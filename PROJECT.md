@@ -14,6 +14,7 @@ Right now it is just two static files:
 | Path        | Forwards to                                 |
 |-------------|---------------------------------------------|
 | `/boardkit` | https://boardkit-iota.vercel.app/boardkit/  |
+| `/linkkit`  | https://linkkit-lake.vercel.app/linkkit/    |
 
 Boardkit needs all three rules (`/boardkit`, `/boardkit/`, `/boardkit/:path+`);
 a single catch-all returned 404 on `/boardkit/`.

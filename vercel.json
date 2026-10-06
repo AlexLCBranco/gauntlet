@@ -2,6 +2,9 @@
   "rewrites": [
     { "source": "/boardkit", "destination": "https://boardkit-iota.vercel.app/boardkit/" },
     { "source": "/boardkit/", "destination": "https://boardkit-iota.vercel.app/boardkit/" },
-    { "source": "/boardkit/:path+", "destination": "https://boardkit-iota.vercel.app/boardkit/:path+" }
+    { "source": "/boardkit/:path+", "destination": "https://boardkit-iota.vercel.app/boardkit/:path+" },
+    { "source": "/linkkit", "destination": "https://linkkit-lake.vercel.app/linkkit/" },
+    { "source": "/linkkit/", "destination": "https://linkkit-lake.vercel.app/linkkit/" },
+    { "source": "/linkkit/:path+", "destination": "https://linkkit-lake.vercel.app/linkkit/:path+" }
   ]
 }
