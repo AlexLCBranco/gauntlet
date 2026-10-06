@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/boardkit", "destination": "https://boardkit-iota.vercel.app/boardkit/" },
+    { "source": "/boardkit/", "destination": "https://boardkit-iota.vercel.app/boardkit/" },
+    { "source": "/boardkit/:path+", "destination": "https://boardkit-iota.vercel.app/boardkit/:path+" }
+  ]
+}
