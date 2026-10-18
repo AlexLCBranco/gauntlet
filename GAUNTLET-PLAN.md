@@ -1,5 +1,10 @@
 # Gauntlet canvas plan (v0)
 
+> **Superseded (2026-10-18).** PROJECT.md is now the single source of truth
+> (the tldraw whiteboard plan), with HANDOFF.md. This file only documents
+> the older iframe canvas still on the home page. Its "How the canvas
+> works" notes that used to be in PROJECT.md: `git show 28662b9:PROJECT.md`.
+
 The source of truth for building the gauntlet canvas. A new session should be
 able to pick up the next pending phase from this file alone. Written
 2026-10-18. Keep it current: update the status table and decisions as work

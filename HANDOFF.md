@@ -5,7 +5,7 @@ file after every step.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
-## Current phase: 1 (the floor), in progress
+## Current phase: 1 (the floor), DONE; waiting for the owner's "go to phase 2"
 
 The whiteboard is a tldraw app at /whiteboard (see DECISIONS). Code areas
 are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
@@ -24,14 +24,25 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   overrode Excalidraw's number keys (turned off); Escape mid-lasso cleared
   the selection instead of restoring it.
 
+- Every e2e passed before the push (`node scripts/local-e2e.mjs`: 12 here,
+  14 Linkkit). Pushed to main (`005168d`), live at
+  gauntlet-home.vercel.app/whiteboard/ (/whiteboard redirects there).
+
 ### Half-done / where it stopped
-- Not pushed yet. Before pushing, every e2e must pass:
-  `node scripts/local-e2e.mjs` (needs the Boardkit and Linkkit folders).
+- Nothing half-done.
 
 ### Known wrong / open
-- Live /whiteboard needs the tldraw hobby license key (see DECISIONS).
-  Until then it disappears after 5 s on the live site.
+- **Live /whiteboard disappears after 5 s**: no tldraw license key yet
+  (console: "No tldraw license key provided!"). Fix: the owner gets the
+  free hobby key at tldraw.dev and either pastes it to the agent (commit it
+  as `VITE_TLDRAW_LICENSE_KEY=...` in `.env.production`; the key ships to
+  every browser anyway, so it isn't a secret) or sets it as a Vercel env
+  var. Until then, the live e2e "watermark" test fails (11/12 pass live);
+  localhost works without a key.
+- Old PROJECT.md content (how the iframe canvas works) is now only in git
+  history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
-- Visual check, `node scripts/local-e2e.mjs`, push, check the live
-  /whiteboard, report to the owner, wait for "go to phase 2".
+- Owner tries phase 1 by hand and says "go to phase 2". Add the license
+  key when it arrives, re-run `npx playwright test` live (all 12 should
+  pass).
