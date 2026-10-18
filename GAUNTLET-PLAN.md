@@ -24,8 +24,8 @@ content. Fluidity and efficiency come first; anything clunky is a bug.
 | 1 | Linkkit automatic backups | **Done**, live in Linkkit v0.0.100 (commit `3431efd`) |
 | 2 | Shared storage (bridge step 3) | **Skipped**: already built and working (see Findings) |
 | 3 | Embed mode for each stone | **Done** 2026-10-18: Linkkit v0.0.101 (`33801c2`), Boardkit v0.0.94 (`2a854dc`), e2e `linkkit/e2e/embed.e2e.ts`. Local e2e route built first (`scripts/`, `b732665`) |
-| 4 | Canvas v0 on the gauntlet home page | **Next.** Read "Notes for phase 4" first |
-| 5 | Prove it's alive (e2e) | Pending |
+| 4 | Canvas v0 on the gauntlet home page | **Done** 2026-10-18 (gauntlet `0739342`). See "Phase 4: what was built" |
+| 5 | Prove it's alive (e2e) | **Next.** Read "Notes for phase 5" first |
 | — | Snapshot-thumbnail feasibility note | Open: write it, don't build it |
 
 ## Rules for this work (owner's)
@@ -87,19 +87,21 @@ the bridge and held e2e passed through it before phase 3 started.
 test in each app's folder, then from this repo:
 
 ```
-node scripts/local-e2e.mjs                    # every e2e in linkkit/e2e
-node scripts/local-e2e.mjs e2e/embed.e2e.ts   # some of them
-node --test "scripts/*.test.mjs"              # the proxy's own tests
+node scripts/local-e2e.mjs                             # every e2e: gauntlet/e2e, then linkkit/e2e
+node scripts/local-e2e.mjs gauntlet                    # only the canvas e2e
+node scripts/local-e2e.mjs linkkit e2e/embed.e2e.ts    # some of Linkkit's
+npm test                                               # unit tests + the proxy's own tests
 ```
 
-`local-e2e.mjs` reuses a dev server already listening on 5181 / 5173 (it
-prints which branch that folder is on) or starts one, starts the proxy on
-3000, runs Playwright in Linkkit with `BRIDGE_SITE=http://localhost:3000`,
-and stops only what it started. `dev-proxy.mjs` (also runnable alone)
-serves this repo's files and applies **`vercel.json`'s own rewrites**, with
+`local-e2e.mjs` builds the canvas (`dist/`), reuses a dev server already
+listening on 5181 / 5173 (it prints which branch that folder is on) or
+starts one, starts the proxy on 3000, runs Playwright in this repo and then
+in Linkkit with `BRIDGE_SITE=http://localhost:3000`, and stops only what it
+started. `dev-proxy.mjs` (also runnable alone)
+serves the canvas build (`dist/`) and applies **`vercel.json`'s own rewrites**, with
 each deployment's origin swapped for its local dev server; a rewrite to a
 deployment it has no local server for stops it, so nothing is silently
-tested against production. Full run: 14 tests, about 3 minutes.
+tested against production. Full run: 3 canvas tests then 14 Linkkit tests, about 4 minutes.
 
 The design notes it was built from:
 
@@ -123,7 +125,7 @@ The design notes it was built from:
 
 | App | Folder | Live | Notes |
 |---|---|---|---|
-| Gauntlet | `C:\Users\alexc\gauntlet` | gauntlet-home.vercel.app | Today two static files: `index.html`, `vercel.json` |
+| Gauntlet | `C:\Users\alexc\gauntlet` | gauntlet-home.vercel.app | The canvas: Vite + React app, built by Vercel from `vercel.json`. Dev server: port 5180 (`npm run dev`). Read its `PROJECT.md` |
 | Linkkit | `C:\Users\alexc\linkkit` | gauntlet-home.vercel.app/linkkit (own deploy linkkit-lake.vercel.app) | Read its `CLAUDE.md`. Bump the patch version for each visible change. Dev server: port 5181, path `/linkkit/` |
 | Boardkit | `C:\Users\alexc\Projects\boardkit` | gauntlet-home.vercel.app/boardkit (own deploy boardkit-iota.vercel.app) | Read its `CLAUDE.md`. **Two agents (Claude and Codex) work there: check `git status` and `PLAN.md`, and claim an item in `PLAN.md` before editing.** |
 
@@ -400,7 +402,7 @@ menus or app chrome, and editing still works normally.
   inside an embedded frame, only one backup file per change with two copies
   open, and the missing-id screen.
 
-## Phase 4: canvas v0 (next)
+## Phase 4: canvas v0 (done; the approved plan, kept for reference)
 
 Gauntlet becomes a small Vite + React app (TypeScript, CSS Modules, dark
 theme by default). The rewrites in `vercel.json` stay. Use `buildCommand` and
@@ -452,7 +454,72 @@ jump and reorder, the layout surviving a reload, undo/redo, the focus
 outline, and unloading/reloading a far frame keeping its scroll and never
 unloading while typing.
 
-## Phase 5: prove it's alive (pending)
+## Phase 4: what was built (2026-10-18)
+
+Gauntlet `0739342` on `main`. How it works and the known gaps: gauntlet
+`PROJECT.md`, "How the canvas works" and "Known gaps and trade-offs".
+
+- **Phase 3's three gaps, triaged before building:** the canvas needed
+  none of them fixed, so none was (no app was touched in phase 4).
+  1. Boardkit's "held back" backup warning shows only in the writing
+     copy's backup menu. Not needed: backups still carry the board's last
+     good copy forward (no data at risk), the damaged board's own frame
+     shows its recovery notice, and `/boardkit` shows the warning. Worth
+     a look if the canvas becomes the only place the owner opens Boardkit.
+  2. Linkkit's embed view leaves out the "maps missing from storage"
+     banner. Not needed: it's about other maps, and `/linkkit` shows it.
+  3. Boardkit's frame keeps "Copy board" / "Save board" and the shortcuts
+     button. Not needed: checked in a half-page frame, they fit and don't
+     crowd it.
+- **App:** Vite 8 + React 19 + TypeScript, CSS Modules, dark. `vercel.json`
+  has `buildCommand` and `outputDirectory` (no Vercel setting changed).
+  `.vercelignore` no longer excludes `scripts/`: `vite.config.ts` imports
+  `scripts/dev-proxy.mjs` (only `dist/` is served).
+- **Dev serving**, as the notes asked: `vite.config.ts` forwards app paths
+  with `dev-proxy.mjs`'s own `rewrite`/`forward` and `vercel.json`;
+  `npm run dev` to the live deployments, `npm run dev:local` to the local
+  dev servers. `dev-proxy.mjs` (pre-push e2e) now serves `dist/`.
+- **Bug found by the e2e and fixed:** a stone resized under another one
+  (later stones paint on top) couldn't be grabbed: the header drag hit the
+  other frame. Now the stone grabbed or focused last is on top. The move
+  test fails on the old code (the drag did nothing).
+- **Tests:** unit `src/domain/layout.test.ts` and `sources.test.ts` (27:
+  clamping, fractions, geometry, page jumps, reorder, undo/redo, reading
+  the layout, the registries and the linked badge, the messages).
+  e2e `gauntlet/e2e/canvas.e2e.ts` (3 tests, fresh Edge profile, the real
+  apps in the frames): adding a board and a map, move/resize staying in the
+  page, the one grabbed last on top, undo/redo (keys and buttons), Ctrl+Z
+  in a frame not touching the canvas, the layout surviving a reload,
+  remove + undo; key jumps landing aligned (and "up" from part way), the
+  focus outline and keys going to the frame, a margin click giving them
+  back, the overview's jump and drag-to-reorder (+ undo); a far frame
+  unloading and coming back at its scroll position, never unloading while
+  a card title is being typed (5 s far away, text intact), then unloading
+  once done, with the text saved.
+- **Not covered by an automated test:** the "Linked" badge in the picker
+  is unit-tested only (making a real linked map is phase 5's alive-test:
+  check the badge there). The feel of dragging, resizing, scrolling and
+  jumps is for the owner.
+- **Found:** when an app in a frame moves its focus (Boardkit after Enter
+  in a card title), the browser scrolls the canvas back to that frame.
+  Documented as a trade-off, not fought.
+
+### Notes for phase 5
+
+- Canvas e2e live in `gauntlet/e2e` (Playwright here, same config as
+  Linkkit's: Edge, `BRIDGE_SITE`). Put the alive and same-map tests there;
+  `local-e2e.mjs` already runs this folder first.
+- `e2e/helpers.ts` has `seedBoard`, `seedMap`, `addStone` (through the
+  picker), `frameOf`, `dragBy`, `alignedPage`, `savedLayout`. Making a
+  *linked* map: copy the flow from `linkkit/e2e/bridge.e2e.ts`.
+- Stones are `[data-stone-id]` with `data-app`, `data-loaded`,
+  `data-focused`; pages `section[data-page-index]`. Frames on far pages
+  unload: get a frame again (`frameOf`) after coming back.
+- Two frames of one map on one page: add the same map twice (the second
+  goes in the right half).
+- Check the "Linked" badge in the picker for the linked map.
+
+## Phase 5: prove it's alive (next)
 
 - **The alive-test** (definition of "the gauntlet exists"): Playwright on the
   live site, fresh profile. Make a throwaway **linked** tree map ("ZZ …")

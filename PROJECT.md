@@ -4,21 +4,91 @@ The shared home address for my apps. Each app keeps its own repo and Vercel
 project; Gauntlet forwards a path on this domain to it, so everything lives
 under one address.
 
-Last updated: 2026-10-18 (phase 3 done: both apps have an embed mode; local e2e route built; see GAUNTLET-PLAN.md).
+Last updated: 2026-10-18 (phase 4 done: the canvas is the home page; see GAUNTLET-PLAN.md).
 
-The site is still two static files:
+The home page (`/`) is the **canvas**: a small Vite + React app (TypeScript,
+CSS Modules, dark theme) where Boardkit boards and Linkkit maps sit as live
+frames ("stones"). `vercel.json` builds it (`buildCommand`, `outputDirectory:
+dist`) and keeps forwarding each app's path to its own deployment.
 
-- `index.html` — a plain page at `/` linking to each app.
-- `vercel.json` — rewrites that forward each app's path to its own deployment.
+```
+npm run dev          # canvas on http://localhost:5180, apps from their live deployments
+npm run dev:local    # same, apps from their local dev servers (5181, 5173)
+npm test             # unit tests (vitest) + the proxy's tests (node --test)
+npm run build        # tsc + vite build into dist/
+npm run lint         # oxlint
+node scripts/local-e2e.mjs            # EVERY e2e, before any push: this repo's, then Linkkit's
+node scripts/local-e2e.mjs gauntlet   # only the canvas e2e
+```
 
-Plus local tooling (not deployed; `.vercelignore` keeps it out):
+localhost keeps its own boards and maps (data is per origin), apart from
+the live site's.
 
-- `scripts/dev-proxy.mjs` — the site on one localhost port: this repo's
-  files, and `vercel.json`'s own rewrites sent to each app's local dev
-  server instead of its deployment, so both apps share one origin as live.
-- `scripts/local-e2e.mjs` — starts both dev servers (or reuses running
-  ones) and the proxy, then runs every e2e against it. Every e2e passes
-  here **before** any push to `main`: `node scripts/local-e2e.mjs`.
+### Files
+
+- `src/domain/layout.ts`: the layout, pure: pages, stones in page
+  fractions, clamping, page geometry and jumps, reorder, undo history,
+  reading the saved layout. `sources.ts`: boards and maps from the apps'
+  registries. `protocol.ts`: the stone messages (phase 3).
+- `src/canvas/Canvas.tsx`: the page stack, keys, focus, loading and
+  unloading, move/resize. `Stone.tsx` (one frame), `AddStone.tsx`,
+  `Overview.tsx`, `frames.ts` (the one `message` listener, flush),
+  `storage.ts`.
+- `e2e/canvas.e2e.ts` (+ `helpers.ts`): Playwright, fresh Edge profile.
+- `scripts/dev-proxy.mjs`: the site on one localhost port: the canvas
+  build (`dist/`), and `vercel.json`'s own rewrites sent to each app's
+  local dev server. Vite's dev server reuses its rules (`vite.config.ts`).
+- `scripts/local-e2e.mjs`: builds the canvas, starts both apps' dev servers
+  (or reuses running ones) and the proxy, then runs this repo's e2e and
+  Linkkit's against it. Every e2e passes here **before** any push to
+  `main`.
+
+### How the canvas works
+
+- **Pages:** a vertical stack of 16:9 pages, each as big as fits the
+  window, "+ page" at the bottom. ↓/↑ and PageDown/PageUp jump one page
+  and land aligned (when the canvas has the keys); scrolling is free, no
+  snap. From part way into a page, "up" goes to that page's top.
+- **Stones:** "+ Add stone" lists every board and every map (linked maps
+  get a "Linked" badge) and puts the pick on the current page (left half,
+  then right half, then stacked). Drag the header to move, the right edge,
+  bottom edge or corner to resize; frames stay inside the page. Places
+  are fractions of the page, so frames scale with the window; the content
+  is not zoomed (a smaller window shows less and scrolls more). While
+  dragging, a transparent shield covers every frame. The stone touched
+  last is drawn on top. × removes a stone (undoable).
+- **Keys and focus:** the focused frame has a yellow outline; keys and
+  Ctrl+Z go to it. A click on the canvas outside any frame gives the keys
+  back to the canvas. Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y) outside a frame
+  undo/redo canvas actions (add, remove, move, resize, pages); also the
+  Undo/Redo buttons.
+- **Unloading:** frames on the current page and its neighbours (±1) are
+  loaded. A frame further away gets `stone:flush`; it is unloaded only
+  when it answers `busy: false`. Busy or no answer: it stays, tried again
+  every 2 s. Each frame's last `stone:scroll` is kept (`gauntlet:scroll`)
+  and sent back with `stone:scroll-to` when it loads again.
+- **Overview ("Pages"):** every page as an outline (frame rectangles with
+  names). Click to jump, drag to reorder, × to remove a page (undoable).
+- **Saved:** `gauntlet:canvas` (layout, every change), `gauntlet:scroll`.
+  The canvas reads the apps' keys but never writes them.
+
+### Known gaps and trade-offs (v0)
+
+- **Dragging between frames isn't possible** (for example a card from the
+  Boardkit frame into the Linkkit frame). Each frame is its own document.
+- A wheel over a frame scrolls the frame, never the canvas
+  (`overscroll-behavior: contain` in embed mode). The canvas scrolls from
+  frame headers, the page margins and empty parts of a page.
+- When an app inside a frame moves its focus (for example Boardkit after
+  Enter in a card title), the browser scrolls the canvas to show that
+  element. So a frame you are typing in comes back into view if you
+  scrolled away. Browser behaviour; found by the unloading e2e.
+- A frame entirely under a bigger one can't be clicked until the top one
+  is moved or resized (the overview shows both).
+- Stones can't move to another page yet (remove and add again).
+- Whichever stone was touched last is on top; that order isn't saved.
+- Each frame runs a whole copy of its app, hence the unloading.
+- Thumbnails are outlines, not live previews.
 
 ## Apps forwarded
 
@@ -34,7 +104,10 @@ a single catch-all returned 404 on `/boardkit/`.
 
 1. The app must be built to serve under its own base path (e.g. `/linkkit/`).
 2. Copy the three Boardkit rules in `vercel.json`, swapping the path and URL.
-3. Add a link to `index.html`.
+3. Add it to the canvas: `App` in `src/domain/layout.ts`, its registry in
+   `src/domain/sources.ts`, a link in the toolbar (`src/canvas/Canvas.tsx`),
+   and its local dev server in `scripts/dev-proxy.mjs` (`localTargets`).
+   The app needs the embed mode (phase 3).
 
 ## Canvas plan (phase 0 findings, 2026-10-18)
 
@@ -105,9 +178,8 @@ every Boardkit field it doesn't know through untouched.
 Approved 2026-10-18 with changes; the full plan, decisions and status are in
 `GAUNTLET-PLAN.md`. Status: phase 1 done (Linkkit v0.0.100), phase 2
 skipped (already built), phase 3 done (embed mode: Linkkit v0.0.101,
-Boardkit v0.0.94; `?embed=1&id=…` shows one map or board with no chrome),
-phases 4–5 pending; phase 4 (the canvas) is next, and
-`GAUNTLET-PLAN.md` has "Notes for phase 4". The list below is the
+Boardkit v0.0.94), phase 4 done (the canvas, above); phase 5 (the
+alive-test) is next. The list below is the
 original proposal.
 
 #### Original proposal
