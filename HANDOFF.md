@@ -33,8 +33,10 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
 
 ### Known wrong / open
 - **Live /whiteboard disappears after 5 s**: no tldraw license key yet
-  (console: "No tldraw license key provided!"). Fix: the owner gets the
-  free hobby key at tldraw.dev and either pastes it to the agent (commit it
+  (console: "No tldraw license key provided!"). The owner applied for the
+  free hobby key on 2026-10-18; tldraw reviews it and replies by email
+  (within a week). Not needed to build phase 2. When it arrives, the owner
+  pastes it to the agent (commit it
   as `VITE_TLDRAW_LICENSE_KEY=...` in `.env.production`; the key ships to
   every browser anyway, so it isn't a secret) or sets it as a Vercel env
   var. Until then, the live e2e "watermark" test fails (11/12 pass live);
