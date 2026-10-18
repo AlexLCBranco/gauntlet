@@ -23,8 +23,8 @@ content. Fluidity and efficiency come first; anything clunky is a bug.
 | 0 | Investigate and plan | **Done** (this file, and the canvas section of `PROJECT.md`) |
 | 1 | Linkkit automatic backups | **Done**, live in Linkkit v0.0.100 (commit `3431efd`) |
 | 2 | Shared storage (bridge step 3) | **Skipped**: already built and working (see Findings) |
-| 3 | Embed mode for each stone | **Pending**. Unfinished Linkkit work is on branch `wip/embed-phase3` (pushed, not on main), see "Phase 3: where it stands". First set up the local e2e route (see "Every test passes before pushing to main") |
-| 4 | Canvas v0 on the gauntlet home page | Pending |
+| 3 | Embed mode for each stone | **Done** 2026-10-18: Linkkit v0.0.101 (`33801c2`), Boardkit v0.0.94 (`2a854dc`), e2e `linkkit/e2e/embed.e2e.ts`. Local e2e route built first (`scripts/`, `b732665`) |
+| 4 | Canvas v0 on the gauntlet home page | **Next.** Read "Notes for phase 4" first |
 | 5 | Prove it's alive (e2e) | Pending |
 | — | Snapshot-thumbnail feasibility note | Open: write it, don't build it |
 
@@ -79,8 +79,29 @@ non-`main` branch of each repo gets one. Three things block e2e on them:
    on the live site. A single app's preview is a different origin from the
    other app's.
 
-**Recommended route: one local origin for everything** (no Vercel change
-needed, and localhost is already allowed by both apps):
+**The route in use: one local origin for everything** (no Vercel change
+needed, and localhost is already allowed by both apps). Built 2026-10-18;
+the bridge and held e2e passed through it before phase 3 started.
+
+**How to run it (before every push to main):** check out the branch to
+test in each app's folder, then from this repo:
+
+```
+node scripts/local-e2e.mjs                    # every e2e in linkkit/e2e
+node scripts/local-e2e.mjs e2e/embed.e2e.ts   # some of them
+node --test "scripts/*.test.mjs"              # the proxy's own tests
+```
+
+`local-e2e.mjs` reuses a dev server already listening on 5181 / 5173 (it
+prints which branch that folder is on) or starts one, starts the proxy on
+3000, runs Playwright in Linkkit with `BRIDGE_SITE=http://localhost:3000`,
+and stops only what it started. `dev-proxy.mjs` (also runnable alone)
+serves this repo's files and applies **`vercel.json`'s own rewrites**, with
+each deployment's origin swapped for its local dev server; a rewrite to a
+deployment it has no local server for stops it, so nothing is silently
+tested against production. Full run: 14 tests, about 3 minutes.
+
+The design notes it was built from:
 
 - Run Linkkit's dev server (port 5181, `/linkkit/`) and Boardkit's dev
   server (check its `vite.config.ts` / `.claude/launch.json` for port and
@@ -96,8 +117,7 @@ needed, and localhost is already allowed by both apps):
 - Only when all of them pass locally: push to `main`, then re-run the e2e
   on the live site as a final check.
 
-Setting this up is the first task of the next session, before phase 3
-continues. If it can't work, ask the owner about the bypass in point 1.
+(Vercel's Protection Bypass, point 1 above, was not needed.)
 
 ## Repos
 
@@ -227,50 +247,106 @@ Linkkit v0.0.100, commit `3431efd` on `main`, live. Process slip: the bridge e2e
   then written, so a crash in between can leave an empty file (harmless). The
   e2e helper skips unfinished files.
 
-## Phase 3: embed mode (pending)
+## Phase 3: embed mode (done)
 
 **Goal:** `?embed=1&id=<board or map id>` shows that one board or map with no
-menus or app chrome, and editing still works normally. Do Linkkit, then
-Boardkit.
+menus or app chrome, and editing still works normally.
 
-### Where it stands
+### What was built (2026-10-18)
 
-Unfinished Linkkit work is on the branch `wip/embed-phase3` (commit
-`c1531e0`), pushed to GitHub (`origin/wip/embed-phase3`), **not** on
-`main`. Use it as a starting point or drop it. It contains:
+- **Linkkit v0.0.101** (`33801c2`). The unfinished branch
+  `wip/embed-phase3` was **reused**: on review it matched the approved
+  design and guarded every path that writes `linkkit:active` or opens
+  another map. It went onto `main` as one squashed commit, with fixes: the
+  known broken test (`embed.test.ts` snapshotted the storage stand-in's
+  methods; it now reads keys, and was checked to fail when the store
+  writes), a second bug on the branch (`store/embed.ts` read
+  `window.location`, which crashed all 81 store tests that stub `window`),
+  and `busy` now also covers focus in any text field (a note), not only a
+  box name. The branch is still on GitHub; deleting it needs the owner's
+  yes.
+- **Boardkit v0.0.94** (`2a854dc`), new: `domain/embed.ts` (same protocol),
+  `store/embedStore.ts`, `app/EmbedApp.tsx`, `app/embedBridge.ts`,
+  `features/board/EmbedBackupStrip.tsx`. `writeRegistry` keeps the stored
+  active board in a frame; switch / new / duplicate / from-layout / delete
+  board do nothing in a frame; search covers this board only;
+  `?damage-test` is ignored in a frame (it would plant and open a board);
+  the missing-boards notice has no "Open". A missing board writes nothing
+  (no first-run seed, no orphan or image sweep). Deleted elsewhere: status
+  `deleted`, and the store stops saving and listening, so it can't bring
+  the board back. Backup: one writer per browser (Web Lock
+  `boardkit-auto-backup`, released by `initAutoBackup`'s stop function),
+  which also backs up on `storage` events; a BroadcastChannel for folder
+  changes. Details: Boardkit `ARCHITECTURE.md`, "Embed mode".
+- **Tests.** Unit: Linkkit `src/store/embed.test.ts` (7); Boardkit
+  `src/store/embed.test.ts` (9) and two multi-copy tests in
+  `autoBackup.test.ts`, each checked to fail on the old code. e2e:
+  `linkkit/e2e/embed.e2e.ts`, one test per app, frames on the gauntlet home
+  page: no chrome, editing, live sync between two frames of the same item,
+  active map/board unchanged, **exactly one backup write per change with
+  three copies open** (checked to fail without the lock: 3 writes),
+  `stone:ready` / `stone:status` / `stone:flushed` with `busy`, the missing
+  screen with storage untouched, the damaged-item banner inside a frame,
+  and deleted while framed. Both also checked to fail against the old app.
+- **Also fixed:** `linkkit/e2e/mapMenu.e2e.ts` had been failing on `main`
+  and live (`c1aa963`): the "+ New ▸ Process" item's accessible name
+  includes its "?" button ("Process What is this?"), so the exact match
+  never found it. Test bug only; the app was fine.
 
-- `src/domain/embed.ts`: `readEmbed(search)` and the message protocol
-  (`readToFrame`).
-- `src/store/embed.ts`: `embedded()` (read once from the address as the
-  stores load), `useEmbedStatus` (`ok` / `missing` / `deleted`),
-  `setEmbeddedForTests`.
-- `persistMap.ts`: `saveActiveMapId` does nothing in embed mode.
-- `mapStore.ts`: `embeddedState(id)` opens the named map and writes nothing.
-  A missing or trashed id gives status `missing` (with a never-shown
-  placeholder that waits for a tidy that never runs). `leaveGoneMap` gives
-  `deleted` instead of opening another map. `restoreMaps` stays on the
-  frame's own map.
-- `src/app/EmbedApp.tsx`: no header. Every warning banner is kept (save
-  failed, link hold, backup hold, plus the new `EmbedBackupStrip`, a
-  "Resume backups" button since embed mode has no menu). A floating tool
-  group (Add box, Tidy up, Undo/Redo) and a "This map was deleted / isn't
-  here" screen.
-- `src/app/embedBridge.ts`: the frame side of the protocol (ready/status,
-  scroll reports, flush with `busy`, scroll-to).
-- `autoBackup.ts`: one writer per app through a Web Lock
-  (`linkkit-auto-backup`). A BroadcastChannel tells the other copies when the
-  folder changes (chosen, resumed, off). The writer also backs up on
-  `storage` events, because it may not have the edited map open.
-- `global.css`: `overscroll-behavior: contain` under `html[data-embed]`.
-- `main.tsx`: renders `EmbedApp`, starts the bridge, skips autosave when the
-  map is missing.
+### Notes for phase 4
 
-**Known broken on that branch:** in `src/store/embed.test.ts`, "says a map
-that isn't there is missing, and writes nothing" fails because of a bug in
-the test itself: `before` serialises `Object.entries(localStorage)` on the
-memory-storage object. Build the snapshot the same way as `after`, by
-looping over keys. The other 6 tests there pass. Not yet done: the e2e,
-`PROJECT.md`, the version bump, and all of Boardkit.
+- **Protocol**, as built (both apps, `domain/embed.ts`). Frame → canvas,
+  posted to `window.parent` with the page's own origin:
+  `{type: "stone:ready", app, id, status}` once at start,
+  `{type: "stone:status", app, id, status}` on change (`ok` → `deleted`),
+  `{type: "stone:scroll", app, id, x, y}` 150 ms after scrolling stops,
+  `{type: "stone:flushed", app, id, busy}`. Canvas → frame:
+  `{type: "stone:flush"}`, `{type: "stone:scroll-to", x, y}` (waits up to
+  2 s for the content). Frames check `event.origin` and that
+  `event.source === window.parent`; the canvas must check `event.origin`
+  and match `event.source` to the iframe's `contentWindow`.
+- **Attach the canvas's `message` listener before setting an iframe's
+  `src`**: `stone:ready` is sent once, early.
+- **Scroll position**: Linkkit reports its `[data-map-view]` area, Boardkit
+  its `[data-board-canvas]` rail (horizontal; each list scrolls on its
+  own, and those positions are not reported).
+- **`busy`** is true while any text field in the frame has focus (an open
+  name, title, thots or note editor, the search box). A frame that never
+  answers a flush counts as busy (the plan already says so).
+- **Status is final per load**: a frame that went `missing` or `deleted`
+  stays so until reloaded, even if the item comes back (restored from the
+  trash). The canvas can offer "Reload" or remove the stone.
+- **Wheel**: `overscroll-behavior: contain` is on in both apps' embed mode,
+  so a wheel over a frame never scrolls the canvas: frame header bars and
+  page margins are where the canvas scrolls (as planned; check the feel).
+- **Backups**: whichever copy of an app opened first holds the lock and
+  writes; that can be a frame. A frame shows a "Resume backups" strip when
+  backups are paused (one click resumes every copy).
+- **Gaps found, not fixed** (no new features in phase 3; decide in phase 4
+  whether they matter):
+  - Boardkit's "held back" backup warning (a damaged board's last good copy
+    is carried forward) lives only in the writing copy's backup menu
+    state. A frame shows its own board's recovery notice, but not the
+    held-back warning about another board.
+  - Linkkit's embed view leaves out the "maps missing from storage" banner
+    (`MissingMapsBanner`, about other maps); its own map's problems still
+    show.
+  - Boardkit's frame keeps its toolbar's "Copy board" / "Save board" image
+    buttons and the shortcuts dialog. Harmless; hide them if they crowd a
+    small frame.
+- **Where the e2e live**: today in `linkkit/e2e` (`local-e2e.mjs` runs
+  Playwright there). Phase 4/5 tests in this repo will need Playwright here
+  and `local-e2e.mjs` taught to run both folders.
+- **Dev serving**: the phase 4 plan's Vite proxy forwards to the **live**
+  deployments for everyday dev, but pre-push e2e need the **local** dev
+  servers. Reuse `scripts/dev-proxy.mjs` (`rewrite`, `localTargets`, and
+  `vercel.json`) for Vite's `server.proxy`, with an env switch between the
+  two, so the rules stay the production ones. Phase 4 adds a
+  `package.json` here: move `scripts/` tests under its test command, and
+  keep `.vercelignore` in mind (it currently excludes `scripts/`).
+- `node --test scripts/` doesn't work on Node 24 (a folder isn't a test
+  file); use the glob form above.
+
 
 ### Design (approved)
 
@@ -313,7 +389,7 @@ looping over keys. The other 6 tests there pass. Not yet done: the e2e,
   `.main`; find it. `damageTestFromUrl` already reads the address: check it
   doesn't clash with `embed`.
 
-### Tests to write
+### Tests planned (all written: see "What was built")
 
 - Unit: parsing the address and messages; the embed store opens the named
   item and writes nothing; missing, trashed and deleted items; restore stays
@@ -324,7 +400,7 @@ looping over keys. The other 6 tests there pass. Not yet done: the e2e,
   inside an embedded frame, only one backup file per change with two copies
   open, and the missing-id screen.
 
-## Phase 4: canvas v0 (pending)
+## Phase 4: canvas v0 (next)
 
 Gauntlet becomes a small Vite + React app (TypeScript, CSS Modules, dark
 theme by default). The rewrites in `vercel.json` stay. Use `buildCommand` and

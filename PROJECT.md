@@ -4,12 +4,21 @@ The shared home address for my apps. Each app keeps its own repo and Vercel
 project; Gauntlet forwards a path on this domain to it, so everything lives
 under one address.
 
-Last updated: 2026-10-18 (canvas plan approved; phase 1 done; see GAUNTLET-PLAN.md).
+Last updated: 2026-10-18 (phase 3 done: both apps have an embed mode; local e2e route built; see GAUNTLET-PLAN.md).
 
-Right now it is just two static files:
+The site is still two static files:
 
 - `index.html` — a plain page at `/` linking to each app.
 - `vercel.json` — rewrites that forward each app's path to its own deployment.
+
+Plus local tooling (not deployed; `.vercelignore` keeps it out):
+
+- `scripts/dev-proxy.mjs` — the site on one localhost port: this repo's
+  files, and `vercel.json`'s own rewrites sent to each app's local dev
+  server instead of its deployment, so both apps share one origin as live.
+- `scripts/local-e2e.mjs` — starts both dev servers (or reuses running
+  ones) and the proxy, then runs every e2e against it. Every e2e passes
+  here **before** any push to `main`: `node scripts/local-e2e.mjs`.
 
 ## Apps forwarded
 
@@ -95,7 +104,10 @@ every Boardkit field it doesn't know through untouched.
 
 Approved 2026-10-18 with changes; the full plan, decisions and status are in
 `GAUNTLET-PLAN.md`. Status: phase 1 done (Linkkit v0.0.100), phase 2
-skipped (already built), phases 3–5 pending. The list below is the
+skipped (already built), phase 3 done (embed mode: Linkkit v0.0.101,
+Boardkit v0.0.94; `?embed=1&id=…` shows one map or board with no chrome),
+phases 4–5 pending; phase 4 (the canvas) is next, and
+`GAUNTLET-PLAN.md` has "Notes for phase 4". The list below is the
 original proposal.
 
 #### Original proposal
