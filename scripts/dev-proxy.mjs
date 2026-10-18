@@ -1,6 +1,6 @@
 // The gauntlet site on one local port, for running e2e tests before a push.
 //
-// Production: Vercel serves this repo's static files and forwards each app's
+// Production: Vercel serves this repo's build (`dist/`, the canvas) and forwards each app's
 // path to its own deployment with the rewrites in `vercel.json`, so the
 // browser only ever sees one origin. This script does the same on
 // localhost: it reads the very same rewrites from `vercel.json` and sends
@@ -12,14 +12,20 @@
 //   PORT=3100 LINKKIT_DEV=http://localhost:5181 node scripts/dev-proxy.mjs
 //
 // Needs both apps' dev servers running (Linkkit on 5181, Boardkit on 5173 by
-// default). `scripts/local-e2e.mjs` starts everything and runs the e2e.
+// default) and the canvas built (`npm run build`). `scripts/local-e2e.mjs`
+// does all of that and runs the e2e. The canvas's own Vite dev server
+// (`vite.config.ts`) uses the same rules through `forward`.
 
 import { createReadStream, readFileSync, statSync } from "node:fs";
 import http from "node:http";
+import https from "node:https";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+/** `vercel.json`'s rewrites. */
+export const readRewrites = () => JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf-8")).rewrites;
 
 /** Each deployment named in `vercel.json`, and the local dev server that
     stands in for it. */
@@ -84,14 +90,13 @@ export function toLocal(url, targets) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".json": "application/json", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon" };
 
-/** A file of this repo to serve as-is, like Vercel's filesystem step (which
-    comes before rewrites), or null. Hidden files and this folder are not
-    served. */
-function staticFile(pathname) {
+/** A file of the build to serve as-is, like Vercel's filesystem step (which
+    comes before rewrites), or null. Hidden files are not served. */
+function staticFile(root, pathname) {
   const rel = decodeURIComponent(pathname === "/" ? "/index.html" : pathname);
-  if (rel.split("/").some((part) => part.startsWith(".")) || rel.startsWith("/scripts/")) return null;
-  const file = path.join(ROOT, rel);
-  if (!file.startsWith(ROOT + path.sep)) return null;
+  if (rel.split("/").some((part) => part.startsWith("."))) return null;
+  const file = path.join(root, rel);
+  if (!file.startsWith(root + path.sep)) return null;
   try {
     return statSync(file).isFile() ? file : null;
   } catch {
@@ -99,8 +104,27 @@ function staticFile(pathname) {
   }
 }
 
-export function start({ port = Number(process.env.PORT ?? 3000), targets = localTargets() } = {}) {
-  const { rewrites } = JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf-8"));
+/** Sends the request on to `target` (an http or https URL) and streams the
+    answer back. */
+export function forward(req, res, target) {
+  const upstream = (target.protocol === "https:" ? https : http).request(
+    target,
+    { method: req.method, headers: { ...req.headers, host: target.host } },
+    (up) => {
+      res.writeHead(up.statusCode ?? 502, up.headers);
+      up.pipe(res);
+    },
+  );
+  upstream.on("error", (err) => {
+    res.writeHead(502, { "content-type": "text/plain" });
+    res.end(`Server at ${target.origin} not reachable: ${err.message}`);
+  });
+  req.pipe(upstream);
+}
+
+/** `root`: the folder served at `/` (the canvas build). */
+export function start({ port = Number(process.env.PORT ?? 3000), targets = localTargets(), root = path.join(ROOT, "dist") } = {}) {
+  const rewrites = readRewrites();
   // Every deployment must have a local stand-in before anything is served.
   for (const { destination } of rewrites) toLocal(new URL(destination.replace(/:\w+[+*]?/g, "x")), targets);
 
@@ -112,7 +136,7 @@ export function start({ port = Number(process.env.PORT ?? 3000), targets = local
 
   const server = http.createServer((req, res) => {
     const { pathname } = new URL(req.url, "http://proxy");
-    const file = staticFile(pathname);
+    const file = staticFile(root, pathname);
     if (file) {
       res.writeHead(200, { "content-type": TYPES[path.extname(file)] ?? "application/octet-stream" });
       createReadStream(file).pipe(res);
@@ -121,22 +145,10 @@ export function start({ port = Number(process.env.PORT ?? 3000), targets = local
     const target = route(req.url);
     if (!target) {
       res.writeHead(404, { "content-type": "text/plain" });
-      res.end("Not found (no file and no rewrite in vercel.json)");
+      res.end("Not found (no file in the build and no rewrite in vercel.json)");
       return;
     }
-    const upstream = http.request(
-      target,
-      { method: req.method, headers: { ...req.headers, host: target.host } },
-      (up) => {
-        res.writeHead(up.statusCode ?? 502, up.headers);
-        up.pipe(res);
-      },
-    );
-    upstream.on("error", (err) => {
-      res.writeHead(502, { "content-type": "text/plain" });
-      res.end(`Dev server at ${target.origin} not reachable: ${err.message}`);
-    });
-    req.pipe(upstream);
+    forward(req, res, target);
   });
 
   // Vite's hot reload talks over a WebSocket on the page's own origin.

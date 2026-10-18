@@ -1,0 +1,23 @@
+import { defineConfig } from "@playwright/test";
+
+/**
+ * End-to-end checks of the canvas, with the real apps in its frames. Each
+ * run gets a fresh, empty browser profile (Edge, which ships with Windows),
+ * so the owner's own maps and boards are never in reach.
+ *
+ *   node scripts/local-e2e.mjs                       # before a push: local copy of the site
+ *   npm run e2e                                      # the live site
+ *   BRIDGE_SITE=http://localhost:3000 npm run e2e    # another copy of it
+ */
+export default defineConfig({
+  testDir: "e2e",
+  testMatch: "*.e2e.ts",
+  timeout: 5 * 60_000,
+  expect: { timeout: 5_000 },
+  reporter: "list",
+  use: {
+    baseURL: process.env.BRIDGE_SITE ?? "https://gauntlet-home.vercel.app",
+    channel: "msedge",
+    viewport: { width: 1400, height: 900 },
+  },
+});

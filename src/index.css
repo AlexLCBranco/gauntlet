@@ -1,0 +1,17 @@
+:root {
+  color-scheme: dark;
+  --bg: #0e0f12;
+  --surface: #17191e;
+  --page: #1c1f26;
+  --line: #2c313b;
+  --fg: #e6e8ec;
+  --muted: #8a909c;
+  --accent: #6aa8ff;
+  --focus: #ffcc4d;
+  --boardkit: #7bd88f;
+  --linkkit: #c39bff;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
+button { font: inherit; }

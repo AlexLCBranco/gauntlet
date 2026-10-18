@@ -1,6 +1,8 @@
 // node --test "scripts/*.test.mjs"
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import http from "node:http";
 import { test } from "node:test";
 
@@ -50,8 +52,11 @@ test("serves the home page and forwards each app to its own server", async (t) =
     });
   const lk = await fake("linkkit");
   const bk = await fake("boardkit");
+  const root = mkdtempSync(path.join(os.tmpdir(), "gauntlet-dist-"));
+  writeFileSync(path.join(root, "index.html"), "<!doctype html><html><body>canvas</body></html>");
   const proxy = await start({
     port: 0,
+    root,
     targets: {
       "https://linkkit-lake.vercel.app": `http://localhost:${lk.address().port}`,
       "https://boardkit-iota.vercel.app": `http://localhost:${bk.address().port}`,
@@ -71,4 +76,5 @@ test("serves the home page and forwards each app to its own server", async (t) =
   assert.deepEqual(await get("/boardkit/assets/x.js"), [200, "boardkit /boardkit/assets/x.js"]);
   assert.equal((await get("/nowhere"))[0], 404);
   assert.equal((await get("/scripts/dev-proxy.mjs"))[0], 404);
+  assert.equal((await get("/.env"))[0], 404);
 });
