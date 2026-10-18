@@ -158,3 +158,15 @@ Changes to the plan, newest last. Each says what and why.
 - 2026-10-18 — Phase 2: lasso and box select pick a whole board. Picking
   single cards inside a board comes with phase 4, when cards become
   things that move anywhere (section 1 asks for it; it needs the same work).
+- 2026-10-18 — Phase 2, how a board behaves. It is drawn at its natural
+  size (Boardkit's list widths, every card shown, no scrollbar) and scaled
+  as a whole: dragging a corner sets the scale, aspect kept. Its box follows
+  the content (more cards, taller board) but never past the sheet: a board
+  that would overflow shrinks to fit. Double-click (or Enter) edits it in
+  place: click a title to rename, drag a card to move it, x deletes it into
+  Boardkit's trash, "+ Add a card" adds (Enter keeps adding). Escape or a
+  click outside ends editing. While editing, Ctrl+Z / Ctrl+Shift+Z undo and
+  redo that board's card edits; outside, Ctrl+Z is the whiteboard's (moves,
+  resizes). Boardkit's pregame/postgame thots stay hidden, as Boardkit shows
+  them by default; background images aren't drawn (colour backgrounds are).
+  A full trash refuses a delete instead of forgetting the oldest card.

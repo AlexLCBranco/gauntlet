@@ -25,6 +25,8 @@ import {
 } from "tldraw";
 import "tldraw/tldraw.css";
 
+import { AddBoard } from "../boards/AddBoard";
+import { BoardShapeUtil } from "../boards/BoardShape";
 import { LassoOverlay } from "../lasso/LassoOverlay";
 import { LassoTool } from "../lasso/LassoTool";
 import { keepInsideSheet } from "../pages/keepInside";
@@ -114,9 +116,13 @@ function TopToolbar() {
         <HighlightToolbarItem />
         <LaserToolbarItem />
       </DefaultToolbar>
+      <AddBoard />
     </div>
   );
 }
+
+/** Boardkit boards as whiteboard objects (`src/boards/`). */
+const shapeUtils = [BoardShapeUtil];
 
 const components: TLComponents = {
   Toolbar: null,
@@ -152,6 +158,7 @@ export function Whiteboard() {
         persistenceKey={PERSISTENCE_KEY}
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY || undefined}
         tools={[LassoTool]}
+        shapeUtils={shapeUtils}
         overrides={overrides}
         components={components}
         cameraOptions={camera}

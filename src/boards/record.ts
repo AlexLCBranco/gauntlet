@@ -89,10 +89,11 @@ export function readBoard(raw: string | null): Read {
   if (typeof record.version === "number" && record.version > SCHEMA_VERSION) return { status: "newer" };
   const b = record.board;
   if (!isObj(b) || !isObj(b.lists) || !isObj(b.cards) || !isStrArray(b.listOrder) || !isObj(b.cardOrder)) return { status: "damaged" };
+  const { lists, cards, cardOrder } = b;
   for (const id of b.listOrder) {
-    const order = b.cardOrder[id];
-    if (!isObj(b.lists[id]) || !isStrArray(order)) return { status: "damaged" };
-    if (order.some((c) => !isObj(b.cards[c]))) return { status: "damaged" };
+    const order = cardOrder[id];
+    if (!isObj(lists[id]) || !isStrArray(order)) return { status: "damaged" };
+    if (order.some((c) => !isObj(cards[c]))) return { status: "damaged" };
   }
   const board = { ...b, trash: Array.isArray(b.trash) ? b.trash : [] } as unknown as Board;
   return { status: "ok", board, rev: revOf(record), record };

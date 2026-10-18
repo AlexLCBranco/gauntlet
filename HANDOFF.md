@@ -5,10 +5,60 @@ file after every step.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
-## Current phase: 2 (Boardkit as a live object), IN PROGRESS
+## Current phase: 2 (Boardkit as a live object), IN PROGRESS (paused by the owner)
 
 Phase 2 started 2026-10-18. Owner chose: the board object reads and writes
-Boardkit's own record (see DECISIONS). Code goes in `src/boards/`.
+Boardkit's own record (PROJECT.md, DECISIONS: three phase 2 entries). Code
+is in `src/boards/` (see `src/README.md`). **Committed locally, NOT pushed**:
+the live site still has phase 1 only.
+
+### Phase 2 plan (the task list), with status
+1. DONE — Read PROJECT.md/HANDOFF.md, ask the owner where board data lives
+   (answer: stays shared with Boardkit).
+2. DONE — Pure board record ops + unit tests: `src/boards/record.ts`
+   (read Boardkit's `boardkit:board:<id>` v2 record, rename card/list, add,
+   move, trash, undo changes, card numbers; keeps every unknown field,
+   rev + 1 per write), `record.test.ts` (18 tests).
+3. DONE — Store: `src/boards/store.ts` (localStorage + `storage` events,
+   edits, per-board undo/redo), `store.test.ts` (5 tests).
+4. DONE — tldraw board shape + in-place editing: `BoardShape.tsx` (shape
+   `boardkit-board`, props boardId/w/h/scale, aspect-locked corner resize
+   scales the whole board, box follows content, never past the sheet:
+   `fit.ts` + `fit.test.ts`), `BoardView.tsx` (draws lists/cards in
+   Boardkit's dark look; double-click/Enter to edit: click title renames,
+   drag moves a card, x trashes, "+ Add a card"; Ctrl+Z/Ctrl+Shift+Z while
+   editing undo card edits), `boards.css`.
+5. DONE — Board picker on the toolbar: `AddBoard.tsx` (button "Board"
+   right of the toolbar, lists `boardkit:registry`, places the board in
+   the middle of the current page, selected). Wired in
+   `src/whiteboard/Whiteboard.tsx` (`shapeUtils`).
+6. IN PROGRESS — e2e, build, push, HANDOFF:
+   - DONE: `e2e/boards.e2e.ts` (5 tests: place board, corner scale + undo,
+     rename/add/move/delete + undo/redo + Boardkit shows it, Boardkit's
+     edits show live + deleted board notice, box select + lasso). All 5
+     passed against the dev server:
+     `BRIDGE_SITE=http://localhost:<port> npx playwright test e2e/boards.e2e.ts`.
+     `npm test` passes (66 unit + proxy tests), `tsc -b` clean.
+   - NOT DONE: full pre-push run `node scripts/local-e2e.mjs` (every e2e
+     here + Linkkit's). It was started when the owner paused the work; its
+     result was not recorded. Run it again.
+   - NOT DONE: push to main, then re-run the e2e live.
+   - NOT DONE: tell the owner what to try by hand (PROJECT.md rule 3).
+
+### Bugs found by the e2e and fixed (phase 2)
+- Escape in a card's text field also ended editing the board: tldraw
+  listens for keys natively on its container, before React. The field now
+  stops keys natively and reads Enter/Escape itself.
+- Escape after a text field or the x button went away did nothing: focus
+  fell to the page body, out of tldraw's reach. Fields hand focus back,
+  board buttons don't take focus, and Escape on the body ends editing.
+
+### Known gaps (phase 2)
+- At narrow windows (about 1000 px and less) the toolbar overflows and the
+  Board button is pushed off-screen.
+- Picking single cards with lasso/box select is deferred to phase 4
+  (DECISIONS).
+- Background images and thots aren't drawn (DECISIONS).
 
 ## Phase 1 (done)
 
@@ -34,7 +84,7 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   gauntlet-home.vercel.app/whiteboard/ (/whiteboard redirects there).
 
 ### Half-done / where it stopped
-- Phase 2: building `src/boards/` (record ops, store, tldraw shape, picker).
+- See phase 2's plan above (step 6).
 
 ### Known wrong / open
 - **Live /whiteboard disappears after 5 s**: no tldraw license key yet
@@ -50,6 +100,6 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
-- Owner tries phase 1 by hand and says "go to phase 2". Add the license
-  key when it arrives, re-run `npx playwright test` live (all 12 should
-  pass).
+- Phase 2 step 6: run `node scripts/local-e2e.mjs`; if all pass, push to
+  main, re-run e2e live, then report to the owner and wait.
+- Add the tldraw license key when it arrives (see above).
