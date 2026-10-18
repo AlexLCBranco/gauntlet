@@ -1,6 +1,6 @@
 // node --test "scripts/*.test.mjs"
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import http from "node:http";
@@ -54,6 +54,8 @@ test("serves the home page and forwards each app to its own server", async (t) =
   const bk = await fake("boardkit");
   const root = mkdtempSync(path.join(os.tmpdir(), "gauntlet-dist-"));
   writeFileSync(path.join(root, "index.html"), "<!doctype html><html><body>canvas</body></html>");
+  mkdirSync(path.join(root, "whiteboard"));
+  writeFileSync(path.join(root, "whiteboard", "index.html"), "<!doctype html><html><body>whiteboard</body></html>");
   const proxy = await start({
     port: 0,
     root,
@@ -72,6 +74,8 @@ test("serves the home page and forwards each app to its own server", async (t) =
   const [homeStatus, home] = await get("/");
   assert.equal(homeStatus, 200);
   assert.match(home, /<html/i);
+  // A folder with an index.html is served as a page, as on Vercel.
+  assert.deepEqual(await get("/whiteboard/"), [200, "<!doctype html><html><body>whiteboard</body></html>"]);
   assert.deepEqual(await get("/linkkit?embed=1&id=m1"), [200, "linkkit /linkkit/?embed=1&id=m1"]);
   assert.deepEqual(await get("/boardkit/assets/x.js"), [200, "boardkit /boardkit/assets/x.js"]);
   assert.equal((await get("/nowhere"))[0], 404);

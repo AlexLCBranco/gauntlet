@@ -1,0 +1,7 @@
+html, body, #root { height: 100%; margin: 0; }
+body { background: #101011; overflow: hidden; }
+
+.gauntlet-whiteboard { position: fixed; inset: 0; }
+
+/* The toolbar sits at the top, as in Excalidraw. */
+.gauntlet-top-toolbar { pointer-events: all; padding-top: 6px; display: flex; justify-content: center; }

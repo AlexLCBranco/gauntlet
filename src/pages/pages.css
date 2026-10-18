@@ -1,0 +1,44 @@
+/* Around the sheet: darker than the sheet itself, so its edge is clear. */
+.gauntlet-outside { position: absolute; inset: 0; background: #cfcfd4; }
+.tl-theme__dark .gauntlet-outside { background: #26262c; }
+.gauntlet-sheet {
+  position: absolute;
+  background: var(--tl-color-background);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tl-color-text) 14%, transparent), 0 6px 24px rgb(0 0 0 / 0.25);
+}
+
+/* Bottom-right, just above tldraw's watermark (which must stay visible). */
+.gauntlet-pages {
+  position: absolute;
+  right: 8px;
+  bottom: 52px;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #232329;
+  color: #e3e3e8;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
+  font: 13px/1 system-ui, sans-serif;
+  user-select: none;
+}
+.gauntlet-pages button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gauntlet-pages button:hover:not(:disabled) { background: #33333b; }
+.gauntlet-pages button:disabled { opacity: 0.3; cursor: default; }
+.gauntlet-pages .gauntlet-pages__present { font-size: 13px; }
+.gauntlet-pages__where { padding: 0 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gauntlet-pages__name { display: inline-block; max-width: 140px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; opacity: 0.7; }
+.gauntlet-pages[data-presenting] { opacity: 0.25; transition: opacity 0.2s; }
+.gauntlet-pages[data-presenting]:hover { opacity: 1; }

@@ -349,6 +349,9 @@ export function Canvas() {
           Redo
         </button>
         <span className={styles.spacer} />
+        <a className={styles.appLink} href="/whiteboard/">
+          Whiteboard (new)
+        </a>
         <a className={styles.appLink} href="/boardkit/" target="_blank" rel="noreferrer">
           Boardkit ↗
         </a>

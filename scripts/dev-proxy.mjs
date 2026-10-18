@@ -93,7 +93,8 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".json": "application/json"
 /** A file of the build to serve as-is, like Vercel's filesystem step (which
     comes before rewrites), or null. Hidden files are not served. */
 function staticFile(root, pathname) {
-  const rel = decodeURIComponent(pathname === "/" ? "/index.html" : pathname);
+  // A path ending in "/" is that folder's index.html (`/whiteboard/`).
+  const rel = decodeURIComponent(pathname.endsWith("/") ? pathname + "index.html" : pathname);
   if (rel.split("/").some((part) => part.startsWith("."))) return null;
   const file = path.join(root, rel);
   if (!file.startsWith(root + path.sep)) return null;
