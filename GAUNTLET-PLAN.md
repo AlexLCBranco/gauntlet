@@ -23,14 +23,15 @@ content. Fluidity and efficiency come first; anything clunky is a bug.
 | 0 | Investigate and plan | **Done** (this file, and the canvas section of `PROJECT.md`) |
 | 1 | Linkkit automatic backups | **Done**, live in Linkkit v0.0.100 (commit `3431efd`) |
 | 2 | Shared storage (bridge step 3) | **Skipped**: already built and working (see Findings) |
-| 3 | Embed mode for each stone | **Pending**. Unfinished Linkkit work is on a local branch, see "Phase 3: where it stands" |
+| 3 | Embed mode for each stone | **Pending**. Unfinished Linkkit work is on branch `wip/embed-phase3` (pushed, not on main), see "Phase 3: where it stands". First set up the local e2e route (see "Every test passes before pushing to main") |
 | 4 | Canvas v0 on the gauntlet home page | Pending |
 | 5 | Prove it's alive (e2e) | Pending |
 | — | Snapshot-thumbnail feasibility note | Open: write it, don't build it |
 
 ## Rules for this work (owner's)
 
-- Phases in order. Push to `main` only when every test passes.
+- Phases in order. Push to `main` only when every test passes (see the next
+  section: e2e included, run **before** the push).
 - No new widget features (no bracket mode, presets, tree mode 14b–14e, …).
   Exception: fixes needed for stones to work inside the canvas.
 - Automate every check that can be automated (unit, or Playwright e2e on the
@@ -45,6 +46,58 @@ content. Fluidity and efficiency come first; anything clunky is a bug.
   test that fails on the old code.
 - Owner's global rules also apply (`~/.claude/CLAUDE.md`): dark theme by
   default; after each change, build/test, one focused commit, push to `main`.
+
+## Every test passes before pushing to main (owner's rule, 2026-10-18)
+
+Every test passes **before** any push to `main`: unit tests, build, lint,
+and **every e2e**: Linkkit's `e2e/bridge.e2e.ts`, `e2e/held.e2e.ts`, and
+every e2e added later (embed, canvas, alive, same-map). Running an e2e
+against the live site after the push doesn't count. Phase 1 broke this
+rule: the bridge e2e ran only after the change was live (it passed, but
+that was luck, not process).
+
+### Where the e2e can run before a push
+
+**Vercel preview deploys: set up, but not usable for e2e today.** Checked
+2026-10-18: pushing `wip/embed-phase3` built a Linkkit preview
+automatically (`npx -y vercel@latest ls linkkit` lists it, "Preview",
+e.g. `https://linkkit-crpftuq8c-alexlcbrancos-projects.vercel.app`). Every
+non-`main` branch of each repo gets one. Three things block e2e on them:
+
+1. **Vercel Deployment Protection is on.** A preview URL answers `302` to
+   Vercel's login (`vercel.com/sso-api`), so Playwright can't load it.
+   Fixing that means turning on "Protection Bypass for Automation" in the
+   Vercel project settings and passing its secret as the
+   `x-vercel-protection-bypass` header. That's a Vercel settings change, so
+   it needs the owner's explicit yes.
+2. **The apps refuse preview hosts.** Both apps run only on
+   gauntlet-home.vercel.app and localhost (Linkkit `src/domain/address.ts`,
+   Boardkit `src/domain/address.ts`). Anywhere else they show "This app
+   moved". Allowing preview hosts would be a code change that weakens that
+   protection.
+3. **The bridge, canvas and alive tests need both apps on one origin**, as
+   on the live site. A single app's preview is a different origin from the
+   other app's.
+
+**Recommended route: one local origin for everything** (no Vercel change
+needed, and localhost is already allowed by both apps):
+
+- Run Linkkit's dev server (port 5181, `/linkkit/`) and Boardkit's dev
+  server (check its `vite.config.ts` / `.claude/launch.json` for port and
+  base `/boardkit/`), each from the branch being tested.
+- Put one local proxy in front of both on a single port, routing `/linkkit`
+  to 5181 and `/boardkit` to Boardkit's port. Once phase 4 exists, the
+  gauntlet's own Vite dev server should be that proxy (`server.proxy`),
+  serving the canvas at `/`. Before that, a small Node proxy script is
+  enough.
+- Run the e2e against it: `BRIDGE_SITE=http://localhost:<proxy port> npm run e2e`
+  in Linkkit (the config reads `BRIDGE_SITE`). New e2e tests take the same
+  variable.
+- Only when all of them pass locally: push to `main`, then re-run the e2e
+  on the live site as a final check.
+
+Setting this up is the first task of the next session, before phase 3
+continues. If it can't work, ask the owner about the bypass in point 1.
 
 ## Repos
 
@@ -149,7 +202,7 @@ Everything else in the proposed plan below is approved.
 
 ## Phase 1: done
 
-Linkkit v0.0.100, commit `3431efd` on `main`, live.
+Linkkit v0.0.100, commit `3431efd` on `main`, live. Process slip: the bridge e2e ran only after the push (it passed). The rule above now forbids that.
 
 - `src/domain/held.ts` (pure, tested), `src/store/backupHold.ts`: a map that
   reads damaged (repaired or unreadable) goes on the held list
@@ -182,9 +235,9 @@ Boardkit.
 
 ### Where it stands
 
-Unfinished Linkkit work is on the **local** branch `wip/embed-phase3` in
-`C:\Users\alexc\linkkit` (commit `c1531e0`, not pushed, not on `main`). Use
-it as a starting point or drop it. It contains:
+Unfinished Linkkit work is on the branch `wip/embed-phase3` (commit
+`c1531e0`), pushed to GitHub (`origin/wip/embed-phase3`), **not** on
+`main`. Use it as a starting point or drop it. It contains:
 
 - `src/domain/embed.ts`: `readEmbed(search)` and the message protocol
   (`readToFrame`).
