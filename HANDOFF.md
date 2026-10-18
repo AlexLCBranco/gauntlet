@@ -5,7 +5,12 @@ file after every step.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
-## Current phase: 1 (the floor), DONE; waiting for the owner's "go to phase 2"
+## Current phase: 2 (Boardkit as a live object), IN PROGRESS
+
+Phase 2 started 2026-10-18. Owner chose: the board object reads and writes
+Boardkit's own record (see DECISIONS). Code goes in `src/boards/`.
+
+## Phase 1 (done)
 
 The whiteboard is a tldraw app at /whiteboard (see DECISIONS). Code areas
 are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
@@ -29,7 +34,7 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   gauntlet-home.vercel.app/whiteboard/ (/whiteboard redirects there).
 
 ### Half-done / where it stopped
-- Nothing half-done.
+- Phase 2: building `src/boards/` (record ops, store, tldraw shape, picker).
 
 ### Known wrong / open
 - **Live /whiteboard disappears after 5 s**: no tldraw license key yet

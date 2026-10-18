@@ -148,3 +148,13 @@ Changes to the plan, newest last. Each says what and why.
   it belongs to pages: full screen, read-only, arrow keys go page to page.
   Naming, jumping to and reordering pages use tldraw's own page menu (top
   left).
+- 2026-10-18 — Phase 2: a board on the whiteboard IS the Boardkit board
+  (owner's choice). The whiteboard object reads and writes the same
+  `boardkit:board:<id>` record /boardkit uses (same origin, merged by
+  `rev`), so an edit shows in both, a linked Linkkit map keeps following,
+  and Boardkit's folder backups keep covering it. "Moving my boards over"
+  therefore means placing them; nothing is copied, and /boardkit keeps
+  working. Deletes go to Boardkit's own trash.
+- 2026-10-18 — Phase 2: lasso and box select pick a whole board. Picking
+  single cards inside a board comes with phase 4, when cards become
+  things that move anywhere (section 1 asks for it; it needs the same work).
