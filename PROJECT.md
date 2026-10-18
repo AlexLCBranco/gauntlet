@@ -4,7 +4,7 @@ The shared home address for my apps. Each app keeps its own repo and Vercel
 project; Gauntlet forwards a path on this domain to it, so everything lives
 under one address.
 
-Last updated: 2026-10-18 (canvas plan, phase 0).
+Last updated: 2026-10-18 (canvas plan approved; phase 1 done; see GAUNTLET-PLAN.md).
 
 Right now it is just two static files:
 
@@ -91,7 +91,14 @@ card colours, icons, widths, numbering, highlights, checks (`check`,
 `hasChecks`), `singleThots`, background, collapsed lists. Linkkit carries
 every Boardkit field it doesn't know through untouched.
 
-### Proposed phases 1–5 (awaiting the owner's OK)
+### Phases 1–5
+
+Approved 2026-10-18 with changes; the full plan, decisions and status are in
+`GAUNTLET-PLAN.md`. Status: phase 1 done (Linkkit v0.0.100), phase 2
+skipped (already built), phases 3–5 pending. The list below is the
+original proposal.
+
+#### Original proposal
 
 1. **Linkkit backups — only the gap.** Today a damaged Linkkit map is
    repaired on open and its original is set aside in `linkkit:damaged:*`,
