@@ -155,6 +155,9 @@ export function Whiteboard() {
         overrides={overrides}
         components={components}
         cameraOptions={camera}
+        // tldraw's own "1–9 press the nth toolbar button" would override
+        // the Excalidraw number keys above.
+        options={{ enableToolbarKeyboardShortcuts: false }}
         onMount={(e) => {
           const stop = setUp(e);
           setEditor(e);

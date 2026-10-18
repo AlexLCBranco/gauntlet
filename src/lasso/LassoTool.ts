@@ -49,12 +49,16 @@ class Idle extends StateNode {
 
 class Lassoing extends StateNode {
   static override id = "lassoing";
-  private before: TLShapeId[] = [];
+  /** The selection when the loop started (Escape puts it back). */
+  private startSelection: TLShapeId[] = [];
+  /** What the loop adds to: the selection with Shift, else nothing. */
+  private base: TLShapeId[] = [];
   private loop: Point[] = [];
 
   override onEnter() {
     const { editor } = this;
-    this.before = editor.inputs.getShiftKey() ? editor.getSelectedShapeIds() : [];
+    this.startSelection = editor.getSelectedShapeIds();
+    this.base = editor.inputs.getShiftKey() ? this.startSelection : [];
     const p = editor.inputs.getOriginPagePoint();
     this.loop = [{ x: p.x, y: p.y }];
     lassoLoop.set(this.loop);
@@ -79,14 +83,14 @@ class Lassoing extends StateNode {
     else this.parent.transition("idle");
   }
   override onCancel() {
-    this.editor.setSelectedShapes(this.before);
+    this.editor.setSelectedShapes(this.startSelection);
     this.parent.transition("idle");
   }
   override onComplete() {
     this.onPointerUp();
   }
   private select() {
-    const ids = new Set([...this.before, ...shapesInLasso(this.editor, this.loop)]);
+    const ids = new Set([...this.base, ...shapesInLasso(this.editor, this.loop)]);
     this.editor.setSelectedShapes([...ids]);
   }
 }
