@@ -3,7 +3,49 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): Linkkit opening is read-only (Linkkit v0.0.102)
+## NOW (2026-10-19): Linkkit v0.0.104, four asks; two WAIT for the owner
+
+Linkkit `1a89a0b`, LIVE. Owner's 4 asks:
+1. Fit to view on open: NOT BUILT, WAITING. View state is already
+   persisted: each map's zoom in `linkkit:zoom` (Linkkit
+   `src/store/viewStore.ts`, `{ "<map id>": 1.5 }`, written only by the
+   zoom pill, 100% = no entry), the align spot for all maps in
+   `linkkit:align` (choosing one MOVES boxes, an undo step), and a
+   frame's scroll in gauntlet's `gauntlet:scroll` (`src/canvas/storage.ts`,
+   restored by `stone:scroll-to`). The owner said to report this before
+   changing anything. Also: the pill's minimum is 50%, too little for a
+   wide map at 481 px. Proposal given: a session-only fit zoom (never
+   written to `linkkit:zoom`), used when the map has no remembered zoom,
+   below 50% if needed; the pill (and a remembered zoom) wins. Test
+   written: Linkkit `e2e/fitview.e2e.ts` (19-box tree, reload at 957x910
+   and 481x910, every box inside the canvas, stored map byte-identical);
+   fails on v0.0.104 (11 of 19 off screen at 957x910); `test.fixme` until
+   the fix.
+2. Stale linked name: INVESTIGATED, nothing changed. The real case
+   ("Party", map ZX4KCqADxR) is a CARD: stored box "Snacks", board card now
+   "i changed this it was SNACKS again". Stored box names are read only
+   through `openLinked` (persistMap.ts:716), so display, export
+   (`mapsForExport`, mapStore.ts:607), automatic backup (autoBackup.ts:176),
+   frames and other tabs all get the board's names. Only a map's OWN name
+   could lag (board renamed in Boardkit; not the case in the owner's data):
+   read raw by Linkkit's map list/search (`loadRegistry`, mapStore.ts:624),
+   `boardLinks` (persistMap.ts:546, "Linked to 'X'" in "Map from a Boardkit
+   board…") and gauntlet `src/domain/sources.ts:35` (widget names, Add
+   stone list, Overview). Owner decides.
+3. Header test: `e2e/header.e2e.ts` also runs a tree with a box selected
+   ("+" enabled), 481-1400 px. Passes local + live.
+4. Tips: the hint under Linkkit's header is behind a "Tips" toggle, open
+   from 700 px, closed below; the user's choice (`linkkit:ui-prefs`,
+   `{ "tips": "open"|"closed" }`) wins, try/catch, never map data. Linkkit
+   `e2e/tips.e2e.ts` (2 tests, incl. storage blocked).
+Results: Linkkit unit 958 pass, build + lint clean (2 old lint warnings).
+Local `node scripts/local-e2e.mjs`: gauntlet 71 pass + 1 FAILED
+(`fullpage.e2e.ts:314`, a Boardkit board widget not visible in 5 s; passed
+13/13 on rerun: flaky under load), incl. the 5 real-data tests; Linkkit 18
+pass, 1 skipped (fitview). Live: Linkkit 18 pass, 1 skipped; gauntlet 67 pass, 5 skipped (real
+data: local only).
+
+## Earlier (2026-10-19): Linkkit opening is read-only (Linkkit v0.0.102)
 
 Owner's task: opening a map in Linkkit must never change or save box
 positions; bracket layout deterministic; window size never changes saved
