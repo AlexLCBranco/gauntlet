@@ -72,11 +72,11 @@ export function MainMenu() {
           }}
         />
         <TldrawUiMenuItem
-          id="backups"
+          id="backup"
           label={"Backups" as never}
           icon="external-link"
           onSelect={() => {
-            window.location.href = "/backups/";
+            window.location.href = "/backup/";
           }}
         />
       </TldrawUiMenuGroup>

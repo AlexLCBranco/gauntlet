@@ -46,10 +46,11 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: { exclude: ["boardkit"] },
   // Watches Boardkit too, for `scripts/sync-boardkit.mjs`.
   server: { port: 5180, watch: { ignored: ["!**/node_modules/boardkit/**"] } },
-  // Two pages: the older canvas at `/`, the whiteboard at `/whiteboard/`.
+  // Three pages: the older canvas at `/`, the whiteboard at `/whiteboard/`,
+  // the backup page at `/backup/`.
   // tldraw alone is ~1.7 MB (515 kB gzipped), loaded only by the whiteboard.
   build: {
-    rolldownOptions: { input: { main: "index.html", whiteboard: "whiteboard/index.html", backups: "backups/index.html" } },
+    rolldownOptions: { input: { main: "index.html", whiteboard: "whiteboard/index.html", backup: "backup/index.html" } },
     chunkSizeWarningLimit: 2000,
   },
   test: { include: ["src/**/*.test.ts"] },

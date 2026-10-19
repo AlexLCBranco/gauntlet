@@ -1,8 +1,8 @@
 import { createRoot } from "react-dom/client";
 
-import "../index.css";
 import { startAutoBackup } from "./auto";
-import { BackupsPage } from "./BackupsPage";
+import { BackupPage } from "./BackupPage";
+import "./backup.css";
 
 startAutoBackup();
-createRoot(document.getElementById("root")!).render(<BackupsPage />);
+createRoot(document.getElementById("root")!).render(<BackupPage />);

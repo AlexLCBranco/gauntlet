@@ -1,185 +1,211 @@
-import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { seedBoard, seedMap } from "./helpers";
 
 /**
- * Backups of the owner's data on the site (src/backup/). Fresh, empty
- * browser profile per test: the boards and maps are made by the real
- * Boardkit and Linkkit, the "lost data" is wiped in that profile only.
+ * The backup page (/backup/): a backup made in one browser and restored
+ * into an empty one (a cleared browser, a new computer) brings back the
+ * same Boardkit boards and pictures, Linkkit maps and whiteboard, and the
+ * apps open them; a restore over changed data puts it back as it was and
+ * downloads what was there first. Each test runs in fresh, empty browser
+ * profiles: the owner's own data is never in reach.
  */
 
-const IMAGE = [137, 80, 78, 71, 1, 2, 3, 4, 5, 250];
+const PICTURE = Array.from({ length: 5000 }, (_, i) => (i * 31) % 256);
 
-/** Every app key in localStorage (what a backup must bring back). */
-const appData = (page: Page) =>
-  page.evaluate(() => {
-    const out: Record<string, string> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)!;
-      if (/^(boardkit|linkkit|gauntlet):/.test(k) && !k.startsWith("gauntlet:backup")) out[k] = localStorage.getItem(k)!;
-    }
-    return out;
-  });
+/** Throwaway data in every app: a Boardkit board, a picture in Boardkit's
+    image store, a Linkkit map, a whiteboard shape, and a backup folder
+    handle (which can't go in a file) in Linkkit's store. */
+async function seed(context: BrowserContext, mapName: string): Promise<{ boardId: string; shapeId: string }> {
+  const boardId = await seedBoard(context);
+  await seedMap(context, mapName);
 
-/** Boardkit's IndexedDB store (`boardkit` / `kv`), as Boardkit opens it. */
-const withBoardkitDb = <T,>(page: Page, work: string, arg?: unknown) =>
-  page.evaluate(
-    ({ work, arg }) =>
-      new Promise<T>((resolve, reject) => {
-        const r = indexedDB.open("boardkit", 1);
-        r.onupgradeneeded = () => r.result.createObjectStore("kv");
-        r.onerror = () => reject(r.error);
-        r.onsuccess = () => {
-          const store = r.result.transaction("kv", "readwrite").objectStore("kv");
-          // eslint-disable-next-line no-new-func
-          new Function("store", "arg", "resolve", work)(store, arg, resolve);
+  const page = await context.newPage();
+  await page.goto("/backup/");
+  await page.evaluate(async (bytes) => {
+    const put = (dbName: string, key: string, value: unknown) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open(dbName, 1);
+        open.onupgradeneeded = () => open.result.createObjectStore("kv");
+        open.onsuccess = () => {
+          const tx = open.result.transaction("kv", "readwrite");
+          tx.objectStore("kv").put(value, key);
+          tx.oncomplete = () => (open.result.close(), resolve());
+          tx.onerror = () => reject(tx.error);
         };
-      }),
-    { work, arg },
-  );
-
-const putImage = (page: Page) =>
-  withBoardkitDb(page, `store.put(new Blob([new Uint8Array(arg)], { type: "image/png" }), "image:zz-test"); store.transaction.oncomplete = () => resolve(true);`, IMAGE);
-const readImage = (page: Page) =>
-  withBoardkitDb<number[] | null>(page, `const q = store.get("image:zz-test"); q.onsuccess = async () => resolve(q.result ? [...new Uint8Array(await q.result.arrayBuffer())] : null);`);
-
-/** The data is lost: every app key and Boardkit's stored image gone. */
-async function wipe(page: Page) {
-  await page.evaluate(() => {
-    for (const k of Object.keys(localStorage)) if (/^(boardkit|linkkit|gauntlet):/.test(k) && !k.startsWith("gauntlet:backup")) localStorage.removeItem(k);
-  });
-  await withBoardkitDb(page, `store.clear(); store.transaction.oncomplete = () => resolve(true);`);
-  expect(Object.keys(await appData(page))).toEqual([]);
-}
-
-/** The backups saved so far, read straight from their database. */
-const savedBackups = (page: Page) =>
-  page.evaluate(
-    () =>
-      new Promise<{ reason: string; keys: string[]; images: number }[]>((resolve) => {
-        const r = indexedDB.open("gauntlet-backups", 1);
-        r.onupgradeneeded = () => r.result.createObjectStore("snapshots", { keyPath: "id" });
-        r.onsuccess = () => {
-          const q = r.result.transaction("snapshots").objectStore("snapshots").getAll();
-          q.onsuccess = () => resolve(q.result.map((s: any) => ({ reason: s.reason, keys: Object.keys(s.local), images: s.idb.boardkit.length })));
-        };
-      }),
-  );
-
-async function restoreFromList(page: Page, has: string) {
-  await page.goto("/backups/");
-  const row = page.getByRole("list", { name: "Backups" }).getByRole("listitem").filter({ hasText: has }).first();
-  await row.getByRole("button", { name: "Restore this" }).click();
-  const confirm = page.getByRole("alertdialog", { name: "Restore this backup?" });
-  await expect(confirm).toBeVisible();
-  await confirm.getByRole("button", { name: "Restore", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Restored");
-}
-
-test("opening the home page backs up every board, map and image by itself; after the data is lost, 'Restore this' brings all of it back", async ({ page, context }) => {
-  const boardId = await seedBoard(context);
-  await seedMap(context, "ZZ backup map");
-  await page.goto("/whiteboard/");
-  await putImage(page);
-  const before = await appData(page);
-  expect(Object.keys(before)).toContain(`boardkit:board:${boardId}`);
-  expect(Object.keys(before)).toContain("linkkit:registry");
-
-  // The home page backs up by itself a moment after it opens.
-  await page.goto("/");
-  await expect
-    .poll(async () => (await savedBackups(page)).some((b) => b.reason === "auto" && b.keys.includes(`boardkit:board:${boardId}`) && b.images === 1), { timeout: 15_000 })
-    .toBe(true);
-  const withHome = await appData(page); // the home page saved its own layout too
-
-  await wipe(page);
-  await restoreFromList(page, "ZZ backup map");
-  expect(await appData(page)).toEqual(withHome);
-  expect(await readImage(page)).toEqual(IMAGE);
-
-  // The data as it was just before (empty) was backed up first.
-  await page.reload();
-  await expect(page.getByRole("list", { name: "Backups" }).getByRole("listitem").filter({ hasText: "Before a restore" })).toHaveCount(1);
-
-  // Boardkit and Linkkit open with the restored board and map.
-  const rec = JSON.parse(before[`boardkit:board:${boardId}`]);
-  const firstCard = rec.board.cards[rec.board.cardOrder[rec.board.listOrder[0]][0]].title as string;
-  const bk = await context.newPage();
-  await bk.goto("/boardkit/");
-  await expect(bk.getByText(firstCard).first()).toBeVisible({ timeout: 15_000 });
-  const lk = await context.newPage();
-  await lk.goto("/linkkit/");
-  await expect(lk.getByText("ZZ backup map").first()).toBeVisible({ timeout: 15_000 });
-});
-
-test("a backup downloads as a file, and 'Restore from a file' brings it back on a wiped browser", async ({ page, context }) => {
-  const boardId = await seedBoard(context);
-  await seedMap(context, "ZZ file map");
-  await page.goto("/backups/");
-  await putImage(page);
-  const before = await appData(page);
-
-  await page.getByRole("button", { name: "Back up now" }).click();
-  await expect(page.getByRole("status")).toContainText("Backed up");
-  const row = page.getByRole("list", { name: "Backups" }).getByRole("listitem").filter({ hasText: "Made by hand" }).first();
-  await expect(row).toContainText("ZZ file map");
-  const [download] = await Promise.all([page.waitForEvent("download"), row.getByRole("button", { name: "Download" }).click()]);
-  expect(download.suggestedFilename()).toMatch(/^gauntlet-backup-\d{4}-\d\d-\d\d-\d{4}\.json$/);
-  const file = await download.path();
-  expect(JSON.parse(readFileSync(file, "utf-8")).local[`boardkit:board:${boardId}`]).toBe(before[`boardkit:board:${boardId}`]);
-
-  await wipe(page);
-  await page.getByTestId("restore-file").setInputFiles(file);
-  const confirm = page.getByRole("alertdialog", { name: "Restore this backup?" });
-  await expect(confirm).toContainText("ZZ file map");
-  await confirm.getByRole("button", { name: "Restore", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Restored");
-  expect(await appData(page)).toEqual(before);
-  expect(await readImage(page)).toEqual(IMAGE);
-});
-
-test("restoring a board Boardkit has since changed gives it a newer rev, so Boardkit keeps the restored one", async ({ page, context }) => {
-  const boardId = await seedBoard(context);
-  await page.goto("/backups/");
-  await page.getByRole("button", { name: "Back up now" }).click();
-  await expect(page.getByRole("status")).toContainText("Backed up");
-  const key = `boardkit:board:${boardId}`;
-  const old = JSON.parse((await appData(page))[key]);
-  // Boardkit saves a change later (a card renamed, rev up).
-  await page.evaluate((key) => {
-    const r = JSON.parse(localStorage.getItem(key)!);
-    const first = Object.keys(r.board.cards)[0];
-    r.board.cards[first].title = "ZZ changed later";
-    r.rev += 5;
-    localStorage.setItem(key, JSON.stringify(r));
-  }, key);
-  await restoreFromList(page, "Made by hand");
-  const now = JSON.parse((await appData(page))[key]);
-  expect(now.rev).toBe(old.rev + 6);
-  expect(now.board).toEqual(old.board);
-});
-
-test("backing up never creates Boardkit's or Linkkit's database (they would fail to open it)", async ({ page }) => {
-  await page.goto("/backups/");
-  await page.getByRole("button", { name: "Back up now" }).click();
-  await expect(page.getByRole("status")).toContainText("Backed up");
-  const names = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name));
-  expect(names).toContain("gauntlet-backups");
-  expect(names).not.toContain("boardkit");
-  expect(names).not.toContain("linkkit");
-});
-
-test("the Backups page is one click from the home page and from the whiteboard's main menu", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("link", { name: "Backups" }).click();
-  await expect(page).toHaveURL(/\/backups\/$/);
-  await expect(page.getByRole("heading", { name: "Backups" })).toBeVisible();
+        open.onerror = () => reject(open.error);
+      });
+    await put("boardkit", "boardImage:e2e-picture", new Blob([new Uint8Array(bytes)], { type: "image/png" }));
+    await put("linkkit", "backupFolder", await navigator.storage.getDirectory());
+  }, PICTURE);
 
   await page.goto("/whiteboard/");
   await page.waitForFunction(() => "editor" in window);
-  await page.getByTestId("main-menu.button").click();
-  await page.getByRole("menuitem", { name: "Backups" }).click();
-  await expect(page).toHaveURL(/\/backups\/$/);
+  const shapeId = await page.evaluate(() => {
+    const editor = (window as any).editor;
+    editor.createShape({ type: "geo", x: 300, y: 300, props: { w: 200, h: 120 } });
+    return editor.getCurrentPageShapes()[0].id as string;
+  });
+  // tldraw saves to IndexedDB a moment later.
+  await expect.poll(() => page.evaluate(() => storedRecordIds()), { timeout: 10_000 }).toContain(shapeId);
+  await page.close();
+  return { boardId, shapeId };
+}
+
+/** The backup page's own snapshot (what "Save a backup" downloads),
+    without its time stamp. */
+async function snapshot(page: Page): Promise<Record<string, unknown>> {
+  const file = await saveBackup(page);
+  const { createdAt: _, ...rest } = file;
+  return rest;
+}
+
+async function saveBackup(page: Page): Promise<Record<string, unknown> & { createdAt: string }> {
+  await page.goto("/backup/");
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save a backup" }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^gauntlet-backup-\d{4}-\d{2}-\d{2}-\d{4}\.json$/);
+  await expect(page.getByRole("status")).toContainText("Saved");
+  return JSON.parse(await readFile((await download.path())!, "utf-8"));
+}
+
+async function restore(page: Page, file: Record<string, unknown>): Promise<Record<string, unknown>> {
+  await page.goto("/backup/");
+  await page.getByLabel("Backup file").setInputFiles({ name: "backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) });
+  const dialog = page.getByRole("dialog", { name: "Replace what's here with this backup?" });
+  await expect(dialog).toBeVisible();
+  const [safety] = await Promise.all([page.waitForEvent("download"), dialog.getByRole("button", { name: "Replace with this backup" }).click()]);
+  expect(safety.suggestedFilename()).toMatch(/^gauntlet-before-restore-/);
+  await expect(page.getByRole("status")).toContainText("Restored");
+  return JSON.parse(await readFile((await safety.path())!, "utf-8"));
+}
+
+/** A snapshot with every "couldn't go in the file" list emptied. */
+function withoutSkipped(file: Record<string, unknown>): Record<string, unknown> {
+  const dbs = file.indexedDB as { stores: { skipped: unknown[] }[] }[];
+  return { ...file, indexedDB: dbs.map((db) => ({ ...db, stores: db.stores.map((s) => ({ ...s, skipped: [] })) })) };
+}
+
+const pictureBytes = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise<number[] | null>((resolve) => {
+        const open = indexedDB.open("boardkit");
+        open.onsuccess = () => {
+          const req = open.result.transaction("kv").objectStore("kv").get("boardImage:e2e-picture");
+          req.onsuccess = async () => resolve(req.result ? Array.from(new Uint8Array(await (req.result as Blob).arrayBuffer())) : null);
+        };
+      }),
+  );
+
+const folderKept = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise<string>((resolve) => {
+        const open = indexedDB.open("linkkit");
+        open.onsuccess = () => {
+          const req = open.result.transaction("kv").objectStore("kv").get("backupFolder");
+          req.onsuccess = () => resolve(req.result?.constructor?.name ?? "none");
+        };
+      }),
+  );
+
+test.beforeEach(async ({ page }) => {
+  // A helper the whiteboard part of `seed` can call in the page.
+  await page.context().addInitScript(() => {
+    (window as any).storedRecordIds = () =>
+      new Promise<string[]>((resolve) => {
+        const open = indexedDB.open("TLDRAW_DOCUMENT_v2gauntlet-whiteboard");
+        open.onsuccess = () => {
+          try {
+            const req = open.result.transaction("records").objectStore("records").getAllKeys();
+            req.onsuccess = () => resolve(req.result.map(String).filter((k) => k.startsWith("shape:")));
+          } catch {
+            resolve([]);
+          }
+        };
+      });
+  });
+});
+declare function storedRecordIds(): Promise<string[]>;
+
+test("a backup restored into an empty browser brings back boards, pictures, maps and the whiteboard", async ({ page, browser }) => {
+  const { boardId, shapeId } = await seed(page.context(), "Backup e2e map");
+  const original = await saveBackup(page);
+  await expect(page.getByTestId("here")).toContainText("1 background picture");
+  await expect(page.getByTestId("here")).toContainText("1 whiteboard page");
+
+  // A second, empty browser: a cleared one, or another computer.
+  const empty = await browser.newContext();
+  const fresh = await empty.newPage();
+  const before = await restore(fresh, original);
+  expect(Object.keys(before.localStorage as object)).toHaveLength(0);
+
+  // Byte for byte what was saved (the folder handle could not go in it,
+  // so the new browser has none).
+  const { createdAt: _, ...want } = original;
+  expect(withoutSkipped(await snapshot(fresh))).toEqual(withoutSkipped(want));
+  expect(await pictureBytes(fresh)).toEqual(PICTURE);
+  expect(await folderKept(fresh)).toBe("none");
+
+  // And the apps open it.
+  await fresh.goto("/boardkit/");
+  await expect(fresh.getByRole("button", { name: "Switch board" })).toBeVisible();
+  expect(await fresh.evaluate(() => JSON.parse(localStorage.getItem("boardkit:registry")!).activeBoardId)).toBe(boardId);
+  await fresh.goto("/linkkit/");
+  await fresh.getByRole("button", { name: /^Switch map/ }).click();
+  await expect(fresh.getByRole("menuitem", { name: /Backup e2e map/ })).toBeVisible();
+  await fresh.goto("/whiteboard/");
+  await fresh.waitForFunction(() => "editor" in window);
+  await expect.poll(() => fresh.evaluate(() => (window as any).editor.getCurrentPageShapes().map((s: { id: string }) => s.id))).toEqual([shapeId]);
+  await empty.close();
+});
+
+test("restoring over changed data puts it back as it was, keeps the picked folder, and downloads what was there", async ({ page }) => {
+  await seed(page.context(), "Restore e2e map");
+  const original = await saveBackup(page);
+
+  // Changes after the backup: a map added, a board record changed, the picture gone.
+  await seedMap(page.context(), "Made after the backup");
+  await page.goto("/backup/");
+  await page.evaluate(async () => {
+    localStorage.setItem("boardkit:board:after-backup", "{}");
+    await new Promise<void>((resolve) => {
+      const open = indexedDB.open("boardkit");
+      open.onsuccess = () => {
+        const tx = open.result.transaction("kv", "readwrite");
+        tx.objectStore("kv").delete("boardImage:e2e-picture");
+        tx.oncomplete = () => (open.result.close(), resolve());
+      };
+    });
+  });
+
+  const before = await restore(page, original);
+  // The safety copy has the changes...
+  expect((before.localStorage as Record<string, string>)["boardkit:board:after-backup"]).toBe("{}");
+  expect((before.localStorage as Record<string, string>)["linkkit:registry"]).toContain("Made after the backup");
+  // ...and the browser is back to the backup.
+  const { createdAt: _, ...want } = original;
+  expect(await snapshot(page)).toEqual(want);
+  expect(await pictureBytes(page)).toEqual(PICTURE);
+  expect(await folderKept(page)).toBe("FileSystemDirectoryHandle");
+
+  // Restoring the safety copy undoes the restore.
+  await restore(page, before);
+  expect(await page.evaluate(() => localStorage.getItem("boardkit:board:after-backup"))).toBe("{}");
+  expect(await pictureBytes(page)).toBeNull();
+});
+
+test("a file that isn't a gauntlet backup is refused and changes nothing", async ({ page }) => {
+  await page.goto("/backup/");
+  await page.evaluate(() => localStorage.setItem("gauntlet:e2e", "kept"));
+  await page.getByLabel("Backup file").setInputFiles({
+    name: "boardkit-backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ version: 1, boards: [] })),
+  });
+  await expect(page.getByRole("status")).toContainText("is not a gauntlet backup file");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("gauntlet:e2e"))).toBe("kept");
 });

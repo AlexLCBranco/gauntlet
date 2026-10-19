@@ -40,59 +40,19 @@ function fileShapes(b: Backup) {
   return { pages: values.filter((v) => v.typeName === "page"), shapes: values.filter((v) => v.typeName === "shape") };
 }
 
-/** Writes the backup into this browser, as the /backup/ page's restore
-    does: every localStorage key, every IndexedDB database with its stores
-    and records (pictures decoded back into Blobs). On a blank page of the
-    site, before any app has run. */
+/** Restores the backup file as the owner would: on the /backup/ page,
+    "Restore from a backup file…", picking the file (read from its folder
+    by the test browser; nothing is uploaded anywhere), "Replace with this
+    backup". Then every localStorage key is the file's. */
 async function restore(page: Page, b: Backup) {
-  await page.goto("/__blank-for-restore");
-  await page.evaluate(async (b: Backup) => {
-    const TAG = "$gauntletBackup";
-    const bytes = (data: string) => Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-    const decode = (v: unknown): unknown => {
-      if (v === null || typeof v !== "object") return v;
-      if (Array.isArray(v)) return v.map(decode);
-      const r = v as Record<string, unknown>;
-      const t = r[TAG] as Record<string, string> | undefined;
-      if (t && Object.keys(r).length === 1) {
-        if (t.kind === "undefined") return undefined;
-        if (t.kind === "number") return Number(t.value);
-        if (t.kind === "date") return new Date(t.value);
-        if (t.kind === "blob") return t.name !== undefined ? new File([bytes(t.data)], t.name, { type: t.type }) : new Blob([bytes(t.data)], { type: t.type });
-        if (t.kind === "bytes") return bytes(t.data).buffer;
-      }
-      return Object.fromEntries(Object.entries(r).map(([k, x]) => [k, decode(x)]));
-    };
-    localStorage.clear();
-    for (const [k, v] of Object.entries(b.localStorage)) localStorage.setItem(k, v);
-    for (const dump of b.indexedDB) {
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const req = indexedDB.open(dump.name, dump.version);
-        req.onupgradeneeded = () => {
-          for (const s of dump.stores) {
-            const store = req.result.createObjectStore(s.name, { keyPath: s.keyPath ?? undefined, autoIncrement: s.autoIncrement });
-            for (const i of s.indexes) store.createIndex(i.name, i.keyPath, { unique: i.unique, multiEntry: i.multiEntry });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-      for (const s of dump.stores) {
-        if (s.records.length === 0) continue;
-        await new Promise<void>((resolve, reject) => {
-          const tx = db.transaction(s.name, "readwrite");
-          const store = tx.objectStore(s.name);
-          for (const r of s.records) {
-            if (s.keyPath === null) store.put(decode(r.value), decode(r.key) as IDBValidKey);
-            else store.put(decode(r.value));
-          }
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-      }
-      db.close();
-    }
-  }, b);
+  await page.goto("/backup/");
+  await page.getByLabel("Backup file").setInputFiles(FILE);
+  const dialog = page.getByRole("dialog", { name: "Replace what's here with this backup?" });
+  await expect(dialog).toBeVisible();
+  await Promise.all([page.waitForEvent("download"), dialog.getByRole("button", { name: "Replace with this backup" }).click()]);
+  await expect(page.getByRole("status")).toContainText("Restored");
+  const now = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)!])));
+  for (const [k, v] of Object.entries(b.localStorage)) expect(now[k], k).toBe(v);
 }
 
 const ed = <T, A = undefined>(page: Page, fn: (editor: any, arg: A) => T, arg?: A) =>
