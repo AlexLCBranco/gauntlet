@@ -55,9 +55,19 @@ KEEP: the yellow, and tldraw's colours in general (prettier than Excalidraw's).
 - [ ] 6. Make the style panel (appears on selection: colours, stroke, fill,
       font…) look and work like Excalidraw's.
 - [ ] 7. At 100% you can still pan and see empty space outside the page.
-      Seeing anything outside the page must be impossible. "Panning is only
-      allowed when…" — THE OWNER'S MESSAGE WAS CUT OFF HERE; ask for the
-      rest of item 7 (and any items after it) before working on it.
+      Seeing anything outside the page must be impossible. Panning is only
+      allowed when zoomed in, and only within the page's edges.
+- [ ] 8. While dragging things, Excalidraw shows a rectangle outline around
+      what's moving. Add it.
+- [ ] 9. Shapes with text: only the outline can be coloured. Need the
+      BACKGROUND (fill) colour and the TEXT colour inside, set separately.
+- [ ] 10. CHECK (owner unsure): dragging may feel less smooth than
+      Excalidraw. Compare; fix if there's a real difference, tell the owner
+      if there isn't.
+
+That's the whole list (1–10). Fix them on top of the live phase 1 version
+(branch off `origin/main`, not `phase-2`), deploy phase 1 only to the live
+site, then stop and tell the owner what to re-test.
 
 Phase 2 status at the pause: `node scripts/local-e2e.mjs` passed in full
 (18 here + 14 Linkkit) on 2026-10-18; `npm test` passes. Not yet reported
