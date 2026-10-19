@@ -162,19 +162,11 @@
   color: #ffd8a8;
 }
 
-/* The toolbar's "Board" button and its list of boards. */
-.gb-add-board { position: relative; display: flex; align-items: center; margin-left: 4px; pointer-events: all; }
-.gb-add-board > .tlui-button {
-  border-radius: 8px;
-  background: var(--tl-color-panel, #232329);
-  box-shadow: var(--tl-shadow-2, 0 1px 6px rgb(0 0 0 / 0.35));
-  height: 40px;
-  width: 40px;
-}
+/* The list of boards the toolbar's Board button opens, centred under it. */
 .gb-picker {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
+  transform: translateX(-50%);
+  pointer-events: all; /* it sits in tldraw's in-front layer, which lets clicks through */
   z-index: 500;
   min-width: 220px;
   max-height: 60vh;

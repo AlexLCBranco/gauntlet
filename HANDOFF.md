@@ -78,10 +78,17 @@ the live site has phase 1 only.
    - After the merge `tsc -b` clean, `npm test` 77 pass, whiteboard +
      boards e2e 24 pass against the dev server (boards.e2e needed no
      change). Committed and pushed to `phase-2`.
-8. NOT DONE — Finish phase 2 against PROJECT.md section 6 ("resize from
+8. IN PROGRESS — Finish phase 2 against PROJECT.md section 6 ("resize from
    the corners, edit cards in place, my existing boards move over"), fix
    the known gaps below that block real use, then tell the owner what to
    try by hand (PROJECT.md rule 3) and STOP.
+   - DONE: the Board button is now a toolbar tool (`boardToolItem` +
+     `BoardPicker` in `src/boards/AddBoard.tsx`), after Frame. It had sat
+     on its own row under the toolbar after the merge, over the style
+     panel, and went off-screen in narrow windows. The toolbar shows as
+     many tools as fit (`src/whiteboard/toolbarFit.ts`), the rest in its
+     overflow menu (Board then is `tools.more.board`). e2e "the Board
+     button is on the toolbar's row at any window width".
 
 ### Bugs found by the e2e and fixed (phase 2)
 - Escape in a card's text field also ended editing the board: tldraw
@@ -92,8 +99,6 @@ the live site has phase 1 only.
   board buttons don't take focus, and Escape on the body ends editing.
 
 ### Known gaps (phase 2)
-- At narrow windows (about 1000 px and less) the toolbar overflows and the
-  Board button is pushed off-screen.
 - Picking single cards with lasso/box select is deferred to phase 4
   (DECISIONS).
 - Background images and thots aren't drawn (DECISIONS).

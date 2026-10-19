@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowToolbarItem,
   AssetToolbarItem,
@@ -26,7 +26,7 @@ import {
 } from "tldraw";
 import "tldraw/tldraw.css";
 
-import { AddBoard } from "../boards/AddBoard";
+import { BoardPicker, boardToolItem } from "../boards/AddBoard";
 import { BoardShapeUtil } from "../boards/BoardShape";
 import { LassoOverlay } from "../lasso/LassoOverlay";
 import { LassoTool } from "../lasso/LassoTool";
@@ -39,6 +39,7 @@ import { shapeUtils as styleShapeUtils } from "../style/shapeUtils";
 import { applyNextMeta, StylePanel } from "../style/StylePanel";
 import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
+import { toolbarItems } from "./toolbarFit";
 import { undoSkipsSelection } from "./undoSkipsSelection";
 import { ZoomUndo } from "./ZoomUndo";
 import "./whiteboard.css";
@@ -99,6 +100,7 @@ const overrides: TLUiOverrides = {
       eraser: "e,0",
     };
     for (const [id, kbd] of Object.entries(keys)) if (tools[id]) tools[id] = { ...tools[id], kbd };
+    tools.board = boardToolItem();
     return tools;
   },
   // Shift+0 and the menu's "Reset zoom": back to 100%, the page filling
@@ -109,14 +111,26 @@ const overrides: TLUiOverrides = {
     if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y" };
     return actions;
   },
-  translations: { en: { "tool.lasso": "Lasso select" } },
+  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board" } },
 };
 
-/** The toolbar along the top, as in Excalidraw, in Excalidraw's order. */
+function useWindowWidth() {
+  const [w, setW] = useState(window.innerWidth);
+  useEffect(() => {
+    const on = () => setW(window.innerWidth);
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return w;
+}
+
+/** The toolbar along the top, as in Excalidraw, in Excalidraw's order, then
+    the Board button (`src/boards/`). */
 function TopToolbar() {
+  const width = useWindowWidth();
   return (
     <div className="gauntlet-top-toolbar">
-      <DefaultToolbar maxItems={14}>
+      <DefaultToolbar maxItems={toolbarItems(width)}>
         <SelectToolbarItem />
         <ToolbarItem tool="lasso" />
         <HandToolbarItem />
@@ -131,10 +145,10 @@ function TopToolbar() {
         <EraserToolbarItem />
         <NoteToolbarItem />
         <FrameToolbarItem />
+        <ToolbarItem tool="board" />
         <HighlightToolbarItem />
         <LaserToolbarItem />
       </DefaultToolbar>
-      <AddBoard />
     </div>
   );
 }
@@ -158,6 +172,7 @@ function InFront() {
     <>
       <LassoOverlay />
       <DragOutline />
+      <BoardPicker />
     </>
   );
 }
