@@ -62,9 +62,17 @@ KEEP: the yellow, and tldraw's colours in general (prettier than Excalidraw's).
       what's moving. Add it.
 - [x] 9. Shapes with text: only the outline can be coloured. Need the
       BACKGROUND (fill) colour and the TEXT colour inside, set separately.
-- [ ] 10. CHECK (owner unsure): dragging may feel less smooth than
+- [x] 10. CHECK (owner unsure): dragging may feel less smooth than
       Excalidraw. Compare; fix if there's a real difference, tell the owner
       if there isn't.
+      RESULT: no measurable difference. `scripts/drag-feel.mjs` (40 shapes,
+      a 2 s drag) on the new build, the old live site and excalidraw.com:
+      all a steady 60 fps (median 16.7 ms a frame, worst under 18 ms), no
+      long tasks, and the dragged shape keeps up with the pointer every
+      frame. A felt difference may come from the missing outline mid-drag
+      (fixed, item 8) or from unfilled shapes only being grabbable by their
+      outline unless selected (as in Excalidraw). The owner re-checks by
+      hand.
 
 How 1–9 were done (branch `phase-1-fixes`; e2e "fix N" tests in
 `e2e/whiteboard.e2e.ts`, each failing on the old live site):
