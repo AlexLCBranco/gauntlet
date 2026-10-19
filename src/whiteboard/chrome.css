@@ -1,0 +1,32 @@
+/* Excalidraw's dark "islands": the panels floating over the page. */
+.gauntlet-island {
+  background: #232329;
+  color: #e3e3e8;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #2e2e36, 0 2px 8px rgb(0 0 0 / 0.35);
+  font: 13px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+  pointer-events: all;
+}
+.gauntlet-island button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.gauntlet-island button:hover:not(:disabled) { background: #363541; }
+.gauntlet-island button:disabled { opacity: 0.35; cursor: default; }
+
+/* Bottom-left: zoom, then undo/redo. */
+.gauntlet-zoom-undo { display: flex; gap: 8px; margin: 0 0 12px 12px; pointer-events: none; }
+.gauntlet-zoom-undo .gauntlet-island { display: flex; padding: 2px; }
+.gauntlet-zoom-undo button { min-width: 36px; height: 36px; font-size: 18px; display: grid; place-items: center; }
+.gauntlet-zoom-undo .gauntlet-zoom-undo__percent { min-width: 60px; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* The outline around what's being dragged. */
+.gauntlet-drag-outline {
+  position: absolute;
+  pointer-events: none;
+  border: 1px solid var(--tl-color-selection-stroke);
+  border-radius: 4px;
+}

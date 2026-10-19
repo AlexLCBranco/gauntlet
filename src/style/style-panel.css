@@ -1,0 +1,37 @@
+/* The style panel, after Excalidraw's: left side, under the menu. */
+.gk-style-panel {
+  width: 204px;
+  margin: 8px 0 0 8px;
+  padding: 10px 12px 12px;
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.gk-section { border: 0; margin: 0; padding: 0; min-width: 0; }
+.gk-section + .gk-section { margin-top: 12px; }
+.gk-section legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #b8b8c2;
+}
+.gk-row, .gk-swatches { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.gk-style-panel .gk-choice {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: #2e2d39;
+  border: 1px solid transparent;
+}
+.gk-style-panel .gk-choice[aria-pressed="true"] { background: #403e6a; border-color: #a8a5ff; }
+.gk-style-panel .gk-choice--danger:hover { color: #ff8383; }
+.gk-swatches .gk-choice { width: 26px; height: 26px; padding: 0; background: transparent; }
+.gk-swatches .gk-choice[aria-pressed="true"] { background: transparent; border-color: #a8a5ff; }
+.gk-swatch { width: 20px; height: 20px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15); }
+.gk-swatch--none {
+  background: repeating-conic-gradient(#3a3a44 0 25%, #26262c 0 50%) 0 0 / 8px 8px;
+}
+.gk-text-choice { font-size: 12px; font-weight: 600; }
+.gk-slider { width: 100%; accent-color: #a8a5ff; }

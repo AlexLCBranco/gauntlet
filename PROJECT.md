@@ -177,3 +177,24 @@ Changes to the plan, newest last. Each says what and why.
   swapping is one change: edit that value, then redeploy (Vite bakes it
   into the build). Steps are in HANDOFF.md. The evaluation key shows no
   "made with tldraw" watermark; the hobby key will.
+- 2026-10-18 — Owner's phase 1 fix list (HANDOFF.md). "100%" is the page
+  filling the window edge to edge, and nothing outside the page ever
+  shows. A window that isn't 16:9 can't show the whole page at once
+  without showing outside it, so the page fills the window and its other
+  axis runs past: at 100% it pans along that one axis only, up to the
+  page's edge. (Present on a 16:9 screen shows the whole page.)
+- 2026-10-18 — The style panel is our own, after Excalidraw's (left under
+  the main menu), shown only while something is selected (owner: "close
+  when nothing is selected"; Excalidraw also shows it while a drawing tool
+  is on). Styles tldraw lacks are kept in each shape's `meta`: font size
+  apart from stroke width (two sizes smaller than tldraw's smallest) and a
+  background colour apart from the outline.
+- 2026-10-18 — Replaces the "100%" part of the fix-list entry above
+  (owner's decision after the re-test): "100%" shows the WHOLE page,
+  centred; a window that isn't 16:9 gets dark bars at the sides (or top
+  and bottom). At 100% nothing scrolls, on any screen. Zoomed in, you pan
+  only up to the page's edges (along an axis where the page is still
+  narrower than the window it stays centred).
+- 2026-10-18 — Undo and redo skip steps that only change the selection, as
+  in Excalidraw: one Ctrl+Z undoes a shape just drawn, even after Escape
+  (tldraw made deselecting its own undo step). Ctrl+Y also redoes.

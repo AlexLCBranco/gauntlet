@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
  * The whiteboard (whiteboard phase 1: the floor) at /whiteboard/. Fresh,
@@ -9,6 +9,10 @@ import { expect, test, type Page } from "@playwright/test";
  */
 
 const SHEET = { w: 1920, h: 1080 };
+
+// 16:9, like the sheet: at 100% the whole sheet is on screen, so the tests
+// can reach every part of it. Other window shapes are tested on their own.
+test.use({ viewport: { width: 1600, height: 900 } });
 
 type Pt = { x: number; y: number };
 type Bounds = { x: number; y: number; w: number; h: number };
@@ -73,44 +77,120 @@ const boundsOf = (page: Page, id: string) =>
   }, id);
 const position = (page: Page) => page.getByTestId("page-position");
 
-test("starts dark with the whole sheet in view, and the camera can't leave the sheet", async ({ page }) => {
-  await open(page);
-  expect(await ed(page, (e) => e.user.getIsDarkMode())).toBe(true);
-
-  const view = () => ed(page, (e) => {
+/** What the camera shows, in sheet units, and the zoom. */
+const view = (page: Page) =>
+  ed(page, (e) => {
     const b = e.getViewportPageBounds();
     return { x: b.x, y: b.y, w: b.w, h: b.h, z: e.getZoomLevel() } as Bounds & { z: number };
   });
-  const fit = await view();
-  // The whole sheet is in view at the start.
-  expect(fit.x).toBeLessThanOrEqual(0);
-  expect(fit.y).toBeLessThanOrEqual(0);
-  expect(fit.x + fit.w).toBeGreaterThanOrEqual(SHEET.w);
-  expect(fit.y + fit.h).toBeGreaterThanOrEqual(SHEET.h);
+
+/** Nothing outside the sheet is on screen (half a sheet unit of rounding). */
+function expectInsideSheet(v: Bounds) {
+  expect(v.x).toBeGreaterThanOrEqual(-0.5);
+  expect(v.y).toBeGreaterThanOrEqual(-0.5);
+  expect(v.x + v.w).toBeLessThanOrEqual(SHEET.w + 0.5);
+  expect(v.y + v.h).toBeLessThanOrEqual(SHEET.h + 0.5);
+}
+
+/** Wheel-pans far past every edge, checking the view after each. */
+async function panEverywhere(page: Page) {
+  for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
+    for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
+    expectInsideSheet(await view(page));
+  }
+}
+
+test("starts dark at 100%: the page fills a 16:9 window exactly, and nothing outside it ever shows", async ({ page }) => {
+  await open(page);
+  expect(await ed(page, (e) => e.user.getIsDarkMode())).toBe(true);
+  await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
+  // A 16:9 window shows exactly the whole sheet.
+  const fit = await view(page);
+  expect(fit.x).toBeCloseTo(0, 0);
+  expect(fit.y).toBeCloseTo(0, 0);
+  expect(fit.w).toBeCloseTo(SHEET.w, 0);
+  expect(fit.h).toBeCloseTo(SHEET.h, 0);
 
   const middle = await screen(page, { x: SHEET.w / 2, y: SHEET.h / 2 });
   await page.mouse.move(middle.x, middle.y);
-  // Zooming out stops at the whole sheet.
+  // At 100% there's nowhere to pan to.
+  await panEverywhere(page);
+  expect(await view(page)).toEqual(fit);
+  // Zooming out stops at 100%.
   await page.keyboard.down("Control");
   for (let i = 0; i < 10; i++) await page.mouse.wheel(0, 400);
   await page.keyboard.up("Control");
-  await expect.poll(async () => (await view()).z).toBeCloseTo(fit.z, 3);
+  await expect.poll(async () => (await view(page)).z).toBeCloseTo(fit.z, 3);
+  await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
 
-  // Zoom in, then try to pan far past every edge: the view stays on the sheet.
+  // Zoomed in, panning goes only up to the sheet's edges.
   await page.keyboard.down("Control");
   for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -300);
   await page.keyboard.up("Control");
-  await expect.poll(async () => (await view()).z).toBeGreaterThan(fit.z * 1.5);
-  for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
-    for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
-    const v = await view();
-    // A 24 px screen margin past the edge is allowed (the padding), no more.
-    const m = 24 / v.z + 1;
-    expect(v.x).toBeGreaterThanOrEqual(-m);
-    expect(v.y).toBeGreaterThanOrEqual(-m);
-    expect(v.x + v.w).toBeLessThanOrEqual(SHEET.w + m);
-    expect(v.y + v.h).toBeLessThanOrEqual(SHEET.h + m);
+  await expect.poll(async () => (await view(page)).z).toBeGreaterThan(fit.z * 1.5);
+  await expect(page.getByTestId("zoom-percent")).not.toHaveText("100%");
+  await panEverywhere(page);
+  // The percentage resets to 100% (the page filling the window).
+  await page.getByTestId("zoom-percent").click();
+  await expect.poll(() => view(page)).toEqual(fit);
+});
+
+/** Zoomed in, the view stays on the sheet: along an axis where the sheet is
+    wider than the window it never shows past the edge; along one where the
+    sheet is narrower it stays centred (dark bars on both sides). */
+function expectBounded(v: Bounds) {
+  if (v.w <= SHEET.w + 0.5) { expect(v.x).toBeGreaterThanOrEqual(-0.5); expect(v.x + v.w).toBeLessThanOrEqual(SHEET.w + 0.5); }
+  else expect(v.x + v.w / 2).toBeCloseTo(SHEET.w / 2, 0);
+  if (v.h <= SHEET.h + 0.5) { expect(v.y).toBeGreaterThanOrEqual(-0.5); expect(v.y + v.h).toBeLessThanOrEqual(SHEET.h + 0.5); }
+  else expect(v.y + v.h / 2).toBeCloseTo(SHEET.h / 2, 0);
+}
+
+test("in a window that isn't 16:9 the whole page shows, centred, with dark bars, nothing scrolls at 100%, and it stays so when the window changes", async ({ page }) => {
+  for (const size of [{ width: 1400, height: 900 }, { width: 900, height: 900 }, { width: 1800, height: 700 }]) {
+    await page.setViewportSize(size);
+    await open(page);
+    await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
+    const v = await view(page);
+    // The whole sheet is in view, touching the window on one axis.
+    expect(v.x).toBeLessThanOrEqual(0.5);
+    expect(v.y).toBeLessThanOrEqual(0.5);
+    expect(v.x + v.w).toBeGreaterThanOrEqual(SHEET.w - 0.5);
+    expect(v.y + v.h).toBeGreaterThanOrEqual(SHEET.h - 0.5);
+    expect(Math.abs(v.w - SHEET.w) < 0.5 || Math.abs(v.h - SHEET.h) < 0.5).toBe(true);
+    // Centred: the bars on either side are the same size.
+    const box = (await page.getByTestId("sheet").boundingBox())!;
+    expect(box.x).toBeCloseTo(size.width - (box.x + box.width), 0);
+    expect(box.y).toBeCloseTo(size.height - (box.y + box.height), 0);
+    // The bars are dark (dark theme by default).
+    const bar = await page.evaluate(([x, y]) => {
+      const el = document.elementsFromPoint(x, y).find((n) => n.classList.contains("gauntlet-outside"));
+      return el ? getComputedStyle(el).backgroundColor : null;
+    }, box.x > 2 ? [box.x / 2, size.height / 2] : [size.width / 2, box.y / 2 + 60]);
+    expect(bar).toBe("rgb(38, 38, 44)");
+    // At 100% nothing scrolls, whichever way.
+    const middle = await screen(page, { x: SHEET.w / 2, y: SHEET.h / 2 });
+    await page.mouse.move(middle.x, middle.y);
+    for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
+      for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
+      expect(await view(page)).toEqual(v);
+    }
+    // Zoomed in, panning stays on the sheet.
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -300);
+    await page.keyboard.up("Control");
+    await expect(page.getByTestId("zoom-percent")).not.toHaveText("100%");
+    for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
+      for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
+      expectBounded(await view(page));
+    }
   }
+  // Resizing the window at 100% keeps the whole page in view.
+  await page.getByTestId("zoom-percent").click();
+  await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
+  await expect.poll(async () => Math.round((await view(page)).w)).toBe(SHEET.w);
+  expectInsideSheet(await view(page));
 });
 
 test("Excalidraw's number keys pick the tools, and each draws its shape", async ({ page }) => {
@@ -224,8 +304,11 @@ test("lasso reaches inside a frame: a loop around one shape in a frame picks jus
   await loop(page, [{ x: 170, y: 170 }, { x: 360, y: 170 }, { x: 360, y: 320 }, { x: 170, y: 320 }]);
   expect(await selected(page)).toEqual([inner]);
   // A loop around the whole frame picks the frame (which carries its shapes).
+  // (Escape first: the style panel and the menu sit over the sheet's top
+  // left corner while something is selected.)
+  await page.keyboard.press("Escape");
   await page.keyboard.press("w");
-  await loop(page, [{ x: 60, y: 40 }, { x: 860, y: 40 }, { x: 860, y: 660 }, { x: 60, y: 660 }]);
+  await loop(page, [{ x: 60, y: 70 }, { x: 860, y: 70 }, { x: 860, y: 660 }, { x: 60, y: 660 }]);
   expect(await selected(page)).toEqual([frame]);
 });
 
@@ -233,8 +316,10 @@ test("nothing sits past the sheet's edge, and undo puts a move back in one step"
   await open(page);
   const a = await rect(page, 1700, 500, 150, 100);
   await page.keyboard.press("v");
-  // Drag it far past the right edge (the pointer leaves the sheet).
-  await drag(page, { x: 1775, y: 550 }, { x: 2050, y: 550 });
+  // Selected, so it can be grabbed from inside (it has no fill).
+  await ed(page, (e, id: string) => void e.select(id), a);
+  // Drag it up to the right edge, so most of it pokes past.
+  await drag(page, { x: 1775, y: 550 }, { x: 1915, y: 550 });
   await expect.poll(async () => (await boundsOf(page, a)).x + (await boundsOf(page, a)).w).toBeLessThanOrEqual(SHEET.w + 0.5);
   const b = await boundsOf(page, a);
   expect(b.x).toBeGreaterThan(1700); // it did move, up to the edge
@@ -324,4 +409,245 @@ test("the tldraw license is accepted: the editor stays up past 5 s with no licen
   await expect(page.locator(".tl-canvas")).toBeVisible();
   // Localhost needs no key; anywhere else tldraw warns when it's missing or bad.
   if (!/localhost|127\.0\.0\.1/.test(page.url())) expect(warnings).toEqual([]);
+});
+
+// ---------------------------------------------------------------------------
+// The owner's phase 1 fixes (HANDOFF.md, 2026-10-18)
+
+const panel = (page: Page) => page.getByTestId("style-panel");
+const shapeOf = (page: Page, id: string) => ed(page, (e, id: string) => e.getShape(id), id);
+
+test("fix 1: text can be made smaller than tldraw's smallest size (XXS, XS), and its box shrinks to fit", async ({ page }) => {
+  await open(page);
+  await page.keyboard.press("8");
+  const at = await screen(page, { x: 600, y: 400 });
+  await page.mouse.click(at.x, at.y);
+  await page.keyboard.type("Small notes");
+  await page.keyboard.press("Escape");
+  const id = await ed(page, (e) => e.getCurrentPageShapesSorted().at(-1).id as string);
+  await ed(page, (e, id: string) => void e.select(id), id);
+  const fontPx = () =>
+    ed(page, (_e, id: string) => {
+      const el = document.querySelector(`[data-shape-id="${id}"] .tl-rich-text`) as HTMLElement;
+      return parseFloat(getComputedStyle(el).fontSize);
+    }, id);
+  await page.getByTestId("font-s").click();
+  await expect.poll(fontPx).toBe(18);
+  const sWidth = (await boundsOf(page, id)).w;
+  for (const [step, px] of [["xs", 14], ["xxs", 10]] as const) {
+    await page.getByTestId(`font-${step}`).click();
+    await expect.poll(fontPx).toBe(px);
+    expect((await boundsOf(page, id)).w).toBeLessThan(sWidth);
+  }
+  // Saved with the shape, and one undo step each.
+  expect((await shapeOf(page, id)).meta.fontStep).toBe("xxs");
+  await page.keyboard.press("Control+z");
+  await expect.poll(fontPx).toBe(14);
+});
+
+test("fix 2: the style panel shows only while something is selected and goes away on a click elsewhere or Escape", async ({ page }) => {
+  await open(page);
+  await expect(panel(page)).toHaveCount(0);
+  const a = await rect(page, 300, 300);
+  await ed(page, (e, id: string) => void e.select(id), a);
+  await expect(panel(page)).toBeVisible();
+  // A click on empty sheet deselects, and the panel goes.
+  const empty = await screen(page, { x: 1200, y: 800 });
+  await page.mouse.click(empty.x, empty.y);
+  expect(await selected(page)).toEqual([]);
+  await expect(panel(page)).toHaveCount(0);
+  // Selecting by clicking brings it back; Escape deselects and closes it.
+  const on = await screen(page, { x: 360, y: 340 });
+  await page.mouse.click(on.x, on.y);
+  await expect(panel(page)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(panel(page)).toHaveCount(0);
+  // A drawing tool on its own (nothing selected) doesn't open it either.
+  await page.keyboard.press("2");
+  await expect(panel(page)).toHaveCount(0);
+});
+
+test("fix 4: Clear page (main menu) asks first, Cancel keeps everything, Clear wipes only this page, Ctrl+Z brings it back", async ({ page }) => {
+  await open(page);
+  await rect(page, 200, 200);
+  await rect(page, 500, 200);
+  // Another page with a shape, which must survive.
+  await page.getByRole("button", { name: "Next page" }).click();
+  await rect(page, 300, 300);
+  await page.getByRole("button", { name: "Previous page" }).click();
+  await expect.poll(async () => (await shapeIds(page)).length).toBe(2);
+
+  const openDialog = async () => {
+    await page.getByTestId("main-menu.button").click();
+    await page.getByTestId("main-menu.clear-page").click();
+    await expect(page.getByRole("dialog")).toContainText("Clear page");
+  };
+  await openDialog();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await shapeIds(page)).toHaveLength(2);
+
+  await openDialog();
+  await page.getByTestId("clear-page-confirm").click();
+  await expect.poll(async () => (await shapeIds(page)).length).toBe(0);
+  expect(await ed(page, (e) => e.getPageShapeIds(e.getPages()[1].id).size as number)).toBe(1);
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await shapeIds(page)).length).toBe(2);
+});
+
+test("fix 5: Excalidraw's layout: menu top-left, tools top-centre, zoom and undo/redo bottom-left, page arrows bottom-right", async ({ page }) => {
+  await open(page);
+  const vp = page.viewportSize()!;
+  const box = async (l: Locator) => (await l.boundingBox())!;
+  const menu = await box(page.getByTestId("main-menu.button"));
+  expect(menu.x).toBeLessThan(60);
+  expect(menu.y).toBeLessThan(60);
+  const tools = await box(page.locator(".gauntlet-top-toolbar .tlui-main-toolbar__tools"));
+  expect(Math.abs(tools.x + tools.width / 2 - vp.width / 2)).toBeLessThan(4);
+  expect(tools.y).toBeLessThan(60);
+  for (const l of [page.getByTestId("zoom-percent"), page.getByRole("button", { name: "Undo" }), page.getByRole("button", { name: "Redo" })]) {
+    const b = await box(l);
+    expect(b.x + b.width).toBeLessThan(vp.width / 3);
+    expect(b.y).toBeGreaterThan(vp.height - 80);
+  }
+  const arrows = await box(page.getByRole("group", { name: "Pages" }));
+  expect(arrows.x).toBeGreaterThan(vp.width * 0.66);
+  expect(arrows.y).toBeGreaterThan(vp.height - 120);
+  // tldraw's own undo/redo row (top left) and style panel (top right) are gone.
+  await expect(page.locator(".tlui-style-panel")).toHaveCount(0);
+  await expect(page.getByTestId("quick-actions.undo")).toHaveCount(0);
+
+  // The tools stay centred when the style panel opens on the left.
+  const b = await rect(page, 900, 500);
+  await ed(page, (e, id: string) => void e.select(id), b);
+  await expect(panel(page)).toBeVisible();
+  expect((await box(page.locator(".gauntlet-top-toolbar .tlui-main-toolbar__tools"))).x).toBeCloseTo(tools.x, 0);
+
+  // The undo/redo buttons work.
+  const a = await rect(page, 300, 300);
+  // One click each, as with Ctrl+Z (selection changes aren't steps).
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(() => shapeIds(page)).not.toContain(a);
+  await page.getByRole("button", { name: "Redo" }).click();
+  await expect.poll(() => shapeIds(page)).toContain(a);
+});
+
+test("fix 6: the style panel is Excalidraw's: on the left under the menu, labelled sections, layer and delete actions", async ({ page }) => {
+  await open(page);
+  const a = await rect(page, 600, 300);
+  await ed(page, (e, id: string) => void e.select(id), a);
+  const p = (await panel(page).boundingBox())!;
+  const menu = (await page.getByTestId("main-menu.button").boundingBox())!;
+  expect(p.x).toBeLessThan(40);
+  expect(p.y).toBeGreaterThanOrEqual(menu.y + menu.height);
+  for (const title of ["Stroke", "Background", "Stroke width", "Stroke style", "Font size", "Opacity", "Layers", "Actions"]) {
+    await expect(panel(page).locator("legend").filter({ hasText: new RegExp(`^${title}$`) })).toHaveCount(1);
+  }
+  // A stroke colour changes the shape and shows as picked.
+  await page.getByTestId("stroke-blue").click();
+  expect((await shapeOf(page, a)).props.color).toBe("blue");
+  await expect(page.getByTestId("stroke-blue")).toHaveAttribute("aria-pressed", "true");
+  // Each change is one undo step.
+  await page.getByTestId("stroke-width-xl").click();
+  expect((await shapeOf(page, a)).props.size).toBe("xl");
+  await page.keyboard.press("Control+z");
+  expect((await shapeOf(page, a)).props.size).not.toBe("xl");
+  await panel(page).getByRole("button", { name: "Delete" }).click();
+  expect(await shapeIds(page)).not.toContain(a);
+});
+
+test("fix 8: dragging shows a rectangle outline around what's moving, gone when dropped", async ({ page }) => {
+  await open(page);
+  const a = await rect(page, 400, 300, 200, 120);
+  await page.keyboard.press("v");
+  await ed(page, (e, id: string) => void e.select(id), a);
+  const from = await screen(page, { x: 500, y: 360 });
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 60, from.y + 40, { steps: 4 });
+  await page.mouse.move(from.x + 120, from.y + 80, { steps: 4 });
+  const outline = page.getByTestId("drag-outline");
+  await expect(outline).toBeVisible();
+  // It surrounds the shape where it is now, close around it.
+  const o = (await outline.boundingBox())!;
+  const b = await boundsOf(page, a);
+  const tl = await screen(page, { x: b.x, y: b.y });
+  const br = await screen(page, { x: b.x + b.w, y: b.y + b.h });
+  expect(o.x).toBeLessThanOrEqual(tl.x);
+  expect(o.y).toBeLessThanOrEqual(tl.y);
+  expect(o.x + o.width).toBeGreaterThanOrEqual(br.x);
+  expect(o.y + o.height).toBeGreaterThanOrEqual(br.y);
+  expect(o.x).toBeGreaterThan(tl.x - 12);
+  await page.mouse.up();
+  await expect(outline).toHaveCount(0);
+});
+
+test("fix 9: a shape with text gets its own background colour and text colour, apart from its outline", async ({ page }) => {
+  await open(page);
+  const a = await rect(page, 400, 300, 260, 140);
+  // Type a label into it (Enter edits the selected shape).
+  await ed(page, (e, id: string) => void e.select(id), a);
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Game 7");
+  await page.keyboard.press("Escape");
+  await ed(page, (e, id: string) => void e.select(id), a);
+  await page.getByTestId("stroke-blue").click();
+  await page.getByTestId("background-yellow").click();
+  await page.getByTestId("text-red").click();
+  const s = await shapeOf(page, a);
+  expect(s.props.color).toBe("blue");
+  expect(s.props.labelColor).toBe("red");
+  expect(s.meta.fillColor).toBe("yellow");
+  expect(s.props.fill).not.toBe("none");
+  // Drawn that way: the fill yellow, the outline blue, the label red.
+  const drawn = await ed(page, (e, id: string) => {
+    const colors = e.getCurrentTheme().colors[e.getColorMode()];
+    const el = document.querySelector(`[data-shape-id="${id}"]`)!;
+    const paths = [...el.querySelectorAll("path")];
+    return {
+      fills: paths.map((p) => p.getAttribute("fill")),
+      strokes: paths.map((p) => p.getAttribute("stroke")),
+      label: getComputedStyle(el.querySelector(".tl-rich-text") as HTMLElement).color,
+      yellow: colors.yellow.fill,
+      blue: colors.blue.solid,
+      red: colors.red.solid,
+    };
+  }, a);
+  expect(drawn.fills).toContain(drawn.yellow);
+  expect(drawn.strokes).toContain(drawn.blue);
+  const rgb = (hex: string) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
+  expect(drawn.label).toBe(rgb(drawn.red));
+  // Transparent takes the background away again.
+  await page.getByTestId("background-transparent").click();
+  expect((await shapeOf(page, a)).props.fill).toBe("none");
+});
+
+test("one Ctrl+Z undoes a shape just drawn, even after Escape, as in Excalidraw; Ctrl+Y brings it back", async ({ page }) => {
+  await open(page);
+  const keep = await rect(page, 100, 100); // rect() ends with Escape
+  const id = await rect(page, 400, 300);
+  // A shape drawn and left selected (no Escape) also goes in one press.
+  await page.keyboard.press("4");
+  await drag(page, { x: 800, y: 300 }, { x: 950, y: 420 });
+  const ellipse = (await shapeIds(page)).find((s) => s !== keep && s !== id)!;
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep]);
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([]);
+  await page.keyboard.press("Control+y");
+  await expect.poll(() => shapeIds(page)).toEqual([keep]);
+  await page.keyboard.press("Control+Shift+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
+  expect(ellipse).toBeTruthy();
+  // Deselecting with a click on empty space isn't an undo step either.
+  await page.keyboard.press("2");
+  await drag(page, { x: 1200, y: 600 }, { x: 1350, y: 700 });
+  const empty = await screen(page, { x: 1700, y: 950 });
+  await page.mouse.click(empty.x, empty.y);
+  await expect.poll(() => selected(page)).toEqual([]);
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
 });
