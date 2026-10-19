@@ -3,6 +3,22 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
+**Previews open without a Vercel login (2026-10-19, owner's request).**
+Phase 2 preview for the owner's hand test: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
+(it follows the latest push to `phase-2`). Vercel Authentication is off for
+project `gauntlet-home`; turn back on with
+`vercel project protection enable gauntlet-home --sso`. A preview is its own
+address: it has none of the owner's real boards; Boardkit runs there
+(v0.0.95, with automatic backups off) so test boards can be made at
+<preview>/boardkit/. Linkkit still shows its "moved" notice on previews
+(not needed for phase 2).
+
+**Before phase 2 goes live (owner, 2026-10-19), BOTH:** (1) the owner has
+tested it by hand; (2) the owner's real Boardkit AND Linkkit data on
+gauntlet-home.vercel.app has a backup the owner can restore. Set up that
+backup first. NOT DONE YET. The old home page (/) stays; revisit after
+phase 3.
+
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
 **tldraw key is a temporary evaluation key, expires Nov 1 2026; swap for
