@@ -5,6 +5,72 @@ file after every step.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
+**tldraw key is a temporary evaluation key, expires Nov 1 2026; swap for
+the permanent hobby key when it arrives.** Added 2026-10-18.
+- Where it's stored: Vercel project `gauntlet-home` → Settings →
+  Environment Variables → `VITE_TLDRAW_LICENSE_KEY` (Production and
+  Preview). Not in the repo. `src/whiteboard/Whiteboard.tsx` reads it at
+  build time (`import.meta.env.VITE_TLDRAW_LICENSE_KEY`).
+- How to swap it: in that Vercel page, edit `VITE_TLDRAW_LICENSE_KEY` and
+  paste the hobby key (both environments), then redeploy (Deployments → the
+  latest Production one → Redeploy). Vite bakes the key into the build, so
+  it only takes effect after a redeploy. Or from this folder:
+  `vercel env rm VITE_TLDRAW_LICENSE_KEY production`, then
+  `vercel env add VITE_TLDRAW_LICENSE_KEY production` (paste the key), same
+  for `preview`, then `vercel redeploy https://gauntlet-home.vercel.app --target production`.
+- Check: `BRIDGE_SITE=https://gauntlet-home.vercel.app npx playwright test e2e/whiteboard.e2e.ts`
+  (the "license is accepted" test). The evaluation key shows no "made with
+  tldraw" watermark; the hobby key will, and the watermark test then checks
+  the page arrows don't cover it.
+- Live was redeployed with the key from the same phase 1 build (no phase 2
+  push): all 10 whiteboard e2e pass live.
+
+**Branches (2026-10-18, owner's instruction):**
+- `main` = the live site (a push deploys it): phase 1 only, plus the
+  phase 1 fixes below, worked on as branch `phase-1-fixes` and pushed to
+  `main` when done.
+- `phase-2` = all phase 2 work (unfinished, paused). Vercel only makes a
+  Preview for it, never the live site. Never push phase 2 to `main` until
+  the owner says it may go live. After the phase 1 fixes land, `main` is
+  merged into `phase-2`.
+
+## Phase 1 fixes from the owner's hand test (2026-10-18) — DO THESE BEFORE PHASE 2
+
+The owner tested phase 1 by hand on the live site. Fix ALL of these before
+continuing phase 2. Tick each off here as it's fixed; add automatic tests
+where possible.
+
+KEEP: the yellow, and tldraw's colours in general (prettier than Excalidraw's).
+
+- [ ] 1. Font size: text can't be made smaller. Add sizes smaller than the
+      current smallest.
+- [ ] 2. The colour/style menu doesn't go away. It should close when nothing
+      is selected or on a click elsewhere, like Excalidraw.
+- [ ] 3. The page loads zoomed to 79% with empty space around it. On load the
+      page must fill the window exactly; that is "100%".
+- [ ] 4. No "start from scratch". Add "clear page" to the main menu (like
+      Excalidraw's "Reset the canvas"), with a confirmation before it wipes
+      anything.
+- [ ] 5. Copy Excalidraw's layout: main menu top-left, tool toolbar
+      top-center, zoom + undo/redo bottom-left, page arrows bottom-right.
+- [ ] 6. Make the style panel (appears on selection: colours, stroke, fill,
+      font…) look and work like Excalidraw's.
+- [ ] 7. At 100% you can still pan and see empty space outside the page.
+      Seeing anything outside the page must be impossible. Panning is only
+      allowed when zoomed in, and only within the page's edges.
+- [ ] 8. While dragging things, Excalidraw shows a rectangle outline around
+      what's moving. Add it.
+- [ ] 9. Shapes with text: only the outline can be coloured. Need the
+      BACKGROUND (fill) colour and the TEXT colour inside, set separately.
+- [ ] 10. CHECK (owner unsure): dragging may feel less smooth than
+      Excalidraw. Compare; fix if there's a real difference, tell the owner
+      if there isn't.
+
+That's the whole list (1–10). Fix them on top of the live phase 1 version
+(branch off `origin/main`, not `phase-2`), deploy phase 1 only to the live
+site, then stop and tell the owner what to re-test.
+
+
 ## Current phase: 1 (the floor): fixing the owner's list above; phase 2 paused on branch `phase-2`
 
 The whiteboard is a tldraw app at /whiteboard (see DECISIONS). Code areas
@@ -32,15 +98,11 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
 - Nothing half-done.
 
 ### Known wrong / open
-- **Live /whiteboard disappears after 5 s**: no tldraw license key yet
-  (console: "No tldraw license key provided!"). The owner applied for the
-  free hobby key on 2026-10-18; tldraw reviews it and replies by email
-  (within a week). Not needed to build phase 2. When it arrives, the owner
-  pastes it to the agent (commit it
-  as `VITE_TLDRAW_LICENSE_KEY=...` in `.env.production`; the key ships to
-  every browser anyway, so it isn't a secret) or sets it as a Vercel env
-  var. Until then, the live e2e "watermark" test fails (11/12 pass live);
-  localhost works without a key.
+- tldraw license: temporary evaluation key until 2026-11-01 (see top). The
+  hobby key must replace it before then, or live /whiteboard disappears
+  after 5 s again.
+- If the window is 0 x 0 (seen in an embedded browser pane), the whiteboard
+  crashes with "camera.x: Expected a number, got NaN".
 - Old PROJECT.md content (how the iframe canvas works) is now only in git
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
