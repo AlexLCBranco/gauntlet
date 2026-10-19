@@ -304,9 +304,24 @@ test("the page arrows sit bottom-right and leave tldraw's watermark uncovered", 
   const view = page.viewportSize()!;
   expect(arrows.x + arrows.width).toBeGreaterThan(view.width - 40);
   expect(arrows.y + arrows.height).toBeGreaterThan(view.height - 120);
+  // The hobby key and localhost show tldraw's watermark; the temporary
+  // evaluation key (until 2026-11-01) doesn't, so there's nothing to cover.
   const mark = page.locator(".tl-watermark_SEE-LICENSE");
+  await page.waitForTimeout(1000);
+  if ((await mark.count()) === 0) return;
   await expect(mark).toBeVisible();
   const m = (await mark.boundingBox())!;
   const overlap = arrows.x < m.x + m.width && m.x < arrows.x + arrows.width && arrows.y < m.y + m.height && m.y < arrows.y + arrows.height;
   expect(overlap).toBe(false);
+});
+
+test("the tldraw license is accepted: the editor stays up past 5 s with no license warning", async ({ page }) => {
+  const warnings: string[] = [];
+  page.on("console", (m) => { if (/licen[cs]e/i.test(m.text())) warnings.push(m.text()); });
+  await open(page);
+  await page.waitForTimeout(6500);
+  await expect(page.getByTestId("sheet")).toBeVisible();
+  await expect(page.locator(".tl-canvas")).toBeVisible();
+  // Localhost needs no key; anywhere else tldraw warns when it's missing or bad.
+  if (!/localhost|127\.0\.0\.1/.test(page.url())) expect(warnings).toEqual([]);
 });

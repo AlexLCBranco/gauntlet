@@ -170,3 +170,10 @@ Changes to the plan, newest last. Each says what and why.
   resizes). Boardkit's pregame/postgame thots stay hidden, as Boardkit shows
   them by default; background images aren't drawn (colour backgrounds are).
   A full trash refuses a delete instead of forgetting the oldest card.
+- 2026-10-18 — tldraw key is a temporary evaluation key, expires Nov 1
+  2026; swap for the permanent hobby key when it arrives. It is stored only
+  in Vercel (project `gauntlet-home` → Settings → Environment Variables →
+  `VITE_TLDRAW_LICENSE_KEY`, Production and Preview), not in the code, so
+  swapping is one change: edit that value, then redeploy (Vite bakes it
+  into the build). Steps are in HANDOFF.md. The evaluation key shows no
+  "made with tldraw" watermark; the hobby key will.

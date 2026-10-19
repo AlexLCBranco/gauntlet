@@ -5,6 +5,26 @@ file after every step.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
+**tldraw key is a temporary evaluation key, expires Nov 1 2026; swap for
+the permanent hobby key when it arrives.** Added 2026-10-18.
+- Where it's stored: Vercel project `gauntlet-home` → Settings →
+  Environment Variables → `VITE_TLDRAW_LICENSE_KEY` (Production and
+  Preview). Not in the repo. `src/whiteboard/Whiteboard.tsx` reads it at
+  build time (`import.meta.env.VITE_TLDRAW_LICENSE_KEY`).
+- How to swap it: in that Vercel page, edit `VITE_TLDRAW_LICENSE_KEY` and
+  paste the hobby key (both environments), then redeploy (Deployments → the
+  latest Production one → Redeploy). Vite bakes the key into the build, so
+  it only takes effect after a redeploy. Or from this folder:
+  `vercel env rm VITE_TLDRAW_LICENSE_KEY production`, then
+  `vercel env add VITE_TLDRAW_LICENSE_KEY production` (paste the key), same
+  for `preview`, then `vercel redeploy https://gauntlet-home.vercel.app --target production`.
+- Check: `BRIDGE_SITE=https://gauntlet-home.vercel.app npx playwright test e2e/whiteboard.e2e.ts`
+  (the "license is accepted" test). The evaluation key shows no "made with
+  tldraw" watermark; the hobby key will, and the watermark test then checks
+  the page arrows don't cover it.
+- Live was redeployed with the key from the same phase 1 build (no phase 2
+  push): all 10 whiteboard e2e pass live.
+
 ## Current phase: 2 (Boardkit as a live object), IN PROGRESS (paused by the owner)
 
 Phase 2 started 2026-10-18. Owner chose: the board object reads and writes
@@ -87,19 +107,17 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
 - See phase 2's plan above (step 6).
 
 ### Known wrong / open
-- **Live /whiteboard disappears after 5 s**: no tldraw license key yet
-  (console: "No tldraw license key provided!"). The owner applied for the
-  free hobby key on 2026-10-18; tldraw reviews it and replies by email
-  (within a week). Not needed to build phase 2. When it arrives, the owner
-  pastes it to the agent (commit it
-  as `VITE_TLDRAW_LICENSE_KEY=...` in `.env.production`; the key ships to
-  every browser anyway, so it isn't a secret) or sets it as a Vercel env
-  var. Until then, the live e2e "watermark" test fails (11/12 pass live);
-  localhost works without a key.
+- tldraw license: a temporary evaluation key is live until 2026-11-01 (see
+  the top of this file). The owner applied for the free hobby key on
+  2026-10-18; it comes by email and must replace the evaluation key before
+  Nov 1, or live /whiteboard disappears after 5 s again.
+- If the window is 0 x 0 (seen in an embedded browser pane), the whiteboard
+  crashes with "camera.x: Expected a number, got NaN". Not fixed yet.
 - Old PROJECT.md content (how the iframe canvas works) is now only in git
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
 - Phase 2 step 6: run `node scripts/local-e2e.mjs`; if all pass, push to
   main, re-run e2e live, then report to the owner and wait.
-- Add the tldraw license key when it arrives (see above).
+- First the owner tests phase 1 by hand on the live site (asked 2026-10-18).
+- Swap in the hobby key when it arrives, before 2026-11-01 (see top).
