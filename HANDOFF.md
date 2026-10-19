@@ -3,7 +3,52 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): Linkkit fit to view on open (v0.0.105, `dfa2412`, LIVE)
+## NOW (2026-10-19): Linkkit v0.0.106 (`19b4672`): an explicit zoom sticks; stale names reported
+
+1. Stale linked name, CORRECTED. My earlier HANDOFF wording ("Party" "linked
+   to a board renamed since") was wrong: in the owner's backup the board is
+   still "Party" (boardkit:registry and the stored map name agree); what
+   changed is a CARD (Wm1QQoPvlq: stored "Snacks", board now "i changed this
+   it was SNACKS again"). Card/list names: every reader goes through
+   `openLinked` (Linkkit persistMap.ts:716), so all show the live names.
+   A renamed BOARD does go stale (checked with a throwaway unit test, not
+   kept: open map "Relocate"; registry, boardLinks, stored copy "Move?";
+   nothing written). Readers showing the STORED name: Linkkit map list /
+   "All maps" / "Find a map" (MapSwitcher.tsx:89 `s.maps` from
+   `loadRegistry` persistMap.ts:93; `switchMap` mapStore.ts:1642 keeps the
+   old list entry; search mapMenu.ts:29), registry repair persistMap.ts:117,
+   "Map from a Boardkit board…" "Linked to 'X'" (persistMap.ts:560 ->
+   bridge.ts:829-830), gauntlet canvas widget name (Canvas.tsx:386), Overview
+   (Overview.tsx:95), Add widget list (AddStone.tsx:24,33) via
+   sources.ts:35, Boardkit delete-board dialog (Boardkit linkedMap.ts:69-73
+   -> BoardSwitcher.tsx:183-184). Showing the LIVE name: Linkkit header
+   (MapSwitcher.tsx:88), chip (BoardLink.tsx:116), export
+   (mapStore.ts:607 -> loadMap), automatic backup (autoBackup.ts:176), copy
+   image (useCopyImage.ts:16), Export menu PNG/SVG/Mermaid
+   (ExportMenu.tsx:31,42,65), frames (mapStore.ts:653). Raw copies (stale +
+   board record, re-derived on open): gauntlet /backup/ file; its summary
+   only counts (format.ts:186). Proposed, NOT built (owner decides): those
+   readers take a linked map's name from boardkit:registry, read-only, in
+   Linkkit (loadRegistry result in memory, boardLinks, switchMap upsert),
+   gauntlet sources.ts and Boardkit findLinkedMap. Opening still writes
+   nothing.
+2. Explicit zoom sticks (owner): a pill zoom is stored for the map, 100%
+   included, and that map is never fitted again; never-zoomed maps keep the
+   fit; stored only on the click. viewStore `zoomChosen` removed (the entry
+   now says it). fitview e2e: fitted map -> pill 100% -> reload -> 100%, all
+   other linkkit:* keys unchanged (failed on v0.0.105: reopened at 29%).
+   bracket.e2e.ts workaround kept: that test never uses the pill before its
+   reload, so a saved bracket still opens fitted.
+3. Confirmed done in v0.0.104 (`1a89a0b`): header e2e with a box selected,
+   Tips toggle (`e2e/tips.e2e.ts`, 2 tests).
+Standing rule (owner): never pipe test commands through tail/head/grep
+without pipefail; capture the real exit code.
+Results (real exit codes): unit 964 pass, build + lint exit 0 (2 old
+warnings); local `node scripts/local-e2e.mjs` exit 0: gauntlet 72 pass
+(incl. 5 real-data) + Linkkit 19 pass. Live (exit 0 each): Linkkit 19
+pass; gauntlet 67 pass, 5 skipped (real data: local only).
+
+## Earlier (2026-10-19): Linkkit fit to view on open (v0.0.105, `dfa2412`, LIVE)
 
 Owner's OK (2026-10-19) on the proposal below: a saved map with no zoom of
 its own opens fitted to the window (never above 100%, down to 10%) and
