@@ -3,7 +3,38 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): owner's hand test FAILED — full Boardkit parity, then backup
+## NOW (2026-10-19): parity + backup DONE on `phase-2` — WAITING for the owner's re-test
+
+Status: every item below is done and pushed to `phase-2` (NOT live). Preview
+for the re-test: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
+(Backups page: same address, `/backups/`). Tests: `node scripts/local-e2e.mjs`
+51 + Linkkit 14 pass; `npm test` 68 pass; on the preview 45 pass, 3 can't
+run there (see "Preview limits"). NEXT: wait for the owner. Do not go live,
+do not start phase 3.
+
+Preview limits (not bugs of this build): /boardkit on a preview is the LIVE
+Boardkit (main, v0.0.95), and Linkkit shows its "moved" notice on previews,
+so (a) parity "C11: a card dropped on the top edge ... Boardkit itself too"
+fails its Boardkit-itself half there, and (b) the two backup e2e that make
+a Linkkit map can't run there. All pass locally.
+
+KNOWN BUG IN LIVE BOARDKIT (owner to decide): the drop-on-top-edge crash
+(React #185) also happens in Boardkit itself (the e2e above shows the live
+Boardkit doesn't move the card). Fixed only on Boardkit's `whiteboard`
+branch (`c4af6dc`, `1e3a413`); it reaches the live Boardkit when that
+branch is merged into Boardkit's main (with a version bump), i.e. at
+go-live, unless the owner wants it sooner.
+
+Vercel now installs with `npm ci` (vercel.json): with plain `npm install`
+it kept a cached Boardkit (every pin says 0.0.95), so the preview ran old
+Boardkit code and still crashed.
+
+Backup and go-live: the backup only runs where the new build runs, so the
+owner's REAL data (gauntlet-home.vercel.app) gets backed up only once this
+build (or the backup part alone) is on `main`. Owner to choose: ship the
+backup alone to main first, or with phase 2 after the hand test.
+
+### The owner's request (2026-10-19)
 
 Owner's message (summary): the whiteboard board is a stripped-down copy.
 Rule from now on: FULL PARITY WITH BOARDKIT'S BOARDS, except Boardkit's
@@ -32,7 +63,7 @@ store; the others are drawn by the same components from read-only stores.
 `src/boards/record.ts`, `store.ts`, `looks.ts`, `BoardView.tsx` (the copy)
 are replaced.
 
-### Parity work — status (2026-10-19, session cut off by usage limit)
+### Parity work — status
 
 DONE (on `phase-2` + Boardkit branch `whiteboard`, pinned in package.json
 as a codeload tarball URL — npm git deps resolve to git+ssh, which Vercel
@@ -197,8 +228,8 @@ address: it has none of the owner's real boards; Boardkit runs there
 
 **Before phase 2 goes live (owner, 2026-10-19), BOTH:** (1) the owner has
 tested it by hand; (2) the owner's real Boardkit AND Linkkit data on
-gauntlet-home.vercel.app has a backup the owner can restore. Set up that
-backup first. NOT DONE YET. The old home page (/) stays; revisit after
+gauntlet-home.vercel.app has a backup the owner can restore. Backup BUILT
+on `phase-2` (see NOW); it protects the real data once it runs on main. The old home page (/) stays; revisit after
 phase 3.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
