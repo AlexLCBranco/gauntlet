@@ -198,3 +198,17 @@ Changes to the plan, newest last. Each says what and why.
 - 2026-10-18 — Undo and redo skip steps that only change the selection, as
   in Excalidraw: one Ctrl+Z undoes a shape just drawn, even after Escape
   (tldraw made deselecting its own undo step). Ctrl+Y also redoes.
+- 2026-10-19 — Owner: phase 2 goes live only after (1) the owner has
+  tested it by hand AND (2) the owner's real Boardkit and Linkkit data on
+  gauntlet-home.vercel.app has a backup the owner can restore. The backup
+  is set up before anything goes live.
+- 2026-10-19 — Owner: the old home page (/) stays for now; revisit
+  replacing it with the whiteboard after phase 3.
+- 2026-10-19 — Vercel previews open without a Vercel login (owner's
+  request, so the owner can test without the terminal): project
+  `gauntlet-home` → Deployment Protection → Vercel Authentication is off
+  (`vercel project protection disable gauntlet-home --sso`). Production
+  was already public. To turn it back on:
+  `vercel project protection enable gauntlet-home --sso`. Boardkit
+  (v0.0.95) runs on these previews, without automatic folder backups, so
+  a preview's test boards never reach the real backup folder.

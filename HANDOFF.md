@@ -3,6 +3,22 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
+**Previews open without a Vercel login (2026-10-19, owner's request).**
+Phase 2 preview for the owner's hand test: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
+(it follows the latest push to `phase-2`). Vercel Authentication is off for
+project `gauntlet-home`; turn back on with
+`vercel project protection enable gauntlet-home --sso`. A preview is its own
+address: it has none of the owner's real boards; Boardkit runs there
+(v0.0.95, with automatic backups off) so test boards can be made at
+<preview>/boardkit/. Linkkit still shows its "moved" notice on previews
+(not needed for phase 2).
+
+**Before phase 2 goes live (owner, 2026-10-19), BOTH:** (1) the owner has
+tested it by hand; (2) the owner's real Boardkit AND Linkkit data on
+gauntlet-home.vercel.app has a backup the owner can restore. Set up that
+backup first. NOT DONE YET. The old home page (/) stays; revisit after
+phase 3.
+
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
 **tldraw key is a temporary evaluation key, expires Nov 1 2026; swap for
@@ -107,10 +123,20 @@ the live site has phase 1 only.
      owner's boards (they live in gauntlet-home.vercel.app's browser
      storage); a board made at <preview>/boardkit/ shows there.
    - Reported to the owner what to try by hand (2026-10-19). WAIT.
-9. OPEN, the owner decides — (a) phase 2 goes live (`phase-2` into
-   `main`) only on the owner's word; (b) DECISIONS says the whiteboard
-   takes over the home page / "at the latest when boards move over in
-   phase 2": asked the owner, no answer yet.
+9. DECIDED 2026-10-19 (PROJECT.md DECISIONS) — (a) goes live only after
+   the owner's hand test AND a restorable backup of the real Boardkit +
+   Linkkit data (to build next, before any go-live); (b) the home page
+   stays until after phase 3.
+10. DONE 2026-10-19 — Preview without login for the owner's hand test (see
+   top). Boardkit needed a change: it showed "moved" on every address but
+   gauntlet-home.vercel.app, so previews had no Boardkit. Boardkit
+   v0.0.95 (`85fa689`, its repo): `isPreviewAddress` runs the app on
+   `gauntlet-home-…-alexlcbrancos-projects.vercel.app`, automatic folder
+   backups off there (unit tests). After it deployed, boards + whiteboard
+   e2e passed on the preview (27, incl. the tldraw key); live still
+   phase 1 (whiteboard + canvas e2e 22 pass live, no Board button).
+11. NEXT — wait for the owner's hand test. Then the backup of the real
+   data (decision (a)), then go-live only on the owner's word.
 
 ### Bugs found by the e2e and fixed (phase 2)
 - Escape in a card's text field also ended editing the board: tldraw
@@ -243,6 +269,7 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
-- Phase 2 is done on `phase-2`; wait for the owner's hand test and the
-  two decisions in phase 2's step 9. Do not start phase 3.
+- Phase 2 is done on `phase-2`; wait for the owner's hand test (preview
+  link at the top). Then the backup of the real data, then go-live only on
+  the owner's word. Do not start phase 3.
 - Swap in the hobby key when it arrives, before 2026-11-01 (see top).
