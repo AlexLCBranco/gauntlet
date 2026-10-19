@@ -333,3 +333,120 @@ test("a board looks as in Boardkit: number formats and emphasis, highlights, che
   await page.waitForTimeout(300);
   expect(await page.evaluate((id) => JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!).rev, id)).toBe(rev);
 });
+
+/** Sets board `id`'s background in its saved record, as Boardkit's toolbar
+    does (rev + 1, so an open Boardkit adopts it). */
+async function setBackground(page: Page, id: string, background: unknown) {
+  await page.evaluate(
+    ([id, background]) => {
+      const key = `boardkit:board:${id}`;
+      const rec = JSON.parse(localStorage.getItem(key)!);
+      rec.board.background = background;
+      rec.rev = (rec.rev ?? 0) + 1;
+      localStorage.setItem(key, JSON.stringify(rec));
+    },
+    [id, background] as const,
+  );
+}
+
+/** What paints at a screen point above the whiteboard's page: every element
+    there, top first, down to the page (the sheet), with a background. */
+const paintedAt = (page: Page, x: number, y: number) =>
+  page.evaluate(
+    ([x, y]) => {
+      const out: string[] = [];
+      for (const el of document.elementsFromPoint(x, y)) {
+        if (el.getAttribute("data-testid") === "sheet") return out;
+        const cs = getComputedStyle(el);
+        const clear = /rgba\(.*,\s*0\)$|transparent/.test(cs.backgroundColor) && cs.backgroundImage === "none";
+        if (!clear) out.push(`${el.tagName}.${el.className} ${cs.backgroundColor} ${cs.backgroundImage.slice(0, 40)}`);
+      }
+      return ["(no sheet under the point)"];
+    },
+    [x, y] as const,
+  );
+
+/** A point in the empty space between the board's first two lists. */
+async function gapBetweenLists(page: Page) {
+  const lists = boardEl(page).locator("section[data-list-id]");
+  const a = await box(lists.nth(0));
+  const b = await box(lists.nth(1));
+  expect(b.x).toBeGreaterThan(a.x + a.width + 2);
+  // Below the shorter list's header, where neither list reaches over.
+  return { x: (a.x + a.width + b.x) / 2, y: Math.min(a.y + a.height, b.y + b.height) - 10 };
+}
+
+test("no panel behind the lists on the whiteboard: they sit on the whiteboard's own background, even when the board has a background in Boardkit", async ({ page, context }) => {
+  const id = await seedBoard(context);
+  await openWhiteboard(page);
+  // A board with a colour background set in Boardkit.
+  await setBackground(page, id, { kind: "color", color: "#d33a3a" });
+  await placeBoard(page, id);
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => (window as any).editor.selectNone());
+
+  // No backdrop, and the board itself is see-through.
+  const board = boardEl(page);
+  expect(await board.evaluate((el) => getComputedStyle(el).backgroundColor)).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+  expect(await board.locator('[style*="--board-background"]').count()).toBe(0);
+  // Between two lists, nothing paints over the whiteboard's page.
+  const gap = await gapBetweenLists(page);
+  expect(await paintedAt(page, gap.x, gap.y)).toEqual([]);
+  // Below the lists and right of "+ Add a list" too, inside the board's box.
+  const all = await box(board);
+  expect(await paintedAt(page, all.x + all.width - 4, all.y + all.height - 4)).toEqual([]);
+  // The title and "+ Add a list" are still there.
+  await expect(page.locator(".gb-name")).toHaveText(await boardName(page, id));
+  await expect(board.getByRole("button", { name: "+ Add a list" })).toBeVisible();
+
+  // The same while the board is being edited.
+  const firstCard = board.locator("article[data-card-id]").first();
+  await startEditing(page, (await firstCard.getAttribute("data-card-id"))!);
+  expect(await editingEl(page).locator('[style*="--board-background"]').count()).toBe(0);
+  expect(await editingEl(page).evaluate((el) => getComputedStyle(el).backgroundColor)).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+});
+
+test("the board is selected and moved by pressing the empty space between its lists", async ({ page, context }) => {
+  const id = await seedBoard(context);
+  await openWhiteboard(page);
+  await placeBoard(page, id);
+  await page.keyboard.press("Escape");
+  // Smaller than the page, in its middle, so there is room to move it.
+  await page.evaluate(() => {
+    const e = (window as any).editor;
+    const s = e.getCurrentPageShapes().find((s: any) => s.type === "boardkit-board");
+    e.updateShape({ id: s.id, type: s.type, x: 200, y: 150, props: { scale: s.props.scale * 0.6 } });
+    e.selectNone();
+  });
+  await page.waitForTimeout(300);
+  const before = (await shapeOf(page))!;
+
+  // A click between two lists selects the board.
+  const gap = await gapBetweenLists(page);
+  await page.mouse.click(gap.x, gap.y);
+  expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([before.id]);
+
+  // A drag from there moves it (and nothing in it). (Not right after the
+  // click: that would be a double-click, which opens the board for editing.)
+  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.waitForTimeout(700);
+  await drag(page, gap, { x: gap.x - 100, y: gap.y + 60 });
+  const after = (await shapeOf(page))!;
+  expect(after.x).toBeLessThan(before.x - 50);
+  expect(after.y).toBeGreaterThan(before.y + 30);
+  expect(after.scale).toBe(before.scale);
+  expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([before.id]);
+});
+
+test("standalone Boardkit still shows a board's background", async ({ page, context }) => {
+  const id = await seedBoard(context);
+  await page.goto("/boardkit/");
+  const notNow = page.getByRole("button", { name: "Not now" });
+  if (await notNow.isVisible({ timeout: 2_000 }).catch(() => false)) await notNow.click();
+  await setBackground(page, id, { kind: "color", color: "#d33a3a" });
+  await page.reload();
+  const backdrop = page.locator('[style*="--board-background"]');
+  await expect(backdrop).toHaveCount(1);
+  const painted = await backdrop.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(painted).not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+});
