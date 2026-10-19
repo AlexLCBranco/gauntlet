@@ -39,6 +39,12 @@ function open(name: string, version?: number, upgrade?: (db: IDBDatabase) => voi
   });
 }
 
+/** The automatic backups' own database (`auto.ts`): never part of a
+    backup (it would hold every earlier backup) and never restored. */
+export const AUTO_DB = "gauntlet-auto-backups";
+/** Their note of the last outcome (localStorage): not part of a backup either. */
+export const AUTO_NOTE = "gauntlet:auto-backup";
+
 export const OTHER_TABS = "Another tab of this site is open. Close every other gauntlet, Boardkit and Linkkit tab, then try again.";
 
 async function dumpDatabase(name: string): Promise<DatabaseDump> {
@@ -82,9 +88,11 @@ export async function makeBackup(now: Date): Promise<BackupFile> {
   const local: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)!;
-    local[key] = localStorage.getItem(key)!;
+    if (key !== AUTO_NOTE) local[key] = localStorage.getItem(key)!;
   }
-  const names = (await indexedDB.databases()).map((db) => db.name).filter((name): name is string => !!name);
+  const names = (await indexedDB.databases())
+    .map((db) => db.name)
+    .filter((name): name is string => !!name && name !== AUTO_DB);
   const databases: DatabaseDump[] = [];
   for (const name of names.sort()) databases.push(await dumpDatabase(name));
   return { format: FORMAT, version: VERSION, createdAt: now.toISOString(), site: location.origin, localStorage: local, indexedDB: databases };
@@ -147,7 +155,12 @@ export async function restoreBackup(file: BackupFile): Promise<void> {
   const existing = new Set((await indexedDB.databases()).map((db) => db.name));
   // Databases first: a tab still holding one open makes this fail before
   // anything has been changed.
-  for (const dump of file.indexedDB) await restoreDatabase(dump, existing.has(dump.name));
+  for (const dump of file.indexedDB) {
+    if (dump.name !== AUTO_DB) await restoreDatabase(dump, existing.has(dump.name));
+  }
+  // The automatic backups' note of their last outcome stays as it is here.
+  const note = localStorage.getItem(AUTO_NOTE);
   localStorage.clear();
   for (const [key, value] of Object.entries(file.localStorage)) localStorage.setItem(key, value);
+  if (note !== null) localStorage.setItem(AUTO_NOTE, note);
 }

@@ -63,3 +63,12 @@ a { color: var(--accent); }
   background: var(--panel);
 }
 .dialog .actions { justify-content: flex-end; margin-bottom: 0; }
+
+.autos { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 24px; }
+.autos .warn { color: var(--warn); }
+.auto-list { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 8px; }
+.auto-list li {
+  display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center;
+  padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+}
+.auto-list .actions { margin: 0; }

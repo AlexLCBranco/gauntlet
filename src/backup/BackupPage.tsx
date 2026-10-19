@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 
+import { fileOf, keepBackup, lastStatus, listAutoBackups, type AutoBackup } from "./auto";
 import { describe, fileName, readBackup, summarize, type BackupFile } from "./format";
+import { WARNING_TEXT } from "./policy";
 import { makeBackup, restoreBackup } from "./storage";
 
 /**
  * The backup page (/backup/): "Save a backup" downloads one file with
  * everything this site keeps in this browser; "Restore from a backup
  * file…" puts such a file back, after downloading a copy of what is here
- * now, so a restore can itself be undone.
+ * now, so a restore can itself be undone. Below, the automatic backups
+ * kept in this browser (`auto.ts`), each with "Restore this".
  */
 
 function download(file: BackupFile, name: string): void {
@@ -31,11 +34,15 @@ type Status =
   | { readonly kind: "saved"; readonly name: string; readonly what: string }
   | { readonly kind: "confirm"; readonly file: BackupFile }
   | { readonly kind: "restored"; readonly what: string; readonly safety: string }
+  | { readonly kind: "kept"; readonly text: string }
   | { readonly kind: "error"; readonly text: string };
 
 export function BackupPage() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [here, setHere] = useState<string | null>(null);
+  const [autos, setAutos] = useState<AutoBackup[] | null>(null);
+  const [warning, setWarning] = useState(() => lastStatus()?.warning);
+  const refreshAutos = () => listAutoBackups().then(setAutos, () => setAutos([]));
   const picker = useRef<HTMLInputElement>(null);
 
   const refreshHere = () =>
@@ -43,7 +50,28 @@ export function BackupPage() {
       (file) => setHere(describe(summarize(file))),
       () => setHere(null),
     );
-  useEffect(() => void refreshHere(), []);
+  useEffect(() => {
+    void refreshHere();
+    void refreshAutos();
+    // This page backs up by itself too (main.tsx): show it when it lands.
+    const timer = setInterval(() => {
+      void refreshAutos();
+      setWarning(lastStatus()?.warning);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const backUpNow = async () => {
+    setStatus({ kind: "busy", text: "Backing up…" });
+    const outcome = await keepBackup("auto");
+    await refreshAutos();
+    setWarning(lastStatus()?.warning);
+    setStatus(
+      outcome.kind === "skipped"
+        ? { kind: "error", text: WARNING_TEXT[outcome.warning] }
+        : { kind: "kept", text: outcome.kind === "saved" ? "Backed up in this browser." : "Nothing changed since the newest automatic backup." },
+    );
+  };
 
   const save = async () => {
     setStatus({ kind: "busy", text: "Saving…" });
@@ -76,6 +104,7 @@ export function BackupPage() {
     try {
       const now = new Date();
       const safety = fileName("gauntlet-before-restore", now);
+      await keepBackup("before-restore");
       download(await makeBackup(now), safety);
       await restoreBackup(file);
       setStatus({ kind: "restored", what: describe(summarize(file)), safety });
@@ -122,6 +151,7 @@ export function BackupPage() {
           </p>
         )}
         {status.kind === "error" && <p className="bad">{status.text}</p>}
+        {status.kind === "kept" && <p className="ok">{status.text}</p>}
         {status.kind === "restored" && (
           <>
             <p className="ok">Restored: {status.what}.</p>
@@ -135,6 +165,67 @@ export function BackupPage() {
           </>
         )}
       </div>
+
+      <section className="autos" aria-labelledby="autos-title">
+        <h2 id="autos-title">Automatic backups</h2>
+        <p className="lead">
+          Made by themselves when you open the home page or the whiteboard, and every 10 minutes while one is open, if
+          anything changed. The newest 30 and one a day for 90 days are kept, as room allows.
+        </p>
+        <p className="warn">
+          They are kept in this browser, next to your data: clearing this browser's data (or a new computer) loses them
+          too. Only a saved backup file protects against that.
+        </p>
+        {warning && (
+          <p className="bad" data-testid="auto-warning">
+            {WARNING_TEXT[warning]}
+          </p>
+        )}
+        <div className="actions">
+          <button type="button" onClick={() => void backUpNow()} disabled={busy}>
+            Back up in this browser now
+          </button>
+        </div>
+        {autos === null ? (
+          <p className="lead">…</p>
+        ) : autos.length === 0 ? (
+          <p className="lead">None yet.</p>
+        ) : (
+          <ol className="auto-list" aria-label="Automatic backups">
+            {autos.map((a) => (
+              <li key={a.id}>
+                <div>
+                  <strong>{when(new Date(a.at).toISOString())}</strong>
+                  {a.reason === "before-restore" && <span className="lead"> · before a restore</span>}
+                  <div className="lead">{a.what}</div>
+                </div>
+                <div className="actions">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      const file = fileOf(a);
+                      setStatus(file ? { kind: "confirm", file } : { kind: "error", text: "That backup can't be read." });
+                    }}
+                  >
+                    Restore this
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      const file = fileOf(a);
+                      if (file) download(file, fileName("gauntlet-backup", new Date(a.at)));
+                    }}
+                  >
+                    Download
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       {status.kind === "confirm" && (
         <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">

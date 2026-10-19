@@ -8,10 +8,10 @@ Each part lives in its own folder; read only the one you work on.
 | `pages/` | Fixed pages: the sheet size, the camera (100% = the whole page in view, centred, dark bars when the window isn't 16:9; nothing scrolls at 100%), keeping shapes inside the sheet, the next/previous arrows, Present | `sheet.ts`, `camera.ts` (pure), `keepFilled.ts`, `PageArrows.tsx` |
 | `style/` | The style panel (Excalidraw's, left under the menu) and the styles tldraw lacks, kept in a shape's `meta`: font sizes smaller than tldraw's, a background colour apart from the outline | `StylePanel.tsx`, `styleMeta.ts` (pure), `shapeUtils.ts` |
 | `lasso/` | Lasso selection: the tool, the loop overlay, the loop geometry | `LassoTool.ts`, `loop.ts` (pure) |
-| `backup/` | The backup page at `/backup/`: one file with all of this site's browser storage (every localStorage key, every IndexedDB database: Boardkit's pictures, the whiteboard), and a restore from it that first downloads what is there | `BackupPage.tsx`, `format.ts` (pure), `storage.ts` |
+| `backup/` | The backup page at `/backup/`: one file with all of this site's browser storage (every localStorage key, every IndexedDB database: Boardkit's pictures, the whiteboard), and a restore from it that first downloads what is there. Automatic backups of the same kind kept in the browser (on opening `/`, `/whiteboard/`, `/backup/`, every 10 min), within a storage budget, with a warning when one can't be kept | `BackupPage.tsx`, `format.ts` (pure), `storage.ts`, `auto.ts`, `policy.ts` (pure) |
 | `canvas/`, `domain/` | The older iframe canvas ("stones") still on the home page `/`; see GAUNTLET-PLAN.md | `canvas/Canvas.tsx` |
 
 Later phases add `boards/`, `maps/`, `connections/`.
 
-Pure files (`backup/format.ts`, `sheet.ts`, `camera.ts`, `loop.ts`, `styleMeta.ts`) have unit tests next to them
+Pure files (`backup/format.ts`, `backup/policy.ts`, `sheet.ts`, `camera.ts`, `loop.ts`, `styleMeta.ts`) have unit tests next to them
 (`*.test.ts`, vitest). The e2e tests are in `../e2e/`.
