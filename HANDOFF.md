@@ -33,8 +33,15 @@ failed on the old Linkkit at every size). Linkkit `e2e/readonly.e2e.ts`
 at half width = the wide layout; failed on the old code). Unit:
 Linkkit `page.test.ts`, `persistLinked.test.ts`, `address.test.ts`.
 LIVE (Linkkit a03ad3a, gauntlet a93e50d). Results: local `node scripts/local-e2e.mjs` gauntlet 72 + Linkkit 15 pass (incl. 5 real-data); live: gauntlet 67 pass / 5 skipped (real data: local only), Linkkit 15 pass; phase-2 preview: readonly.e2e passes, and backup.e2e x2 + canvas "add stones" (the 3 that could not run on previews) now pass there.
-Seen, not fixed: at 957 px wide Linkkit's toolbar "+" button covers the
-"Switch map" button (clicks land on "+").
+FIXED (Linkkit v0.0.103, `029d2bf`, LIVE): at 957 px Linkkit's "+" covered
+"Switch map". Cause: the header was one non-wrapping row needing ~1064 px;
+below that the map switcher shrank to 0 px and its chevron overflowed
+under "+" (greyed out = opacity 0.5 = painted on top), and the right-hand
+buttons ran off the window. The header now wraps. New Linkkit
+`e2e/header.e2e.ts` (every header button on screen and clickable, "Switch
+map" opens, 481-1400 px; failed on the old live build), and
+`readonly.e2e.ts` no longer widens the window to clean up. Live: Linkkit
+e2e 16/16 pass.
 
 ## Earlier (2026-10-19): phase 2 is LIVE (owner's OK, 2026-10-19)
 
