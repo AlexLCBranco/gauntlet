@@ -32,6 +32,7 @@ failed on the old Linkkit at every size). Linkkit `e2e/readonly.e2e.ts`
 (throwaway bracket + tree, reload/reopen at 3 sizes, bracket re-laid out
 at half width = the wide layout; failed on the old code). Unit:
 Linkkit `page.test.ts`, `persistLinked.test.ts`, `address.test.ts`.
+LIVE (Linkkit a03ad3a, gauntlet a93e50d). Results: local `node scripts/local-e2e.mjs` gauntlet 72 + Linkkit 15 pass (incl. 5 real-data); live: gauntlet 67 pass / 5 skipped (real data: local only), Linkkit 15 pass; phase-2 preview: readonly.e2e passes, and backup.e2e x2 + canvas "add stones" (the 3 that could not run on previews) now pass there.
 Seen, not fixed: at 957 px wide Linkkit's toolbar "+" button covers the
 "Switch map" button (clicks land on "+").
 
