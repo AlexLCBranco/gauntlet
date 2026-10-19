@@ -40,8 +40,8 @@ failed alone too, the old limits sat on refresh steps. 10/10 isolated
 runs pass. Note: Boardkit's real components are heavier than the old
 copy (zoom p95 3 refreshes, was 2).
 
-BACKUP: the owner chose to ship it on its own: branch `backup-live` (from
-`main`), see its HANDOFF.md. `main` already had a /backup/ page (a side
+BACKUP: LIVE on `main` since 2026-10-19 (owner shipped it on its own, via
+branch `backup-live`; 28 e2e pass live), see main's HANDOFF.md. `main` already had a /backup/ page (a side
 session, live): automatic backups were added to THAT page, same file
 format. When `main` is merged into `phase-2`: drop phase-2's own
 `src/backup/` version (snapshot.ts, store.ts, BackupsPage.tsx,
