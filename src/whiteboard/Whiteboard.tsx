@@ -53,10 +53,11 @@ const PERSISTENCE_KEY = "gauntlet-whiteboard";
 const DEFAULTS_KEY = "gauntlet:whiteboard:defaults";
 
 const camera: Partial<TLCameraOptions> = {
-  // Zoom steps are multiples of "100%", where the whole sheet fits the
-  // window, centred, with dark bars where the window isn't 16:9 (see
-  // fillZoom): you can zoom in, never out past it. At 100% nothing
-  // scrolls; zoomed in, you pan only up to the sheet's edges.
+  // Zoom steps are multiples of "100%", where the page fills the window
+  // edge to edge (the page has the window's shape: pageForWindow; its
+  // bounds are set by sizePage, SHEET is only the start): you can zoom
+  // in, never out past it. At 100% nothing scrolls; zoomed in, you pan
+  // only up to the page's edges.
   zoomSteps: [1, 1.5, 2, 3, 4, 6, 8],
   constraints: {
     bounds: SHEET,
@@ -208,8 +209,8 @@ function setUp(editor: Editor) {
   }
   // For the e2e tests (and the console).
   (window as unknown as { editor: Editor }).editor = editor;
-  // A saved camera (from before a resize, or from a tab) may sit outside
-  // the sheet's limits: start with the whole sheet in view.
+  // Size the page to the window (and what's on it) and show all of it. A
+  // saved camera (from before a resize, or from a tab) may sit outside it.
   fillWindow(editor);
   const stopInside = keepInsideSheet(editor);
   const stopNext = applyNextMeta(editor);

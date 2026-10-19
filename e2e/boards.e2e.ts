@@ -93,8 +93,9 @@ test("the Board button puts a real Boardkit board on the page, every list and ca
   expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([s.id]);
   expect(s.x).toBeGreaterThanOrEqual(0);
   expect(s.y).toBeGreaterThanOrEqual(0);
-  expect(s.x + s.w).toBeLessThanOrEqual(1920 + 0.5);
-  expect(s.y + s.h).toBeLessThanOrEqual(1080 + 0.5);
+  const pageBox = await page.evaluate(() => (window as any).editor.getCameraOptions().constraints.bounds);
+  expect(s.x + s.w).toBeLessThanOrEqual(pageBox.w + 0.5);
+  expect(s.y + s.h).toBeLessThanOrEqual(pageBox.h + 0.5);
   const onScreen = await box(board);
   const zoom = await page.evaluate(() => (window as any).editor.getZoomLevel());
   expect(onScreen.width).toBeCloseTo(s.w * zoom, 0);

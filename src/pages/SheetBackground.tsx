@@ -1,18 +1,21 @@
 import { useEditor, useValue } from "tldraw";
 
+import { pageBox } from "./keepFilled";
 import { SHEET } from "./sheet";
 import "./pages.css";
 
-/** The page as a sheet of paper: the sheet in the canvas colour, the space
-    around it darker. Drawn behind every shape. */
+/** The page in the canvas colour, the space around it darker. The page
+    always fills the window (keepFilled.ts), so the darker space never
+    shows; it stays as a guard. Drawn behind every shape. */
 export function SheetBackground() {
   const editor = useEditor();
   const rect = useValue(
     "sheet rect",
     () => {
+      const page = pageBox.get() ?? SHEET;
       const z = editor.getZoomLevel();
-      const p = editor.pageToViewport({ x: SHEET.x, y: SHEET.y });
-      return { left: p.x, top: p.y, width: SHEET.w * z, height: SHEET.h * z };
+      const p = editor.pageToViewport({ x: page.x, y: page.y });
+      return { left: p.x, top: p.y, width: page.w * z, height: page.h * z };
     },
     [editor],
   );

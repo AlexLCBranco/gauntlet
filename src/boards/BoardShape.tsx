@@ -12,7 +12,7 @@ import {
   type TLShape,
 } from "tldraw";
 
-import { SHEET } from "../pages/sheet";
+import { pageBox } from "../pages/keepFilled";
 import { WhiteboardBoard, useSelectionStore } from "./boardkit";
 import { fitBoard } from "./fit";
 import { registryBoards, useRegistry } from "./registry";
@@ -84,7 +84,8 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     const measure = () => {
       const current = editor.getShape<BoardShape>(shape.id);
       if (!current) return;
-      const fit = fitBoard({ w: el.offsetWidth, h: el.offsetHeight }, current.props.scale, SHEET);
+      // Before the page is sized (first render), a board keeps its scale.
+      const fit = fitBoard({ w: el.offsetWidth, h: el.offsetHeight }, current.props.scale, pageBox.get() ?? { w: Infinity, h: Infinity });
       const p = current.props;
       if (Math.abs(fit.w - p.w) < 0.5 && Math.abs(fit.h - p.h) < 0.5 && fit.scale === p.scale) return;
       // Placed new: grow from the middle, where it was put.
