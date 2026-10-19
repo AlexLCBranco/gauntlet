@@ -18,12 +18,34 @@ so (a) parity "C11: a card dropped on the top edge ... Boardkit itself too"
 fails its Boardkit-itself half there, and (b) the two backup e2e that make
 a Linkkit map can't run there. All pass locally.
 
-KNOWN BUG IN LIVE BOARDKIT (owner to decide): the drop-on-top-edge crash
-(React #185) also happens in Boardkit itself (the e2e above shows the live
-Boardkit doesn't move the card). Fixed only on Boardkit's `whiteboard`
-branch (`c4af6dc`, `1e3a413`); it reaches the live Boardkit when that
-branch is merged into Boardkit's main (with a version bump), i.e. at
-go-live, unless the owner wants it sooner.
+BOARDKIT CRASH FIX: LIVE (owner, 2026-10-19). Boardkit `main` `7815ec7`,
+v0.0.96: the top-edge drop fix (c4af6dc + 1e3a413) AND the drag-save fix
+(5d8d004 + 0108856: a card moved into another list and dropped there was
+shown moved but never saved), which that drop also needs to land. Crash
+on live before the fix: the whole Boardkit page went blank; nothing was
+lost but that one move (saves run 400 ms after each edit, outside React;
+a reload showed everything, the card back in its old list). Parity
+"C11: a card dropped on the top edge ... Boardkit itself too" now passes
+on the phase-2 preview against the live Boardkit. Boardkit's `whiteboard`
+branch has the same changes; merge Boardkit `main` into it before its own
+merge (conflicts in DragContext.tsx/package.json: keep whiteboard's, v0.0.96+).
+Boardkit `npm audit`: 7 high, all in the shadcn CLI (dev tool), fix is a
+major upgrade (shadcn 1.0): owner to decide.
+
+SPEED CHECK: `e2e/perf.e2e.ts`, Playwright project "perf", the teardown
+of the main suite (runs after every other e2e, also when some failed, one
+worker; a filtered run also runs it). Limits in whole screen refreshes
+with half a refresh of margin (median <= 2, p95 <= 4 refreshes): it had
+failed alone too, the old limits sat on refresh steps. 10/10 isolated
+runs pass. Note: Boardkit's real components are heavier than the old
+copy (zoom p95 3 refreshes, was 2).
+
+BACKUP: the owner chose to ship it on its own: branch `backup-live` (from
+`main`), see its HANDOFF.md. `main` already had a /backup/ page (a side
+session, live): automatic backups were added to THAT page, same file
+format. When `main` is merged into `phase-2`: drop phase-2's own
+`src/backup/` version (snapshot.ts, store.ts, BackupsPage.tsx,
+/backups/, e2e/backup.e2e.ts) and take main's; also its links.
 
 Vercel now installs with `npm ci` (vercel.json): with plain `npm install`
 it kept a cached Boardkit (every pin says 0.0.95), so the preview ran old
