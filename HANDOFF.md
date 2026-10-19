@@ -27,6 +27,11 @@ backup first. The old home page (/) stays; revisit after phase 3.
   into an empty browser = byte-for-byte the same and the apps open it;
   restore over changed data + undo with the safety copy; a wrong file is
   refused). The e2e fail if the restore skips IndexedDB (checked).
+  LIVE on `main` (`5881bfd`): backup + whiteboard + canvas e2e, 25 pass
+  against gauntlet-home.vercel.app. `main` is now ahead of `phase-2`:
+  merge `main` into `phase-2` (only `src/backup/`, `backup/`, e2e, docs,
+  `vite.config.ts` input, `vercel.json` redirect; expect conflicts only in
+  HANDOFF.md/PROJECT.md/src/README.md/vite.config.ts: keep both sides).
 - WAITING FOR THE OWNER: they save their real backup (steps below; only
   they can, their data lives only in their browser). Once they say it's
   saved, condition (2) is met.
