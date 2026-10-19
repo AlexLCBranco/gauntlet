@@ -17,12 +17,29 @@ address: it has none of the owner's real boards; Boardkit runs there
 tested it by hand; (2) the owner's real Boardkit AND Linkkit data on
 gauntlet-home.vercel.app has a backup the owner can restore. Set up that
 backup first. The old home page (/) stays; revisit after phase 3.
-- IN PROGRESS 2026-10-19 (a side session, on branch `backup-page` from
-  `main`, worktree `../gauntlet-main-backup`): a backup page at
-  `/backup/` (`src/backup/`): one file with ALL of this site's browser
-  storage (every localStorage key + the IndexedDB databases: Boardkit's
-  images, the whiteboard's pages), and a restore from that file. Not
-  phase 2 work, so it goes to `main`.
+- BUILT 2026-10-19 (a side session; PROJECT.md DECISIONS): the backup
+  page gauntlet-home.vercel.app/backup/ (`src/backup/`). "Save a backup"
+  = one file with ALL of this site's browser storage (every localStorage
+  key + every IndexedDB database: Boardkit's pictures, the whiteboard's
+  pages); "Restore from a backup file…" puts it back after downloading
+  what's there. Not phase 2 work, so it is on `main`. Tests: unit
+  `src/backup/format.test.ts` (10), e2e `e2e/backup.e2e.ts` (3: restore
+  into an empty browser = byte-for-byte the same and the apps open it;
+  restore over changed data + undo with the safety copy; a wrong file is
+  refused). The e2e fail if the restore skips IndexedDB (checked).
+- WAITING FOR THE OWNER: they save their real backup (steps below; only
+  they can, their data lives only in their browser). Once they say it's
+  saved, condition (2) is met.
+- Owner's steps, one at a time: (1) open
+  gauntlet-home.vercel.app/backup/ in the browser you normally use;
+  (2) click "Save a backup" (the grey line should list your boards and
+  maps); (3) move the downloaded `gauntlet-backup-….json` from Downloads
+  to OneDrive. Optional proof it restores, without touching the real
+  data: (4) open an InPrivate window (Ctrl+Shift+N) at
+  gauntlet-home.vercel.app/backup/; (5) "Restore from a backup file…",
+  pick the file, "Replace with this backup"; (6) open /boardkit/ and
+  /linkkit/ in that same InPrivate window: your boards and maps are
+  there. Closing the InPrivate window forgets it all.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 

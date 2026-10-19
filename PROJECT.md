@@ -190,3 +190,17 @@ Changes to the plan, newest last. Each says what and why.
   `vercel project protection enable gauntlet-home --sso`. Boardkit
   (v0.0.95) runs on these previews, without automatic folder backups, so
   a preview's test boards never reach the real backup folder.
+- 2026-10-19 — The backup the owner asked for (entry above) is one page,
+  gauntlet-home.vercel.app/backup/, not each app's own export. "Save a
+  backup" downloads ONE file with everything this site keeps in the
+  browser: every localStorage key (Boardkit, Linkkit, the home page) and
+  every IndexedDB database (Boardkit's background pictures, the
+  whiteboard's pages). Why: the owner needs one file and one restore for
+  both apps; a copy of the storage itself also keeps what the apps'
+  exports leave out (Boardkit's trash, a Linkkit map linked to a board,
+  settings) and needs no change when an app adds a key. "Restore from a
+  backup file…" puts the browser back exactly as in the file, after
+  downloading a copy of what is there now (so a restore can be undone);
+  only a picked backup folder can't go in a file, and a restore leaves it
+  as it is. Boardkit's and Linkkit's own exports and folder backups stay
+  as they are.
