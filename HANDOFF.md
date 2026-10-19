@@ -5,7 +5,7 @@ file after every step.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
-## Current phase: 1 (the floor), DONE; waiting for the owner's "go to phase 2"
+## Current phase: 1 (the floor): fixing the owner's list above; phase 2 paused on branch `phase-2`
 
 The whiteboard is a tldraw app at /whiteboard (see DECISIONS). Code areas
 are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
@@ -45,6 +45,4 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
-- Owner tries phase 1 by hand and says "go to phase 2". Add the license
-  key when it arrives, re-run `npx playwright test` live (all 12 should
-  pass).
+- Fix the list at the top, item by item, ticking each off.

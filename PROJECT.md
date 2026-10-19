@@ -148,3 +148,10 @@ Changes to the plan, newest last. Each says what and why.
   it belongs to pages: full screen, read-only, arrow keys go page to page.
   Naming, jumping to and reordering pages use tldraw's own page menu (top
   left).
+- 2026-10-18 — tldraw key is a temporary evaluation key, expires Nov 1
+  2026; swap for the permanent hobby key when it arrives. It is stored only
+  in Vercel (project `gauntlet-home` → Settings → Environment Variables →
+  `VITE_TLDRAW_LICENSE_KEY`, Production and Preview), not in the code, so
+  swapping is one change: edit that value, then redeploy (Vite bakes it
+  into the build). Steps are in HANDOFF.md. The evaluation key shows no
+  "made with tldraw" watermark; the hobby key will.
