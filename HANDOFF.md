@@ -235,7 +235,7 @@ code). Test column: the e2e in `e2e/parity.e2e.ts` that checks it.
 | B2 | Drag a list by its header to reorder | `DragContext` | kept |
 | B3 | Marquee: drag on empty board area selects cards (Shift adds), click empty clears | `useMarqueeSelection` | kept |
 | B4 | Selection bar: count, Copy, Number emphasis, Highlight colour + style, ↺ reset, × let go | `SelectionBar` | kept |
-| B5 | Background colour / image (shown) | `BoardBackdrop` | kept (shown; set in Boardkit's toolbar, see W-ideas) |
+| B5 | Background colour / image | `BoardBackdrop` | NOT on the whiteboard (owner, 2026-10-19): no panel or background behind the lists there; Boardkit itself still shows it |
 | B6 | Read-only board saved by a newer Boardkit | `inert` rail | kept |
 
 **List header** (left to right)
@@ -291,9 +291,8 @@ switcher, theme switch, trash panel) and version badge.
 - W2 Download / copy a page (or selection) as PNG/PDF (Boardkit's copy and
   download buttons).
 - W3 Keyboard-shortcuts help listing the whiteboard's and the boards' keys.
-- W4 Board background (colour/image) is set from Boardkit's toolbar, which
-  isn't on the whiteboard: set it in /boardkit for now, or add it to the
-  whiteboard's style panel later.
+- W4 (dropped, owner 2026-10-19) Board backgrounds aren't shown on the
+  whiteboard at all; set and seen in /boardkit only.
 - W5 Restoring deleted cards/lists (Boardkit's Trash panel, in its header):
   use /boardkit for now.
 
@@ -343,7 +342,7 @@ the permanent hobby key when it arrives.** Added 2026-10-18.
 - `phase-2` has every phase 1 fix (merged from `main` 2026-10-18). If a
   phase 1 fix lands on `main` later, merge `main` into `phase-2` again.
 
-## Current phase: 2 (Boardkit as a live object), on branch `phase-2` — DONE 2026-10-19, waiting for the owner's hand test
+## Current phase: 2 (Boardkit as a live object), on branch `phase-2` — DONE 2026-10-19, hand test PASSED (owner), go-live prepared (see NOW)
 
 Phase 2 started 2026-10-18. Owner chose: the board object reads and writes
 Boardkit's own record (PROJECT.md, DECISIONS: three phase 2 entries). Code

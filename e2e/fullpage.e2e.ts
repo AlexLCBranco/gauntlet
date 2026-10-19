@@ -488,9 +488,19 @@ test("an image and a Boardkit board widget dragged past the edges stay inside th
   await expect(page.locator("[data-boardkit-board]")).toBeVisible();
   await page.waitForTimeout(600); // the board sizes itself
   const p = await pageBounds(page);
+  // One widget at a time (the other out of the way), each drag from the
+  // middle of the window (clear of the style panel on the left).
+  const home = await ed(page, (e, ids: string[]) => ids.map((id) => ({ id, type: e.getShape(id).type, x: e.getShape(id).x, y: e.getShape(id).y })), ids);
   for (const id of ids) {
+    await ed(page, (e, a: { id: string; home: { id: string; type: string }[] }) => void e.updateShapes(a.home.map((h) => (h.id === a.id ? { ...h, opacity: 1 } : { ...h, opacity: 0, isLocked: true }))), { id, home });
+    const self = home.find((h) => h.id === id)!;
     for (const edge of EDGES) {
-      await ed(page, (e, id: string) => void e.select(id), id);
+      await ed(page, (e, h: { id: string; type: string; x: number; y: number }) => {
+        const b = e.getShapePageBounds(h.id);
+        const v = e.getViewportPageBounds();
+        e.updateShape({ id: h.id, type: h.type, x: v.midX - b.w / 2 + 80, y: v.midY - b.h / 2 });
+        e.select(h.id);
+      }, self);
       const s = await boundsOf(page, id);
       const from = await middle(page, id);
       const { during, after } = await dragWatching(page, from, { x: from.x + edge.dx * 2000, y: from.y + edge.dy * 2000 }, () => boundsOf(page, id));
@@ -498,6 +508,7 @@ test("an image and a Boardkit board widget dragged past the edges stay inside th
       for (const d of during) expect(inside(d, p), `${id} ${edge.name} edge, mid-drag ${JSON.stringify(d)}`).toBe(true);
       expect(after).toEqual(during[during.length - 1]);
     }
+    await ed(page, (e, home: { id: string; type: string }[]) => void e.updateShapes(home.map((h) => ({ id: h.id, type: h.type, isLocked: false }))), home);
   }
 });
 
