@@ -42,29 +42,50 @@ where possible.
 
 KEEP: the yellow, and tldraw's colours in general (prettier than Excalidraw's).
 
-- [ ] 1. Font size: text can't be made smaller. Add sizes smaller than the
+- [x] 1. Font size: text can't be made smaller. Add sizes smaller than the
       current smallest.
-- [ ] 2. The colour/style menu doesn't go away. It should close when nothing
+- [x] 2. The colour/style menu doesn't go away. It should close when nothing
       is selected or on a click elsewhere, like Excalidraw.
-- [ ] 3. The page loads zoomed to 79% with empty space around it. On load the
+- [x] 3. The page loads zoomed to 79% with empty space around it. On load the
       page must fill the window exactly; that is "100%".
-- [ ] 4. No "start from scratch". Add "clear page" to the main menu (like
+- [x] 4. No "start from scratch". Add "clear page" to the main menu (like
       Excalidraw's "Reset the canvas"), with a confirmation before it wipes
       anything.
-- [ ] 5. Copy Excalidraw's layout: main menu top-left, tool toolbar
+- [x] 5. Copy Excalidraw's layout: main menu top-left, tool toolbar
       top-center, zoom + undo/redo bottom-left, page arrows bottom-right.
-- [ ] 6. Make the style panel (appears on selection: colours, stroke, fill,
+- [x] 6. Make the style panel (appears on selection: colours, stroke, fill,
       font…) look and work like Excalidraw's.
-- [ ] 7. At 100% you can still pan and see empty space outside the page.
+- [x] 7. At 100% you can still pan and see empty space outside the page.
       Seeing anything outside the page must be impossible. Panning is only
       allowed when zoomed in, and only within the page's edges.
-- [ ] 8. While dragging things, Excalidraw shows a rectangle outline around
+- [x] 8. While dragging things, Excalidraw shows a rectangle outline around
       what's moving. Add it.
-- [ ] 9. Shapes with text: only the outline can be coloured. Need the
+- [x] 9. Shapes with text: only the outline can be coloured. Need the
       BACKGROUND (fill) colour and the TEXT colour inside, set separately.
 - [ ] 10. CHECK (owner unsure): dragging may feel less smooth than
       Excalidraw. Compare; fix if there's a real difference, tell the owner
       if there isn't.
+
+How 1–9 were done (branch `phase-1-fixes`; e2e "fix N" tests in
+`e2e/whiteboard.e2e.ts`, each failing on the old live site):
+- 1, 6, 9, 2: `src/style/`. Our own style panel (Excalidraw's look, left
+  under the menu) replaces tldraw's. Font sizes XXS 10 / XS 14 / S 18 / M 24
+  / L 36 / XL 44 px, kept in `meta.fontStep` apart from the stroke width.
+  Background colour kept in `meta.fillColor` (tldraw fills with the outline
+  colour); text colour is tldraw's own `labelColor`. Shown only while
+  something is selected.
+- 3, 7: `src/pages/camera.ts`, `keepFilled.ts`. 100% = the page fills the
+  window edge to edge (no padding); never zoomed out past it; the view
+  never leaves the page. `fillWindow` replaces tldraw's `resetZoom`, which
+  toggled to its own 100% when already there.
+- 4: `src/whiteboard/MainMenu.tsx`: "Clear page" at the top of the main
+  menu, with a Cancel / Clear page dialog. Only the current page; Ctrl+Z
+  brings it back.
+- 5: `Whiteboard.tsx` components: tldraw's top-left undo row and actions
+  menu and top-right style panel removed; `ZoomUndo.tsx` bottom left; the
+  toolbar pinned to the window's centre; page arrows in the bottom-right
+  corner (above the watermark when there is one).
+- 8: `src/whiteboard/DragOutline.tsx`.
 
 That's the whole list (1–10). Fix them on top of the live phase 1 version
 (branch off `origin/main`, not `phase-2`), deploy phase 1 only to the live

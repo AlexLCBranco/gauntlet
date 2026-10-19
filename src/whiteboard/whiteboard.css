@@ -4,4 +4,10 @@ body { background: #101011; overflow: hidden; }
 .gauntlet-whiteboard { position: fixed; inset: 0; }
 
 /* The toolbar sits at the top, as in Excalidraw. */
-.gauntlet-top-toolbar { pointer-events: all; padding-top: 6px; display: flex; justify-content: center; }
+/* Centred on the window whatever sits at the left (the menu, and the
+   style panel under it). */
+.gauntlet-top-toolbar { pointer-events: all; position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 300; }
+
+/* Excalidraw's corners: zoom and undo/redo bottom left (tldraw centres
+   its bottom row). */
+.gauntlet-whiteboard .tlui-layout__bottom__main { justify-content: flex-start; }

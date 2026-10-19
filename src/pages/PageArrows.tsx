@@ -1,6 +1,7 @@
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { PageRecordType, useValue, type Editor, type TLPageId } from "tldraw";
 
+import { fillWindow } from "./keepFilled";
 import { nextPage, previousPage } from "./sheet";
 import "./pages.css";
 
@@ -14,7 +15,7 @@ function freshName(editor: Editor) {
 
 function go(editor: Editor, id: TLPageId) {
   editor.setCurrentPage(id);
-  editor.resetZoom();
+  fillWindow(editor);
 }
 
 /** "Next": the following page, or a new empty one on the last page (not
@@ -44,13 +45,13 @@ function startPresenting(editor: Editor) {
   editor.setCurrentTool("select");
   editor.selectNone();
   editor.updateInstanceState({ isFocusMode: true, isReadonly: true });
-  editor.resetZoom();
+  fillWindow(editor);
   document.documentElement.requestFullscreen?.().catch(() => {});
 }
 
 function stopPresenting(editor: Editor) {
   editor.updateInstanceState({ isFocusMode: false, isReadonly: false });
-  editor.resetZoom();
+  fillWindow(editor);
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
 
