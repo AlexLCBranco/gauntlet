@@ -3,79 +3,149 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## EXPERIMENT (2026-10-19): branch `fullscreen-page` (off `phase-2`) — the page fills the window — WAITING for the owner
+## NOW (2026-10-19): phase 2 READY TO GO LIVE — WAITING for the owner's OK to merge into `main` (gauntlet AND Boardkit)
 
-Owner's request: the whiteboard fills the whole browser window on every
-screen, like default tldraw: no grey bars, all of it real page. Rules: the
-page is the window's size and resizes with it; still pages (no infinite
-canvas, no scrolling past the edges, more room = next page); content keeps
-its place, a window smaller than the content zooms out just enough to show
-it all (never move/resize/delete content because of the window); existing
-content not lost or moved; toolbars, menu, zoom, arrows where they were.
-Experiment only: `phase-2` is untouched; nothing merged anywhere.
+Owner (2026-10-19): phase 2 passed the hand test; `fullscreen-page` kept,
+with fixes. This round, in order: (1) fullscreen fixes, merge into
+`phase-2`, delete the branch, test with the owner's real backup; (2) no
+board background on the whiteboard; (3) go-live prep, then STOP before
+merging anything into `main` of either repo. All done; nothing merged into
+any `main`. Preview: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
 
-Preview: https://gauntlet-home-git-fullscreen-page-alexlcbrancos-projects.vercel.app/whiteboard/
-(follows the latest push to `fullscreen-page`).
+NAMING (owner): things placed on the whiteboard (Boardkit boards, Linkkit
+maps, ...) are "widgets", not "stones", in comments, docs and here. Done
+in comments/docs; identifiers, the home page's UI text ("+ Add stone") and
+the embed protocol's message names (`stone:ready`, ...) keep their names.
 
-How it works (`src/pages/camera.ts` `pageForWindow`, `keepFilled.ts`):
-- The page box (`pageBox` atom) = the window's shape, at "100%" one page
-  unit per screen pixel; if the page's content reaches further right/down
-  (drawn in a bigger window, or an old 1920x1080 page), the page grows to
-  cover it and the camera zooms out just enough (zoom < 1), still filling
-  the window. Content is never moved for this. It is the camera's bounds
-  (`sizePage`), sized again on every window resize and page change;
-  content arriving from another tab (store source "remote") that reaches
-  past it grows it at once, so "keep inside the page" never pulls it in.
-- "Keep inside the page" (`keepInside.ts`), a new board's place
-  (`AddBoard.tsx`) and a board's size cap (`BoardShape.tsx`/`fit.ts`) use
-  `pageBox` instead of the fixed `SHEET` (now only the start value).
-- 100% = the page fills the window (as before); zoom out stops there.
-- Note: an old page that fit 1920x1080 now shows a bit bigger in a
-  1920-wide window than before (old 100% scaled the sheet to the window;
-  now 1 unit = 1 pixel unless the content needs less).
+### 1. Fullscreen, Excalidraw-style — DONE, in `phase-2` (merge `c08c514`; branch `fullscreen-page` deleted, local and GitHub)
+- The page (`pageBox`, `src/pages/camera.ts` `pageForWindow`,
+  `keepFilled.ts`) is at least the window's size at 100% and as big as its
+  content. A smaller window (e.g. snapped to half the screen) keeps the
+  zoom and the content's size and place on screen (tldraw keeps the camera
+  on a resize); you pan (hand tool, wheel, Space+drag) to the rest, and
+  panning stops at the page's edges. As big or bigger window: the page
+  fills it, no bars. Resizing never changes the zoom or moves content.
+  Zoom out stops where the page still covers the window (`coverZoom`, only
+  below 100% on a page bigger than the window both ways). A page opens at
+  100%, top-left. 100% = one page unit per screen pixel (the label is
+  `zoom x 100`, no longer relative to a "fill" zoom).
+- Edge wall (`src/pages/edgeWall.ts`): while dragging, the dragged item
+  (shape, picture, board widget, multi-selection) stops at the page's edge
+  and slides along it; a resize handle stops at the edge (free resize:
+  the handle is held at the edge; locked aspect, e.g. a board or picture:
+  the furthest size that fits); a line's end and a pen stroke stop at it
+  while drawing. tldraw has no hook for this: the select tool's Translating
+  and Resizing states are wrapped on the editor's instances, inside
+  tldraw's "ignore changes" block. `keepInside.ts` still pulls back
+  anything else (paste, arrow-key nudge) after the pointer is up.
+- Tests: `e2e/fullpage.e2e.ts` (13): no bars at 1915x910/1366x768; empty
+  page follows the window, zoom kept on every resize; 1915x910 -> half
+  width -> quarter: zoom 100%, content not moved/resized, still at the same
+  screen place, wheel/Space+drag/hand pan reach every edge and stop there,
+  back to full size = the original camera exactly; old 1920x1080 content
+  at 5 window sizes; two tabs; dragging past each of the four edges at
+  1915x910 and at half width (inside the page at every step, reaches the
+  edge, slides, no jump on the drop), a multi-selection (keeps its shape),
+  a picture and a board widget, resizing (rectangle on 3 handles, board,
+  multi-selection), drawing a rectangle/pen stroke/line past the edge.
+  Unit: `camera.test.ts`.
+- Linkkit maps aren't on the whiteboard yet (phase 3); the wall is generic
+  shape code, so they'll get it too.
 
-Bug found by the new tests and fixed: shapes touching the old sheet's
-right edge were nudged left by ~2e-13 units (the page size rounded a hair
-below the content, then "keep inside" moved them). `pageForWindow` now
-covers the content exactly; unit test "always covers the content exactly"
-(failed on the old code).
+### Real-data check — DONE (owner's backup, read at run time)
+`e2e/realdata.e2e.ts` restores the owner's backup file
+(C:\Users\alexc\Downloads\gauntlet-backup-2026-10-19-1606.json, read from
+that path at run time; never copied, committed or uploaded) through the
+`/backup/` page's "Restore from a backup file…" in a fresh local browser,
+then checks: the whiteboard (2 pages, 22 shapes incl. 4 pictures) at
+1915x910, half width and 1366x768: every shape's position, size and
+props unchanged, pictures load, 100%, no bars, the page covers every
+shape, panning reaches the far corner, the edge wall on a real shape
+(Ctrl+Z puts it back); all 11 Boardkit boards in Boardkit and as
+whiteboard widgets with every list and card (collapsed lists counted from
+their strip), records unchanged, the 1 background picture kept; all 18
+Linkkit maps load with every box, nothing lost. Skipped when the file
+isn't there or the site isn't localhost. Run:
+`node scripts/local-e2e.mjs gauntlet e2e/realdata.e2e.ts`.
+FINDINGS (Linkkit itself, the same on the live site, not caused by phase
+2; the owner may want a Linkkit task): opening a map in Linkkit saves
+position changes. (a) A bracket map is laid out again on every open (its
+`refitBracket`: positions and page size follow the window); the owner's
+"Untitled" bracket (u6GU4wE337, 15 boxes) moves every box even in a window
+the size it was saved in. (b) At 1366x768 one box of the tree map
+kqdHATDCm4 moves (y 774 -> 732). Nothing is lost. Also seen, expected: a
+map linked to a board takes box names from the board ("Snacks" -> the
+board's newer title).
 
-Tests: `e2e/fullpage.e2e.ts` (6): no bars at 1915x910 and 1366x768 (page
-covers every edge/corner, nothing scrolls, shapes drawn at the window's
-right/bottom edges stay there); resizing resizes the page (5 sizes, and
-zoomed in); a shape near the right edge at 1915x910 is whole on screen at
-1366x768 (resize and reload), zoomed out, never moved, also after an edit;
-existing content (shapes on 2 pages up to the old sheet's far corner + a
-Boardkit board, made in the same saved format) unchanged after reloads at
-4 window sizes; two tabs (big + laptop) never pull a far shape in.
-`e2e/whiteboard.e2e.ts` now runs in a 1920x1080 window (page = 1920x1080,
-same coordinates as before); its "not 16:9 → dark bars" test is removed
-(replaced by fullpage.e2e.ts). `boards.e2e.ts` checks the board against the
-page box. Unit: `camera.test.ts` `pageForWindow` (5).
-Results (2026-10-19, commit 48dc941): `npm test` 70 unit + 5 proxy pass,
-build + lint clean; `node scripts/local-e2e.mjs` 56 + Linkkit 14 pass; on
-the preview 53 pass, 3 can't run there (backup x2 + canvas "add stones":
-all make a Linkkit map, and Linkkit shows its "moved" notice on previews;
-the known preview limit). NEXT: wait for the owner. Not merged into
-`phase-2`, nothing live.
+### 2. Board background on the whiteboard — DONE (Boardkit `6fb82fd`, whiteboard branch)
+Boardkit `src/app/whiteboard/WhiteboardBoard.tsx`: no `BoardBackdrop`, no
+panel colour; the lists, the board title (gauntlet's `.gb-name`) and
+"+ Add a list" sit on the whiteboard's own background; a background set in
+Boardkit is ignored there; standalone Boardkit unchanged. The board is
+still selected/moved/resized as before (tldraw's hit area is the whole
+box). e2e in `e2e/boards.e2e.ts`: "no panel behind the lists ..." (failed
+on the old code: board background rgb(20,22,27)), "the board is selected
+and moved by pressing the empty space between its lists", "standalone
+Boardkit still shows a board's background".
 
-If the owner keeps it: merge `fullscreen-page` into `phase-2`. If not:
-delete the branch (owner's yes needed); `phase-2` never had it.
+### 3. Go-live prep — DONE, WAITING for the owner's OK
+- `main` merged into `phase-2` (`3da2016`): phase-2's own `/backups/` page
+  (`snapshot.ts`, `store.ts`, `BackupsPage.tsx`, `backups/`, its e2e) is
+  gone; the live `/backup/` page and its automatic backups are taken as
+  they are live (same database `gauntlet-auto-backups`, so backups kept
+  before are still listed). The whiteboard's main menu "Backups" opens
+  `/backup/`; the home page keeps its live "Backup" link. e2e
+  `auto-backup.e2e.ts` "the whiteboard keeps backups by itself too, its
+  Backups menu item opens /backup/, and backups kept before are still
+  listed there".
+- Boardkit: local folder back on `whiteboard`; Boardkit `main` merged into
+  it, v0.0.97 (`1a9f283`), pushed. It contains `main`, so merging it into
+  Boardkit `main` is a fast-forward. Boardkit build + 201 unit tests pass.
+  gauntlet pins `1a9f283` (package.json, codeload tarball).
+- Go-live steps, ONLY on the owner's OK: (1) Boardkit:
+  `git checkout main && git merge --ff-only whiteboard && git push` (live
+  Boardkit v0.0.97); (2) gauntlet: `git checkout main && git merge
+  phase-2 && git push` (live site); (3) run the whole e2e against
+  gauntlet-home.vercel.app; (4) tell the owner.
+- Test results: (2026-10-19, after the last merge and pin) `npm test` 80 unit + 5
+  proxy pass, build + lint clean; `node scripts/local-e2e.mjs` 71 + Linkkit
+  14 pass (incl. the 4 real-data tests). On the phase-2 preview 63 pass, 4
+  skipped (real data: local only), 3 can't run there (backup.e2e x2 and
+  canvas "add stones": they make a Linkkit map; the known preview limit),
+  1 failed and was fixed (`6493a08`: the picture/board drag test pressed the
+  wrong widget where the two overlapped; now passes on the preview and
+  locally). Boardkit: build, 201 unit pass; `npm audit` 7 high (shadcn CLI,
+  left as is).
 
-## NOW (2026-10-19): parity + backup DONE on `phase-2` — WAITING for the owner's re-test
+### Questions the owner asked (answered 2026-10-19)
+- "Card images" in the backup report: wrong. Boardkit cards have no
+  pictures. The pictures in Boardkit's IndexedDB (`boardImage:<id>`) are
+  BOARD BACKGROUND pictures (the owner has 1, on the board "example"). The
+  words came from phase-2's old `snapshot.ts` (now deleted); README and the
+  backup page now say "background pictures". The backup also keeps the
+  whiteboard's own pictures (tldraw's IndexedDB).
+- Is "100%" accurate? Yes now: 100% = one page unit per screen pixel
+  (`zoomPercent(zoom) = round(zoom x 100)`). Before, 100% meant "the page
+  fills the window", which on a page bigger than the window was really a
+  zoomed-out view.
 
-Status: every item below is done and pushed to `phase-2` (NOT live). Preview
-for the re-test: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
-(Backups page: same address, `/backups/`). Tests: `node scripts/local-e2e.mjs`
-51 + Linkkit 14 pass; `npm test` 68 pass; on the preview 45 pass, 3 can't
-run there (see "Preview limits"). NEXT: wait for the owner. Do not go live,
-do not start phase 3.
+### NEXT ROUND — recorded, NOT started (owner, 2026-10-19)
+- Create widgets from inside the whiteboard: the insert menu gets "New
+  board" and "New map" next to adding existing ones, so the owner never
+  has to leave the whiteboard to make one.
+- Boardkit: cards can have images (not in Boardkit today, not even on its
+  site). Build it in Boardkit itself, so it works on the site and inside
+  the whiteboard.
+- Boardkit `npm audit` (7 high, in the shadcn CLI): leave as is; revisit
+  only if we add new shadcn components.
 
-Preview limits (not bugs of this build): /boardkit on a preview is the LIVE
-Boardkit (main, v0.0.95), and Linkkit shows its "moved" notice on previews,
-so (a) parity "C11: a card dropped on the top edge ... Boardkit itself too"
-fails its Boardkit-itself half there, and (b) the two backup e2e that make
-a Linkkit map can't run there. All pass locally.
+Preview limits (not bugs of this build): /boardkit on a preview is the
+LIVE Boardkit (main), and Linkkit shows its "moved" notice on previews, so
+tests that make a Linkkit map can't run there; the real-data test runs
+only locally.
+
+
+## Earlier (2026-10-19): parity + backup on `phase-2` — hand test PASSED (owner)
 
 BOARDKIT CRASH FIX: LIVE (owner, 2026-10-19). Boardkit `main` `7815ec7`,
 v0.0.96: the top-edge drop fix (c4af6dc + 1e3a413) AND the drag-save fix
@@ -88,8 +158,8 @@ a reload showed everything, the card back in its old list). Parity
 on the phase-2 preview against the live Boardkit. Boardkit's `whiteboard`
 branch has the same changes; merge Boardkit `main` into it before its own
 merge (conflicts in DragContext.tsx/package.json: keep whiteboard's, v0.0.96+).
-Boardkit `npm audit`: 7 high, all in the shadcn CLI (dev tool), fix is a
-major upgrade (shadcn 1.0): owner to decide.
+(DONE 2026-10-19: merged, v0.0.97, see NOW 3.) Boardkit `npm audit`: 7
+high, all in the shadcn CLI (dev tool); owner: leave as is (NEXT ROUND).
 
 SPEED CHECK: `e2e/perf.e2e.ts`, Playwright project "perf", the teardown
 of the main suite (runs after every other e2e, also when some failed, one
@@ -99,21 +169,12 @@ failed alone too, the old limits sat on refresh steps. 10/10 isolated
 runs pass. Note: Boardkit's real components are heavier than the old
 copy (zoom p95 3 refreshes, was 2).
 
-BACKUP: LIVE on `main` since 2026-10-19 (owner shipped it on its own, via
-branch `backup-live`; 28 e2e pass live), see main's HANDOFF.md. `main` already had a /backup/ page (a side
-session, live): automatic backups were added to THAT page, same file
-format. When `main` is merged into `phase-2`: drop phase-2's own
-`src/backup/` version (snapshot.ts, store.ts, BackupsPage.tsx,
-/backups/, e2e/backup.e2e.ts) and take main's; also its links.
+BACKUP: phase-2 now uses main's live /backup/ page (see NOW, 3).
 
 Vercel now installs with `npm ci` (vercel.json): with plain `npm install`
 it kept a cached Boardkit (every pin says 0.0.95), so the preview ran old
 Boardkit code and still crashed.
 
-Backup and go-live: the backup only runs where the new build runs, so the
-owner's REAL data (gauntlet-home.vercel.app) gets backed up only once this
-build (or the backup part alone) is on `main`. Owner to choose: ship the
-backup alone to main first, or with phase 2 after the hand test.
 
 ### The owner's request (2026-10-19)
 
