@@ -64,7 +64,7 @@
 }
 .addPageRow { display: flex; justify-content: center; align-items: flex-start; flex: none; width: 100%; }
 
-/* ---------------------------------------------------------------- stones */
+/* ---------------------------------------------------------------- widgets */
 .stone {
   position: absolute;
   display: flex;

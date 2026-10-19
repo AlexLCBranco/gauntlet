@@ -6,7 +6,7 @@
 
 export type App = "boardkit" | "linkkit";
 
-/** Where a stone sits on its page: every number is a fraction of the page
+/** Where a widget sits on its page: every number is a fraction of the page
     (x, w of its width; y, h of its height). */
 export type Rect = { x: number; y: number; w: number; h: number };
 
@@ -56,7 +56,7 @@ export function resizeRect(r: Rect, edge: Edge, dx: number, dy: number): Rect {
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
-/** Where a new stone goes on a page: the left half, else the right half,
+/** Where a new widget goes on a page: the left half, else the right half,
     else stacked a little down and right of the last one. */
 export function placeNew(stones: Rect[]): Rect {
   const halves: Rect[] = [
@@ -137,7 +137,7 @@ export const removeStone = (layout: Layout, stoneId: string): Layout => ({
 
 export const addPage = (layout: Layout, id: string): Layout => ({ ...layout, pages: [...layout.pages, { id, stones: [] }] });
 
-/** Removes a page and its stones. The last page stays (emptied). */
+/** Removes a page and its widgets. The last page stays (emptied). */
 export function removePage(layout: Layout, pageIndex: number): Layout {
   if (layout.pages.length <= 1) return { ...layout, pages: [{ ...layout.pages[0], stones: [] }] };
   return { ...layout, pages: layout.pages.filter((_, i) => i !== pageIndex) };

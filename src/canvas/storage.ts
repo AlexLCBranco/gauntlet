@@ -2,8 +2,8 @@
  * The canvas's own keys. It reads the apps' keys (see `domain/sources.ts`)
  * but never writes them.
  *
- *   gauntlet:canvas   the layout (pages and stones)
- *   gauntlet:scroll   each stone's last scroll position inside its frame
+ *   gauntlet:canvas   the layout (pages and widgets)
+ *   gauntlet:scroll   each widget's last scroll position inside its frame
  */
 import { emptyLayout, readLayout, type Layout } from "../domain/layout";
 

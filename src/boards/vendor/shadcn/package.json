@@ -1,0 +1,7 @@
+{
+  "name": "shadcn",
+  "version": "4.21.4-css-only",
+  "private": true,
+  "description": "Only shadcn 4.21.4's dist/tailwind.css (MIT), which Boardkit's global.css imports as shadcn/tailwind.css. A stand-in for the shadcn CLI, whose dependencies carry npm audit warnings and which the whiteboard never runs.",
+  "exports": { "./tailwind.css": "./tailwind.css" }
+}

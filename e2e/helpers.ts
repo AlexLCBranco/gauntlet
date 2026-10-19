@@ -45,7 +45,7 @@ export const canvasEl = (page: Page) => page.getByTestId("canvas");
 export const stones = (page: Page) => page.locator("[data-stone-id]");
 export const pageEl = (page: Page, index: number) => page.locator(`section[data-page-index="${index}"]`);
 
-/** Adds the board or map named `name` to the current page; the new stone. */
+/** Adds the board or map named `name` to the current page; the new widget. */
 export async function addStone(page: Page, name: string): Promise<Locator> {
   const before = await stones(page).count();
   await page.getByRole("button", { name: "+ Add stone" }).click();
@@ -54,7 +54,7 @@ export async function addStone(page: Page, name: string): Promise<Locator> {
   return stones(page).nth(before);
 }
 
-/** The app inside a stone's frame. */
+/** The app inside a widget's frame. */
 export async function frameOf(stone: Locator): Promise<Frame> {
   await expect(stone.locator("iframe")).toHaveCount(1);
   return (await (await stone.locator("iframe").elementHandle())!.contentFrame())!;

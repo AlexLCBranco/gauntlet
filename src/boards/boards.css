@@ -1,0 +1,49 @@
+/* A Boardkit board on the whiteboard: drawn at natural size by Boardkit's
+   own components (boardkit.ts), scaled from the top-left corner. */
+.gb-scaled {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+/* The toolbar's Board picker (AddBoard.tsx). */
+.gb-picker {
+  position: fixed;
+  transform: translateX(-50%);
+  pointer-events: all; /* it sits in tldraw's in-front layer, which lets clicks through */
+  z-index: 500;
+  min-width: 220px;
+  max-height: 60vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border-radius: 10px;
+  background: #232329;
+  color: #e3e3e8;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.45);
+  font: 13px/1.3 system-ui, sans-serif;
+}
+
+.gb-picker-title { padding: 6px 8px; color: #9a9aa4; font-size: 12px; }
+.gb-picker-empty { padding: 6px 8px; }
+.gb-picker button {
+  border: 0;
+  border-radius: 6px;
+  padding: 8px;
+  text-align: left;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.gb-picker button:hover { background: rgb(255 255 255 / 0.08); }
+
+/* The board's name, above its lists (from Boardkit's board list). */
+.gb-name {
+  padding: 0 4px 6px;
+  color: #a3abb9;
+  font: 600 14px/1.3 system-ui, sans-serif;
+}

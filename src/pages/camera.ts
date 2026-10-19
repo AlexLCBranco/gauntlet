@@ -1,18 +1,38 @@
-// The camera on the fixed page. Pure, no tldraw; tested in camera.test.ts.
+// The camera on the page. Pure, no tldraw; tested in camera.test.ts.
 
 import type { Box } from "./sheet";
 
 type Size = { w: number; h: number };
+type Point = { x: number; y: number };
 
-/** "100%": the zoom at which the whole sheet fits the window, centred.
-    When the window isn't 16:9 the sheet fills it along one axis and dark
-    bars show at the sides (or top and bottom) of the other; at 100%
-    there is nothing to scroll to. */
-export function fillZoom(viewport: Size, sheet: Box): number {
-  return Math.min(viewport.w / sheet.w, viewport.h / sheet.h);
+/** The page for a window, as in Excalidraw: at least the window's size at
+    100% (one page unit per screen pixel), so a big window has no bars, and
+    always as big as what's on it (`contentEnd`, e.g. drawn in a bigger
+    window), so a small window shows part of the page and you pan to the
+    rest. The zoom never changes for this: zoomed out (`zoom` < 1, only
+    possible on a page bigger than the window) the page covers the window
+    at that zoom. Nothing on the page moves; the page only grows to cover
+    it. */
+export function pageForWindow(viewport: Size, contentEnd: Point, zoom = 1): Box {
+  const z = Math.min(1, zoom);
+  return { x: 0, y: 0, w: Math.max(viewport.w / z, contentEnd.x), h: Math.max(viewport.h / z, contentEnd.y) };
 }
 
-/** The zoom shown to the owner, as a whole percentage of "100%". */
-export function zoomPercent(zoom: number, base: number): number {
-  return Math.round((zoom / base) * 100);
+/** The furthest you can zoom out: the page still covers the whole window
+    (no bars). 1 when the page is the window's size in either direction. */
+export function coverZoom(viewport: Size, page: Box): number {
+  return Math.min(1, Math.max(viewport.w / page.w, viewport.h / page.h));
+}
+
+/** Steps for zoom in / zoom out: Excalidraw-like percentages, starting at
+    `min` (coverZoom) when the page lets you zoom out at all. */
+export function zoomSteps(min: number): number[] {
+  const steps = [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+  return [min, ...steps.filter((s) => s > min + 1e-6)];
+}
+
+/** The zoom shown to the owner, as a whole percentage: 100% is one page
+    unit per screen pixel. */
+export function zoomPercent(zoom: number): number {
+  return Math.round(zoom * 100);
 }

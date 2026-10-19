@@ -148,6 +148,28 @@ Changes to the plan, newest last. Each says what and why.
   it belongs to pages: full screen, read-only, arrow keys go page to page.
   Naming, jumping to and reordering pages use tldraw's own page menu (top
   left).
+- 2026-10-18 — Phase 2: a board on the whiteboard IS the Boardkit board
+  (owner's choice). The whiteboard object reads and writes the same
+  `boardkit:board:<id>` record /boardkit uses (same origin, merged by
+  `rev`), so an edit shows in both, a linked Linkkit map keeps following,
+  and Boardkit's folder backups keep covering it. "Moving my boards over"
+  therefore means placing them; nothing is copied, and /boardkit keeps
+  working. Deletes go to Boardkit's own trash.
+- 2026-10-18 — Phase 2: lasso and box select pick a whole board. Picking
+  single cards inside a board comes with phase 4, when cards become
+  things that move anywhere (section 1 asks for it; it needs the same work).
+- 2026-10-18 — Phase 2, how a board behaves. It is drawn at its natural
+  size (Boardkit's list widths, every card shown, no scrollbar) and scaled
+  as a whole: dragging a corner sets the scale, aspect kept. Its box follows
+  the content (more cards, taller board) but never past the sheet: a board
+  that would overflow shrinks to fit. Double-click (or Enter) edits it in
+  place: click a title to rename, drag a card to move it, x deletes it into
+  Boardkit's trash, "+ Add a card" adds (Enter keeps adding). Escape or a
+  click outside ends editing. While editing, Ctrl+Z / Ctrl+Shift+Z undo and
+  redo that board's card edits; outside, Ctrl+Z is the whiteboard's (moves,
+  resizes). Boardkit's pregame/postgame thots stay hidden, as Boardkit shows
+  them by default; background images aren't drawn (colour backgrounds are).
+  A full trash refuses a delete instead of forgetting the oldest card.
 - 2026-10-18 — tldraw key is a temporary evaluation key, expires Nov 1
   2026; swap for the permanent hobby key when it arrives. It is stored only
   in Vercel (project `gauntlet-home` → Settings → Environment Variables →

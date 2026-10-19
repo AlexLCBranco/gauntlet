@@ -3,6 +3,360 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
+## NOW (2026-10-19): phase 2 READY TO GO LIVE — WAITING for the owner's OK to merge into `main` (gauntlet AND Boardkit)
+
+Owner (2026-10-19): phase 2 passed the hand test; `fullscreen-page` kept,
+with fixes. This round, in order: (1) fullscreen fixes, merge into
+`phase-2`, delete the branch, test with the owner's real backup; (2) no
+board background on the whiteboard; (3) go-live prep, then STOP before
+merging anything into `main` of either repo. All done; nothing merged into
+any `main`. Preview: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
+
+NAMING (owner): things placed on the whiteboard (Boardkit boards, Linkkit
+maps, ...) are "widgets", not "stones", in comments, docs and here. Done
+in comments/docs; identifiers, the home page's UI text ("+ Add stone") and
+the embed protocol's message names (`stone:ready`, ...) keep their names.
+
+### 1. Fullscreen, Excalidraw-style — DONE, in `phase-2` (merge `c08c514`; branch `fullscreen-page` deleted, local and GitHub)
+- The page (`pageBox`, `src/pages/camera.ts` `pageForWindow`,
+  `keepFilled.ts`) is at least the window's size at 100% and as big as its
+  content. A smaller window (e.g. snapped to half the screen) keeps the
+  zoom and the content's size and place on screen (tldraw keeps the camera
+  on a resize); you pan (hand tool, wheel, Space+drag) to the rest, and
+  panning stops at the page's edges. As big or bigger window: the page
+  fills it, no bars. Resizing never changes the zoom or moves content.
+  Zoom out stops where the page still covers the window (`coverZoom`, only
+  below 100% on a page bigger than the window both ways). A page opens at
+  100%, top-left. 100% = one page unit per screen pixel (the label is
+  `zoom x 100`, no longer relative to a "fill" zoom).
+- Edge wall (`src/pages/edgeWall.ts`): while dragging, the dragged item
+  (shape, picture, board widget, multi-selection) stops at the page's edge
+  and slides along it; a resize handle stops at the edge (free resize:
+  the handle is held at the edge; locked aspect, e.g. a board or picture:
+  the furthest size that fits); a line's end and a pen stroke stop at it
+  while drawing. tldraw has no hook for this: the select tool's Translating
+  and Resizing states are wrapped on the editor's instances, inside
+  tldraw's "ignore changes" block. `keepInside.ts` still pulls back
+  anything else (paste, arrow-key nudge) after the pointer is up.
+- Tests: `e2e/fullpage.e2e.ts` (13): no bars at 1915x910/1366x768; empty
+  page follows the window, zoom kept on every resize; 1915x910 -> half
+  width -> quarter: zoom 100%, content not moved/resized, still at the same
+  screen place, wheel/Space+drag/hand pan reach every edge and stop there,
+  back to full size = the original camera exactly; old 1920x1080 content
+  at 5 window sizes; two tabs; dragging past each of the four edges at
+  1915x910 and at half width (inside the page at every step, reaches the
+  edge, slides, no jump on the drop), a multi-selection (keeps its shape),
+  a picture and a board widget, resizing (rectangle on 3 handles, board,
+  multi-selection), drawing a rectangle/pen stroke/line past the edge.
+  Unit: `camera.test.ts`.
+- Linkkit maps aren't on the whiteboard yet (phase 3); the wall is generic
+  shape code, so they'll get it too.
+
+### Real-data check — DONE (owner's backup, read at run time)
+`e2e/realdata.e2e.ts` restores the owner's backup file
+(C:\Users\alexc\Downloads\gauntlet-backup-2026-10-19-1606.json, read from
+that path at run time; never copied, committed or uploaded) through the
+`/backup/` page's "Restore from a backup file…" in a fresh local browser,
+then checks: the whiteboard (2 pages, 22 shapes incl. 4 pictures) at
+1915x910, half width and 1366x768: every shape's position, size and
+props unchanged, pictures load, 100%, no bars, the page covers every
+shape, panning reaches the far corner, the edge wall on a real shape
+(Ctrl+Z puts it back); all 11 Boardkit boards in Boardkit and as
+whiteboard widgets with every list and card (collapsed lists counted from
+their strip), records unchanged, the 1 background picture kept; all 18
+Linkkit maps load with every box, nothing lost. Skipped when the file
+isn't there or the site isn't localhost. Run:
+`node scripts/local-e2e.mjs gauntlet e2e/realdata.e2e.ts`.
+FINDINGS (Linkkit itself, the same on the live site, not caused by phase
+2; the owner may want a Linkkit task): opening a map in Linkkit saves
+position changes. (a) A bracket map is laid out again on every open (its
+`refitBracket`: positions and page size follow the window); the owner's
+"Untitled" bracket (u6GU4wE337, 15 boxes) moves every box even in a window
+the size it was saved in. (b) At 1366x768 one box of the tree map
+kqdHATDCm4 moves (y 774 -> 732). Nothing is lost. Also seen, expected: a
+map linked to a board takes box names from the board ("Snacks" -> the
+board's newer title).
+
+### 2. Board background on the whiteboard — DONE (Boardkit `6fb82fd`, whiteboard branch)
+Boardkit `src/app/whiteboard/WhiteboardBoard.tsx`: no `BoardBackdrop`, no
+panel colour; the lists, the board title (gauntlet's `.gb-name`) and
+"+ Add a list" sit on the whiteboard's own background; a background set in
+Boardkit is ignored there; standalone Boardkit unchanged. The board is
+still selected/moved/resized as before (tldraw's hit area is the whole
+box). e2e in `e2e/boards.e2e.ts`: "no panel behind the lists ..." (failed
+on the old code: board background rgb(20,22,27)), "the board is selected
+and moved by pressing the empty space between its lists", "standalone
+Boardkit still shows a board's background".
+
+### 3. Go-live prep — DONE, WAITING for the owner's OK
+- `main` merged into `phase-2` (`3da2016`): phase-2's own `/backups/` page
+  (`snapshot.ts`, `store.ts`, `BackupsPage.tsx`, `backups/`, its e2e) is
+  gone; the live `/backup/` page and its automatic backups are taken as
+  they are live (same database `gauntlet-auto-backups`, so backups kept
+  before are still listed). The whiteboard's main menu "Backups" opens
+  `/backup/`; the home page keeps its live "Backup" link. e2e
+  `auto-backup.e2e.ts` "the whiteboard keeps backups by itself too, its
+  Backups menu item opens /backup/, and backups kept before are still
+  listed there".
+- Boardkit: local folder back on `whiteboard`; Boardkit `main` merged into
+  it, v0.0.97 (`1a9f283`), pushed. It contains `main`, so merging it into
+  Boardkit `main` is a fast-forward. Boardkit build + 201 unit tests pass.
+  gauntlet pins `1a9f283` (package.json, codeload tarball).
+- Go-live steps, ONLY on the owner's OK: (1) Boardkit:
+  `git checkout main && git merge --ff-only whiteboard && git push` (live
+  Boardkit v0.0.97); (2) gauntlet: `git checkout main && git merge
+  phase-2 && git push` (live site); (3) run the whole e2e against
+  gauntlet-home.vercel.app; (4) tell the owner.
+- Test results: (2026-10-19, after the last merge and pin) `npm test` 80 unit + 5
+  proxy pass, build + lint clean; `node scripts/local-e2e.mjs` 71 + Linkkit
+  14 pass (incl. the 4 real-data tests). On the phase-2 preview 63 pass, 4
+  skipped (real data: local only), 3 can't run there (backup.e2e x2 and
+  canvas "add stones": they make a Linkkit map; the known preview limit),
+  1 failed and was fixed (`6493a08`: the picture/board drag test pressed the
+  wrong widget where the two overlapped; now passes on the preview and
+  locally). Boardkit: build, 201 unit pass; `npm audit` 7 high (shadcn CLI,
+  left as is).
+
+### Questions the owner asked (answered 2026-10-19)
+- "Card images" in the backup report: wrong. Boardkit cards have no
+  pictures. The pictures in Boardkit's IndexedDB (`boardImage:<id>`) are
+  BOARD BACKGROUND pictures (the owner has 1, on the board "example"). The
+  words came from phase-2's old `snapshot.ts` (now deleted); README and the
+  backup page now say "background pictures". The backup also keeps the
+  whiteboard's own pictures (tldraw's IndexedDB).
+- Is "100%" accurate? Yes now: 100% = one page unit per screen pixel
+  (`zoomPercent(zoom) = round(zoom x 100)`). Before, 100% meant "the page
+  fills the window", which on a page bigger than the window was really a
+  zoomed-out view.
+
+### NEXT ROUND — recorded, NOT started (owner, 2026-10-19)
+- Create widgets from inside the whiteboard: the insert menu gets "New
+  board" and "New map" next to adding existing ones, so the owner never
+  has to leave the whiteboard to make one.
+- Boardkit: cards can have images (not in Boardkit today, not even on its
+  site). Build it in Boardkit itself, so it works on the site and inside
+  the whiteboard.
+- Boardkit `npm audit` (7 high, in the shadcn CLI): leave as is; revisit
+  only if we add new shadcn components.
+
+Preview limits (not bugs of this build): /boardkit on a preview is the
+LIVE Boardkit (main), and Linkkit shows its "moved" notice on previews, so
+tests that make a Linkkit map can't run there; the real-data test runs
+only locally.
+
+
+## Earlier (2026-10-19): parity + backup on `phase-2` — hand test PASSED (owner)
+
+BOARDKIT CRASH FIX: LIVE (owner, 2026-10-19). Boardkit `main` `7815ec7`,
+v0.0.96: the top-edge drop fix (c4af6dc + 1e3a413) AND the drag-save fix
+(5d8d004 + 0108856: a card moved into another list and dropped there was
+shown moved but never saved), which that drop also needs to land. Crash
+on live before the fix: the whole Boardkit page went blank; nothing was
+lost but that one move (saves run 400 ms after each edit, outside React;
+a reload showed everything, the card back in its old list). Parity
+"C11: a card dropped on the top edge ... Boardkit itself too" now passes
+on the phase-2 preview against the live Boardkit. Boardkit's `whiteboard`
+branch has the same changes; merge Boardkit `main` into it before its own
+merge (conflicts in DragContext.tsx/package.json: keep whiteboard's, v0.0.96+).
+(DONE 2026-10-19: merged, v0.0.97, see NOW 3.) Boardkit `npm audit`: 7
+high, all in the shadcn CLI (dev tool); owner: leave as is (NEXT ROUND).
+
+SPEED CHECK: `e2e/perf.e2e.ts`, Playwright project "perf", the teardown
+of the main suite (runs after every other e2e, also when some failed, one
+worker; a filtered run also runs it). Limits in whole screen refreshes
+with half a refresh of margin (median <= 2, p95 <= 4 refreshes): it had
+failed alone too, the old limits sat on refresh steps. 10/10 isolated
+runs pass. Note: Boardkit's real components are heavier than the old
+copy (zoom p95 3 refreshes, was 2).
+
+BACKUP: phase-2 now uses main's live /backup/ page (see NOW, 3).
+
+Vercel now installs with `npm ci` (vercel.json): with plain `npm install`
+it kept a cached Boardkit (every pin says 0.0.95), so the preview ran old
+Boardkit code and still crashed.
+
+
+### The owner's request (2026-10-19)
+
+Owner's message (summary): the whiteboard board is a stripped-down copy.
+Rule from now on: FULL PARITY WITH BOARDKIT'S BOARDS, except Boardkit's
+app-level toolbar (undo/redo, zoom, search, shortcuts dialog, copy board,
+download board) — those stay off the board; any the whiteboard lacks go in
+"Whiteboard-level ideas" below. Specific failures: (1) a card disappears
+while dragged to another list; (2) Enter on an empty composer must add a
+blank card at once; (3) card buttons ▤ ○ → missing; (4) list header count,
+‹, ▤, ⧉, ○, × missing. Also: write the full control inventory here, make
+every item work, an automatic test per control, say why if something can't
+work. Then the backup of the real Boardkit + Linkkit data (automatic,
+simple restore, restore tested automatically). Work on `phase-2` only, do
+NOT go live, update the preview link, then STOP and tell the owner.
+
+Approach chosen (why: a copy will always drift; Boardkit's board is ~5,000
+lines of UI + a 1,100-line store with merge/recovery logic): the whiteboard
+runs **Boardkit's own code** — its `ListColumn`, `CardItem`, drag context,
+menus, store — imported as an npm git dependency from the Boardkit repo
+(branch `whiteboard`, pinned commit; NOT Boardkit's `main`, so the live
+Boardkit is untouched until go-live). Boardkit changes needed (on its
+`whiteboard` branch): selectors read the store from a React context
+(default: Boardkit's own store, so Boardkit itself is unchanged), and a way
+to open a given board in the store at runtime (embed mode, which already
+exists for one board per page). The board being edited uses Boardkit's real
+store; the others are drawn by the same components from read-only stores.
+`src/boards/record.ts`, `store.ts`, `looks.ts`, `BoardView.tsx` (the copy)
+are replaced.
+
+### Parity work — status
+
+DONE (on `phase-2` + Boardkit branch `whiteboard`, pinned in package.json
+as a codeload tarball URL — npm git deps resolve to git+ssh, which Vercel
+can't fetch):
+- The whiteboard board is Boardkit's own code (`src/boards/boardkit.ts`,
+  `BoardShape.tsx`; Boardkit `src/app/whiteboard/`). Old copy deleted.
+- Owner's 4 problems fixed: card follows the pointer while dragged (overlay
+  drawn at page top level, scaled; sortable transforms divided by scale),
+  Enter on empty composer adds blank card, card buttons ▤ ○ → ×, header
+  count ‹ ▤ ⧉ ○ × all present (Boardkit's own components).
+- List resize/auto-fit correct at any zoom (`boardScale`).
+- Boardkit bug found and fixed (also affects LIVE Boardkit, fix only on the
+  `whiteboard` branch so far): a card dragged into another list and dropped
+  without a final reorder (e.g. into an empty list) was shown moved but
+  never saved. Test `store/dragSave.test.ts` (failed before the fix).
+- Events: inside the board being edited, pointer/key events are marked
+  handled for tldraw (not stopped), right-click stays Boardkit's.
+- `e2e/parity.e2e.ts`: 15 tests; 11 pass on the dev server.
+
+DONE 2026-10-19 (second session), was "HALF-DONE / BROKEN":
+1. Clicks on Boardkit's menus, panels, dialogs and selection bar did
+   nothing / ended editing. Real cause (the old guess, tldraw's
+   `handleBlurOnPointerDown`, only runs with `?tldraw_preserve_focus`):
+   those are React portals, and React sends their events up the React
+   tree through the board into tldraw's canvas handlers; tldraw took
+   pointer capture on its canvas, so the menu item never got its click.
+   Fix: `portalEventsHandled` in `BoardShape.tsx` marks pointer/click/
+   touch events coming from outside the board's DOM as handled, so
+   tldraw's canvas skips them. NOT stopPropagation: React's also stops
+   the native event at React's root, which broke Boardkit's document
+   listeners (Escape in the customise panel, the drop of a dragged card).
+   Also: Escape that closes a Boardkit menu/panel no longer ends editing
+   (`boardkitOverlayOpen`).
+2. Esc during a pointer drag: Boardkit marks the lifted copy
+   `data-boardkit-lifted` (Boardkit `f5a650d`), `boardkitDragging()` checks it.
+3. Parity test 1 hovers the card before "Customise card".
+4. `e2e/boards.e2e.ts` uses Boardkit's DOM (`[data-boardkit-board]`,
+   `section[data-list-id]`, `article[data-card-id]`) and waits for saves.
+5. NEW BUG FOUND by (4) and fixed: dropping a card on the top edge of
+   another list's first card crashed the board ("Error", React #185): the
+   card flipped between the two lists on every render (nearest-centre
+   collision; on the scaled board moved cards measure off by the scale).
+   Boardkit `c4af6dc` (branch `whiteboard`, pinned): with a pointer, a card
+   crosses only into the list whose column the pointer is in. Changes
+   Boardkit itself too (on merge to its `main`: bump its version). Test:
+   parity "C11: a card dropped on the top edge ..." (whiteboard AND
+   Boardkit itself; failed on the old code).
+6. Dev tip: after `node scripts/sync-boardkit.mjs` restart the dev server
+   (Vite doesn't pick up node_modules changes despite the watch setting).
+   `local-e2e.mjs` joins its arguments into a shell line: use
+   `file:line`, not `-g "a|b"`.
+
+BACKUP: BUILT on `phase-2` (2026-10-19), NOT live. `src/backup/`
+(README row), page `/backups/` (link on the home page toolbar and in the
+whiteboard's main menu). Backs up every `boardkit:`/`linkkit:`/`gauntlet:`
+localStorage key + Boardkit's and Linkkit's IndexedDB `kv` stores (images,
+folder link) into IndexedDB `gauntlet-backups`: 3 s after opening `/`,
+`/whiteboard/` or `/backups/` and every 10 min, only if changed; keeps the
+newest 30 + one a day for 90 days. "Restore this" asks first, backs up the
+current data ("Before a restore"), then writes the backup back (records
+with a `rev` get rev above the current one so open tabs adopt them).
+Download as a .json file / "Restore from a file" (images inline; the
+folder link can't go in a file). It never creates the apps' databases.
+Tests: `src/backup/snapshot.test.ts` (10), `e2e/backup.e2e.ts` (5: auto
+backup on the home page, wipe, restore, Boardkit/Linkkit show it; file
+round trip; rev; no stray databases; links). It only protects data on an
+address where the new build runs: real data is protected once this is
+live (owner's go-live condition (2)). Original plan was: gauntlet `src/backup/` — automatic
+snapshots of every `boardkit:*`/`linkkit:*` localStorage key (and Boardkit's
+image IndexedDB) into a separate IndexedDB on each load of / and /whiteboard
+and every ~10 min while open (keep recent + one per day), a "Backups" page
+listing them with one "Restore this" button (it first snapshots the current
+state), download/restore from a file; e2e: seed, back up, wipe, restore,
+compare. Note: the folder at OneDrive/Desktop/boardkit-backups has only one
+file (2026-10-06): Boardkit's own folder auto-backup is not running for the
+owner. Then update the preview link and STOP for the owner's re-test.
+
+### Boardkit board inventory (source: Boardkit `whiteboard` branch, b80beb8)
+
+Every control, menu, shortcut and gesture on Boardkit's boards, lists and
+cards. "Kept" = on the whiteboard board (works, through Boardkit's own
+code). Test column: the e2e in `e2e/parity.e2e.ts` that checks it.
+
+**Board**
+| # | Control | Where in Boardkit | Whiteboard |
+|---|---|---|---|
+| B1 | "+ Add a list" composer (Enter adds, blank allowed, keeps open) | `BoardCanvas` AddListSlot | kept |
+| B2 | Drag a list by its header to reorder | `DragContext` | kept |
+| B3 | Marquee: drag on empty board area selects cards (Shift adds), click empty clears | `useMarqueeSelection` | kept |
+| B4 | Selection bar: count, Copy, Number emphasis, Highlight colour + style, ↺ reset, × let go | `SelectionBar` | kept |
+| B5 | Background colour / image | `BoardBackdrop` | NOT on the whiteboard (owner, 2026-10-19): no panel or background behind the lists there; Boardkit itself still shows it |
+| B6 | Read-only board saved by a newer Boardkit | `inert` rail | kept |
+
+**List header** (left to right)
+| # | Control | Whiteboard |
+|---|---|---|
+| L1 | keep/maybe/cut status badge (set in Linkkit) | kept |
+| L2 | list icon | kept |
+| L3 | title: click to rename (blank allowed) | kept |
+| L4 | card count (or number range when numbering continues) | kept |
+| L5 | ‹ Collapse list (and click the strip to expand; strip is a drop target) | kept |
+| L6 | ▤ thots for every card: hidden → pregame → postgame | kept |
+| L7 | ⧉ Copy list as image | kept |
+| L8 | ○ Customise list: colour (palette, custom picker, recent colours), icon, numbers format (plain/roman/letters/#/01/hidden), checks on/off, thots single/double, numbering restart/continue | kept |
+| L9 | × Delete list (asks first; goes to trash) | kept |
+| L10 | Right-click header (or strip): Collapse/Expand, Duplicate list, Continue numbering, Check circles, Just one thots box, Move/Copy list to another board, Delete list… (collapsed) | kept |
+| L11 | Right edge: drag to resize (Alt every list, Shift match), double-click to fit (Alt all, Shift copy width) | kept |
+| L12 | "+ Add a card" composer: Enter adds a card, **Enter on empty adds a blank card at once** and stays open | kept |
+| L13 | "Paste N cards" / × cancel paste (after Copy) | kept |
+| L14 | "List is full · 50 cards max" note | kept |
+
+**Card**
+| # | Control | Whiteboard |
+|---|---|---|
+| C1 | number (format + emphasis from list/card) | kept |
+| C2 | check circle: click cycles marks | kept |
+| C3 | keep/maybe/cut badge, cut cards faded | kept |
+| C4 | title: click to rename; right-click selected text → Move to thots | kept |
+| C5 | right-click card toggles its thots | kept |
+| C6 | thots row: ▾ label hides, ⇄ flips pregame/postgame, text editable, links clickable | kept |
+| C7 | → Move or copy card to another board (menu: board → list) | kept |
+| C8 | ▤ show/hide thots | kept |
+| C9 | ○ Customise card: colour, highlight colour + style, card type (normal/divider/note…), number emphasis | kept |
+| C10 | × Delete card (to trash; asks when trash is full) | kept |
+| C11 | Drag a card within / across lists, onto a collapsed strip; **the card follows the pointer the whole time**; Esc cancels | kept |
+
+**Keyboard** (Boardkit's shortcut registry, while the board is edited)
+| # | Keys | Whiteboard |
+|---|---|---|
+| K1 | Ctrl+Z / Ctrl+Shift+Z undo/redo board edits | kept |
+| K2 | Ctrl+C copy selected cards, Ctrl+V paste into list under pointer | kept |
+| K3 | Esc: clear selection, then copied cards (then, on the whiteboard, ends editing) | kept |
+| K4 | Card: arrows move focus, N / Shift+N new card below/above, E or F2 rename, T thots, Delete to trash | kept |
+| K5 | List header: ←/→ focus lists, ↓ first card, D duplicate, C collapse | kept |
+| K6 | Space + arrows: keyboard drag (dnd-kit) | kept |
+
+**Excluded (owner): Boardkit's app toolbar and header** — undo/redo
+buttons, zoom (− 100% +), search (Ctrl+K), keyboard-shortcuts dialog (?),
+copy board as image, download board (PNG/PDF); also the page header (board
+switcher, theme switch, trash panel) and version badge.
+
+### Whiteboard-level ideas (from the excluded Boardkit tools; for later, not built)
+- W1 Search across every board/map on the whiteboard (Boardkit's Ctrl+K).
+- W2 Download / copy a page (or selection) as PNG/PDF (Boardkit's copy and
+  download buttons).
+- W3 Keyboard-shortcuts help listing the whiteboard's and the boards' keys.
+- W4 (dropped, owner 2026-10-19) Board backgrounds aren't shown on the
+  whiteboard at all; set and seen in /boardkit only.
+- W5 Restoring deleted cards/lists (Boardkit's Trash panel, in its header):
+  use /boardkit for now.
+
 **Previews open without a Vercel login (2026-10-19, owner's request).**
 Phase 2 preview for the owner's hand test: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
 (it follows the latest push to `phase-2`). Vercel Authentication is off for
@@ -15,61 +369,9 @@ address: it has none of the owner's real boards; Boardkit runs there
 
 **Before phase 2 goes live (owner, 2026-10-19), BOTH:** (1) the owner has
 tested it by hand; (2) the owner's real Boardkit AND Linkkit data on
-gauntlet-home.vercel.app has a backup the owner can restore. Set up that
-backup first. The old home page (/) stays; revisit after phase 3.
-- BUILT 2026-10-19 (a side session; PROJECT.md DECISIONS): the backup
-  page gauntlet-home.vercel.app/backup/ (`src/backup/`). "Save a backup"
-  = one file with ALL of this site's browser storage (every localStorage
-  key + every IndexedDB database: Boardkit's pictures, the whiteboard's
-  pages); "Restore from a backup file…" puts it back after downloading
-  what's there. Not phase 2 work, so it is on `main`. Tests: unit
-  `src/backup/format.test.ts` (10), e2e `e2e/backup.e2e.ts` (3: restore
-  into an empty browser = byte-for-byte the same and the apps open it;
-  restore over changed data + undo with the safety copy; a wrong file is
-  refused). The e2e fail if the restore skips IndexedDB (checked).
-  LIVE on `main` (`5881bfd`): backup + whiteboard + canvas e2e, 25 pass
-  against gauntlet-home.vercel.app. `main` is now ahead of `phase-2`:
-  merge `main` into `phase-2` (only `src/backup/`, `backup/`, e2e, docs,
-  `vite.config.ts` input, `vercel.json` redirect; expect conflicts only in
-  HANDOFF.md/PROJECT.md/src/README.md/vite.config.ts: keep both sides).
-- AUTOMATIC BACKUPS (owner, 2026-10-19: "backup to live now, on its own"):
-  LIVE on `main` (`7787690`, merged from branch `backup-live` on the
-  owner's OK, 2026-10-19): all 28 e2e pass against gauntlet-home.vercel.app. Added to the /backup/ page (`src/backup/auto.ts`,
-  `policy.ts`; PROJECT.md DECISIONS), same file format. Owner's questions:
-  (a) WHERE: in this browser, IndexedDB database `gauntlet-auto-backups`
-  (plus a small note `gauntlet:auto-backup` in localStorage). Same
-  browser storage as the data: clearing the browser's data (or a new
-  computer) loses the backups too. Only "Save a backup" (a file kept in
-  OneDrive) protects against that; the page says so.
-  (b) QUOTA: the site has one quota, shared with Boardkit's pictures and
-  the whiteboard. Backups use at most 20% of it (oldest dropped first),
-  and none is kept if the site would pass 60%; boards and maps are in
-  localStorage, which has its own limit, so backups can't take their room.
-  A backup that can't be kept (too big, nearly full, or the browser
-  refuses the write) is skipped: banner on the page + note on /backup/;
-  Boardkit's saves never share a database or transaction with it. Tests:
-  `src/backup/policy.test.ts`; `e2e/auto-backup.e2e.ts` "with the
-  browser's storage nearly full ..." (real quota override of 10 MB, a
-  2.5 MB picture: no backup, the warning, Boardkit still saves a board and
-  a 1 MB picture) and "when the browser refuses to store a backup ...".
-  Checks: local 28 + Linkkit 14 e2e pass, 67 unit; on the branch preview
-  25 pass, 3 can't run there (they make a Linkkit map; Linkkit shows
-  "moved" on previews): backup.e2e x2, canvas.e2e x1, all pass locally.
-  After merging: run `BRIDGE_SITE=https://gauntlet-home.vercel.app npx
-  playwright test e2e/backup.e2e.ts e2e/auto-backup.e2e.ts e2e/canvas.e2e.ts e2e/whiteboard.e2e.ts`.
-- WAITING FOR THE OWNER: they save their real backup (steps below; only
-  they can, their data lives only in their browser). Once they say it's
-  saved, condition (2) is met.
-- Owner's steps, one at a time: (1) open
-  gauntlet-home.vercel.app/backup/ in the browser you normally use;
-  (2) click "Save a backup" (the grey line should list your boards and
-  maps); (3) move the downloaded `gauntlet-backup-….json` from Downloads
-  to OneDrive. Optional proof it restores, without touching the real
-  data: (4) open an InPrivate window (Ctrl+Shift+N) at
-  gauntlet-home.vercel.app/backup/; (5) "Restore from a backup file…",
-  pick the file, "Replace with this backup"; (6) open /boardkit/ and
-  /linkkit/ in that same InPrivate window: your boards and maps are
-  there. Closing the InPrivate window forgets it all.
+gauntlet-home.vercel.app has a backup the owner can restore. Backup BUILT
+on `phase-2` (see NOW); it protects the real data once it runs on main. The old home page (/) stays; revisit after
+phase 3.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
@@ -94,16 +396,118 @@ the permanent hobby key when it arrives.** Added 2026-10-18.
   push): all 10 whiteboard e2e pass live.
 
 **Branches (2026-10-18, owner's instruction):**
-- `main` = the live site (a push deploys it): phase 1 only, plus the
-  phase 1 fixes below, worked on as branch `phase-1-fixes` and pushed to
-  `main` when done.
-- `phase-2` = all phase 2 work (unfinished, paused). Vercel only makes a
-  Preview for it, never the live site. Never push phase 2 to `main` until
-  the owner says it may go live. It does NOT have the phase 1 fixes yet:
-  merging `main` into it is the first step when phase 2 resumes (see
-  "Next concrete step").
+- `main` = the live site (a push deploys it): phase 1 + its fixes only.
+- `phase-2` = all phase 2 work. Push it often (`git push origin phase-2`)
+  so nothing exists only on one computer. Vercel only makes a Preview for
+  it. NEVER push phase 2 to `main` until the owner says it may go live.
+- `phase-2` has every phase 1 fix (merged from `main` 2026-10-18). If a
+  phase 1 fix lands on `main` later, merge `main` into `phase-2` again.
 
-## Phase 1 fixes from the owner's hand test (2026-10-18) — ALL DONE, LIVE
+## Current phase: 2 (Boardkit as a live object), on branch `phase-2` — DONE 2026-10-19, hand test PASSED (owner), go-live prepared (see NOW)
+
+Phase 2 started 2026-10-18. Owner chose: the board object reads and writes
+Boardkit's own record (PROJECT.md, DECISIONS: three phase 2 entries). Code
+is in `src/boards/` (see `src/README.md`). All on branch `phase-2` (pushed);
+the live site has phase 1 only.
+
+### Phase 2 plan (the task list), with status
+1. DONE — Read PROJECT.md/HANDOFF.md, ask the owner where board data lives
+   (answer: stays shared with Boardkit).
+2. DONE — Pure board record ops + unit tests: `src/boards/record.ts`
+   (read Boardkit's `boardkit:board:<id>` v2 record, rename card/list, add,
+   move, trash, undo changes, card numbers; keeps every unknown field,
+   rev + 1 per write), `record.test.ts` (18 tests).
+3. DONE — Store: `src/boards/store.ts` (localStorage + `storage` events,
+   edits, per-board undo/redo), `store.test.ts` (5 tests).
+4. DONE — tldraw board shape + in-place editing: `BoardShape.tsx` (shape
+   `boardkit-board`, props boardId/w/h/scale, aspect-locked corner resize
+   scales the whole board, box follows content, never past the sheet:
+   `fit.ts` + `fit.test.ts`), `BoardView.tsx` (draws lists/cards in
+   Boardkit's dark look; double-click/Enter to edit: click title renames,
+   drag moves a card, x trashes, "+ Add a card"; Ctrl+Z/Ctrl+Shift+Z while
+   editing undo card edits), `boards.css`.
+5. DONE — Board picker on the toolbar: `AddBoard.tsx` (button "Board"
+   right of the toolbar, lists `boardkit:registry`, places the board in
+   the middle of the current page, selected). Wired in
+   `src/whiteboard/Whiteboard.tsx` (`shapeUtils`).
+6. IN PROGRESS — e2e, build, push, HANDOFF:
+   - DONE: `e2e/boards.e2e.ts` (5 tests: place board, corner scale + undo,
+     rename/add/move/delete + undo/redo + Boardkit shows it, Boardkit's
+     edits show live + deleted board notice, box select + lasso). All 5
+     passed against the dev server:
+     `BRIDGE_SITE=http://localhost:<port> npx playwright test e2e/boards.e2e.ts`.
+     `npm test` passes (66 unit + proxy tests), `tsc -b` clean.
+   - Before the pause `node scripts/local-e2e.mjs` passed in full (18 here
+     + 14 Linkkit).
+   - NO push to `main` (owner, 2026-10-18): phase 2 stays on `phase-2`.
+7. DONE (2026-10-18) — Merge `main` (phase 1 fixes + the two
+   re-test decisions) into `phase-2`:
+   - DONE: conflicts resolved (HANDOFF.md, PROJECT.md, src/README.md,
+     e2e/whiteboard.e2e.ts: kept both sides; Whiteboard.tsx:
+     `shapeUtils = [...styleShapeUtils, BoardShapeUtil]`).
+   - After the merge `tsc -b` clean, `npm test` 77 pass, whiteboard +
+     boards e2e 24 pass against the dev server (boards.e2e needed no
+     change). Committed and pushed to `phase-2`.
+8. DONE — Finish phase 2 against PROJECT.md section 6 ("resize from
+   the corners, edit cards in place, my existing boards move over"), fix
+   the known gaps below that block real use, then tell the owner what to
+   try by hand (PROJECT.md rule 3) and STOP.
+   - DONE: the Board button is now a toolbar tool (`boardToolItem` +
+     `BoardPicker` in `src/boards/AddBoard.tsx`), after Frame. It had sat
+     on its own row under the toolbar after the merge, over the style
+     panel, and went off-screen in narrow windows. The toolbar shows as
+     many tools as fit (`src/whiteboard/toolbarFit.ts`), the rest in its
+     overflow menu (Board then is `tools.more.board`). e2e "the Board
+     button is on the toolbar's row at any window width".
+   - DONE: a board shows Boardkit's card looks, so it reads like the
+     screenshot the owner pastes today: number formats (roman, letters,
+     #, 01) and emphasis (badge, ring, bold, muted), highlights (ring,
+     outline, dashed, double, bar, pulse), check circles in lists with
+     checks, keep / maybe / cut badges, cut cards and cut lists faded.
+     `src/boards/looks.ts` (pure, `looks.test.ts`), drawn in
+     `BoardView.tsx`, `boards.css`. Display only (checks can't be
+     clicked on the whiteboard yet). e2e "a board looks as in Boardkit".
+   - DONE: speed check, e2e "a big board (8 lists, 240 cards) stays
+     smooth": dragging it and zooming, median frame 16.7 ms (60 fps),
+     95th percentile 33 ms, no long tasks (dev server, headless Edge).
+   - DONE 2026-10-19: full `node scripts/local-e2e.mjs` passed (30 here +
+     14 Linkkit), `npm test` 88 pass, build clean, `npm audit` 0.
+     Vercel built the `phase-2` Preview (success). The Preview sits
+     behind Vercel's login and is its own origin, so it has none of the
+     owner's boards (they live in gauntlet-home.vercel.app's browser
+     storage); a board made at <preview>/boardkit/ shows there.
+   - Reported to the owner what to try by hand (2026-10-19). WAIT.
+9. DECIDED 2026-10-19 (PROJECT.md DECISIONS) — (a) goes live only after
+   the owner's hand test AND a restorable backup of the real Boardkit +
+   Linkkit data (to build next, before any go-live); (b) the home page
+   stays until after phase 3.
+10. DONE 2026-10-19 — Preview without login for the owner's hand test (see
+   top). Boardkit needed a change: it showed "moved" on every address but
+   gauntlet-home.vercel.app, so previews had no Boardkit. Boardkit
+   v0.0.95 (`85fa689`, its repo): `isPreviewAddress` runs the app on
+   `gauntlet-home-…-alexlcbrancos-projects.vercel.app`, automatic folder
+   backups off there (unit tests). After it deployed, boards + whiteboard
+   e2e passed on the preview (27, incl. the tldraw key); live still
+   phase 1 (whiteboard + canvas e2e 22 pass live, no Board button).
+11. NEXT — wait for the owner's hand test. Then the backup of the real
+   data (decision (a)), then go-live only on the owner's word.
+
+### Bugs found by the e2e and fixed (phase 2)
+- Escape in a card's text field also ended editing the board: tldraw
+  listens for keys natively on its container, before React. The field now
+  stops keys natively and reads Enter/Escape itself.
+- Escape after a text field or the x button went away did nothing: focus
+  fell to the page body, out of tldraw's reach. Fields hand focus back,
+  board buttons don't take focus, and Escape on the body ends editing.
+
+### Known gaps (phase 2)
+- Picking single cards with lasso/box select is deferred to phase 4
+  (DECISIONS).
+- Background images and thots aren't drawn (DECISIONS).
+
+## Phase 1 (done, live on `main`)
+
+### Phase 1 fixes from the owner's hand test (2026-10-18) — ALL DONE, LIVE
 
 The owner tested phase 1 by hand on the live site. Fix ALL of these before
 continuing phase 2. Tick each off here as it's fixed; add automatic tests
@@ -164,12 +568,7 @@ How 1–9 were done (branch `phase-1-fixes`; e2e "fix N" tests in
   corner (above the watermark when there is one).
 - 8: `src/whiteboard/DragOutline.tsx`.
 
-That's the whole list (1–10). Fix them on top of the live phase 1 version
-(branch off `origin/main`, not `phase-2`), deploy phase 1 only to the live
-site, then stop and tell the owner what to re-test.
-
-
-## Owner's two decisions after the re-test (2026-10-18) — DONE, LIVE
+### Owner's two decisions after the re-test (2026-10-18) — DONE, LIVE
 
 - [x] Non-16:9 windows: show the WHOLE page with dark bars at the sides; at
       100% no scrolling at all. `camera.ts` (`fillZoom` = min of the two
@@ -187,10 +586,8 @@ site, then stop and tell the owner what to re-test.
 - Before the push `node scripts/local-e2e.mjs` passed (22 here + 14
   Linkkit), `npm test` passes. Pushed to `main` (`7943a14`); after the
   deploy all 19 whiteboard e2e passed live.
-- Next: phase 2 resumes on branch `phase-2` (owner, 2026-10-18): merge
-  `main` into it, then continue phase 2. Phase 2 never goes to `main`.
 
-## Current phase: 1 (the floor): fixes 1–10 live, waiting for the owner's re-test; phase 2 paused on branch `phase-2`
+### Phase 1 basics
 
 The whiteboard is a tldraw app at /whiteboard (see DECISIONS). Code areas
 are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
@@ -226,13 +623,7 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
-- Fixes 1–10 are live (pushed to `main` 2026-10-18, `0121e3b`). Before the
-  push `node scripts/local-e2e.mjs` passed (21 here + 14 Linkkit); after
-  it every e2e passed live (21). The owner re-tests by hand; wait.
-- When the owner says phase 2 continues: merge `main` into `phase-2`.
-  Expect conflicts in HANDOFF.md, PROJECT.md, `src/whiteboard/Whiteboard.tsx`
-  (phase 2 adds `shapeUtils` and the Board button: combine with
-  `src/style/shapeUtils.ts` and the new components) and
-  `e2e/whiteboard.e2e.ts`. Then update `e2e/boards.e2e.ts` for the new
-  camera (100% = page fills the window; tests use a 16:9 window) and the
-  style panel over the top-left of the page, and run every e2e.
+- Phase 2 is done on `phase-2`; wait for the owner's hand test (preview
+  link at the top). Then the backup of the real data, then go-live only on
+  the owner's word. Do not start phase 3.
+- Swap in the hobby key when it arrives, before 2026-11-01 (see top).

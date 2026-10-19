@@ -8,11 +8,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * through the mouse and keyboard, as a person would.
  */
 
+/** The page in a 1920x1080 window: the page is the window's size (one
+    unit per pixel), so the coordinates below are also screen pixels. Other
+    window sizes: fullpage.e2e.ts. */
 const SHEET = { w: 1920, h: 1080 };
-
-// 16:9, like the sheet: at 100% the whole sheet is on screen, so the tests
-// can reach every part of it. Other window shapes are tested on their own.
-test.use({ viewport: { width: 1600, height: 900 } });
+test.use({ viewport: { width: 1920, height: 1080 } });
 
 type Pt = { x: number; y: number };
 type Bounds = { x: number; y: number; w: number; h: number };
@@ -100,11 +100,11 @@ async function panEverywhere(page: Page) {
   }
 }
 
-test("starts dark at 100%: the page fills a 16:9 window exactly, and nothing outside it ever shows", async ({ page }) => {
+test("starts dark at 100%: the page fills the window exactly, and nothing outside it ever shows", async ({ page }) => {
   await open(page);
   expect(await ed(page, (e) => e.user.getIsDarkMode())).toBe(true);
   await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
-  // A 16:9 window shows exactly the whole sheet.
+  // The window shows exactly the whole page.
   const fit = await view(page);
   expect(fit.x).toBeCloseTo(0, 0);
   expect(fit.y).toBeCloseTo(0, 0);
@@ -133,64 +133,6 @@ test("starts dark at 100%: the page fills a 16:9 window exactly, and nothing out
   // The percentage resets to 100% (the page filling the window).
   await page.getByTestId("zoom-percent").click();
   await expect.poll(() => view(page)).toEqual(fit);
-});
-
-/** Zoomed in, the view stays on the sheet: along an axis where the sheet is
-    wider than the window it never shows past the edge; along one where the
-    sheet is narrower it stays centred (dark bars on both sides). */
-function expectBounded(v: Bounds) {
-  if (v.w <= SHEET.w + 0.5) { expect(v.x).toBeGreaterThanOrEqual(-0.5); expect(v.x + v.w).toBeLessThanOrEqual(SHEET.w + 0.5); }
-  else expect(v.x + v.w / 2).toBeCloseTo(SHEET.w / 2, 0);
-  if (v.h <= SHEET.h + 0.5) { expect(v.y).toBeGreaterThanOrEqual(-0.5); expect(v.y + v.h).toBeLessThanOrEqual(SHEET.h + 0.5); }
-  else expect(v.y + v.h / 2).toBeCloseTo(SHEET.h / 2, 0);
-}
-
-test("in a window that isn't 16:9 the whole page shows, centred, with dark bars, nothing scrolls at 100%, and it stays so when the window changes", async ({ page }) => {
-  for (const size of [{ width: 1400, height: 900 }, { width: 900, height: 900 }, { width: 1800, height: 700 }]) {
-    await page.setViewportSize(size);
-    await open(page);
-    await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
-    const v = await view(page);
-    // The whole sheet is in view, touching the window on one axis.
-    expect(v.x).toBeLessThanOrEqual(0.5);
-    expect(v.y).toBeLessThanOrEqual(0.5);
-    expect(v.x + v.w).toBeGreaterThanOrEqual(SHEET.w - 0.5);
-    expect(v.y + v.h).toBeGreaterThanOrEqual(SHEET.h - 0.5);
-    expect(Math.abs(v.w - SHEET.w) < 0.5 || Math.abs(v.h - SHEET.h) < 0.5).toBe(true);
-    // Centred: the bars on either side are the same size.
-    const box = (await page.getByTestId("sheet").boundingBox())!;
-    expect(box.x).toBeCloseTo(size.width - (box.x + box.width), 0);
-    expect(box.y).toBeCloseTo(size.height - (box.y + box.height), 0);
-    // The bars are dark (dark theme by default).
-    const bar = await page.evaluate(([x, y]) => {
-      const el = document.elementsFromPoint(x, y).find((n) => n.classList.contains("gauntlet-outside"));
-      return el ? getComputedStyle(el).backgroundColor : null;
-    }, box.x > 2 ? [box.x / 2, size.height / 2] : [size.width / 2, box.y / 2 + 60]);
-    expect(bar).toBe("rgb(38, 38, 44)");
-    // At 100% nothing scrolls, whichever way.
-    const middle = await screen(page, { x: SHEET.w / 2, y: SHEET.h / 2 });
-    await page.mouse.move(middle.x, middle.y);
-    for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
-      for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
-      expect(await view(page)).toEqual(v);
-    }
-    // Zoomed in, panning stays on the sheet.
-    await page.keyboard.down("Control");
-    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -300);
-    await page.keyboard.up("Control");
-    await expect(page.getByTestId("zoom-percent")).not.toHaveText("100%");
-    for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
-      for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
-      expectBounded(await view(page));
-    }
-  }
-  // Resizing the window at 100% keeps the whole page in view.
-  await page.getByTestId("zoom-percent").click();
-  await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
-  await page.setViewportSize({ width: 1600, height: 900 });
-  await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
-  await expect.poll(async () => Math.round((await view(page)).w)).toBe(SHEET.w);
-  expectInsideSheet(await view(page));
 });
 
 test("Excalidraw's number keys pick the tools, and each draws its shape", async ({ page }) => {
@@ -525,12 +467,11 @@ test("fix 5: Excalidraw's layout: menu top-left, tools top-centre, zoom and undo
 
   // The undo/redo buttons work.
   const a = await rect(page, 300, 300);
-  // (tldraw keeps selection changes as steps too, so drawing a shape and
-  // pressing Escape takes two steps back, as with Ctrl+Z.)
-  for (let i = 0; i < 3 && (await shapeIds(page)).includes(a); i++) await page.getByRole("button", { name: "Undo" }).click();
-  expect(await shapeIds(page)).not.toContain(a);
-  for (let i = 0; i < 3 && !(await shapeIds(page)).includes(a); i++) await page.getByRole("button", { name: "Redo" }).click();
-  expect(await shapeIds(page)).toContain(a);
+  // One click each, as with Ctrl+Z (selection changes aren't steps).
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(() => shapeIds(page)).not.toContain(a);
+  await page.getByRole("button", { name: "Redo" }).click();
+  await expect.poll(() => shapeIds(page)).toContain(a);
 });
 
 test("fix 6: the style panel is Excalidraw's: on the left under the menu, labelled sections, layer and delete actions", async ({ page }) => {

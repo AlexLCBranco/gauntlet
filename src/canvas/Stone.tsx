@@ -10,7 +10,7 @@ export type Grab = "move" | Edge;
 type Props = {
   stone: StoneData;
   rect: Rect;
-  /** Stacking order among overlapping stones. */
+  /** Stacking order among overlapping widgets. */
   z: number;
   name: string;
   linked: boolean;
@@ -112,7 +112,7 @@ function Frame({ stone, name, onFrame, onMessage, onFrameFocus }: Props) {
       onFrame(stone.id, null);
       latest.current.onFrameFocus(stone.id, false);
     };
-    // The frame's address never changes for a stone.
+    // The frame's address never changes for a widget.
   }, [stone.id]);
 
   return <iframe ref={ref} className={styles.frame} title={name} />;

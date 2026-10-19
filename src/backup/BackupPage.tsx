@@ -119,7 +119,7 @@ export function BackupPage() {
     <main className="backup">
       <h1>Backup</h1>
       <p className="lead">
-        One file with everything this site keeps in this browser: your Boardkit boards (with their pictures and trash),
+        One file with everything this site keeps in this browser: your Boardkit boards (with their background pictures and trash),
         your Linkkit maps, the whiteboard and the home page.
       </p>
       <p className="here" data-testid="here">

@@ -143,3 +143,30 @@ test("when the browser refuses to store a backup, the page warns and Boardkit st
   expect(await kept(page)).toEqual([]);
   await renameInBoardkit(context, id, "ZZ saved while backups fail");
 });
+
+test("the whiteboard keeps backups by itself too, its Backups menu item opens /backup/, and backups kept before are still listed there", async ({ page, context }) => {
+  const id = await seedBoard(context);
+  // A backup kept before (here by the home page, as on the live site).
+  await page.goto("/");
+  await expect.poll(async () => (await kept(page)).length, { timeout: 15_000 }).toBe(1);
+  const earlier = (await kept(page))[0];
+  // Something changes; opening the whiteboard keeps a new backup.
+  await page.evaluate((id) => {
+    const rec = JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!);
+    rec.rev = (rec.rev ?? 0) + 1;
+    localStorage.setItem(`boardkit:board:${id}`, JSON.stringify(rec));
+  }, id);
+  await page.goto("/whiteboard/");
+  await page.waitForFunction(() => "editor" in window);
+  await expect.poll(async () => (await kept(page)).length, { timeout: 15_000 }).toBe(2);
+  expect((await kept(page)).map((b) => b.json)).toContain(earlier.json);
+
+  // Main menu → Backups → the backup page, both backups listed.
+  await page.getByTestId("main-menu.button").click();
+  await page.getByRole("menuitem", { name: "Backups" }).click();
+  await expect(page).toHaveURL(/\/backup\/$/);
+  await expect(page.getByRole("list", { name: "Automatic backups" }).getByRole("listitem")).toHaveCount(2);
+  // The home page links here too.
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Backup" })).toHaveAttribute("href", "/backup/");
+});
