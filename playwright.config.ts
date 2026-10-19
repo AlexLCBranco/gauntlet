@@ -20,4 +20,11 @@ export default defineConfig({
     channel: "msedge",
     viewport: { width: 1400, height: 900 },
   },
+  // Speed checks (perf.e2e.ts) measure frame times, so they run alone:
+  // after every other e2e has finished, even when some failed (a teardown
+  // project always runs), one at a time.
+  projects: [
+    { name: "e2e", testIgnore: "perf.e2e.ts", teardown: "perf" },
+    { name: "perf", testMatch: "perf.e2e.ts", workers: 1 },
+  ],
 });
