@@ -3,7 +3,16 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): phase 2 READY TO GO LIVE — WAITING for the owner's OK to merge into `main` (gauntlet AND Boardkit)
+## NOW (2026-10-19): phase 2 is LIVE (owner's OK, 2026-10-19)
+
+LIVE: Boardkit `main` fast-forwarded to `whiteboard` (`1a9f283`, v0.0.97,
+deployed); gauntlet `main` = `phase-2` merged (`f38e496`, deployed).
+`npx playwright test` against gauntlet-home.vercel.app: 67 pass, 4
+skipped (real data: local only). NEXT: the owner's next round (below);
+Linkkit position findings (Real-data check) are the owner's call. Branches
+`phase-2` and Boardkit `whiteboard` stay (not deleted).
+
+### How it got here: phase 2 go-live round
 
 Owner (2026-10-19): phase 2 passed the hand test; `fullscreen-page` kept,
 with fixes. This round, in order: (1) fullscreen fixes, merge into
