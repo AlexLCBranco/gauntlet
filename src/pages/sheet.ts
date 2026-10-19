@@ -11,11 +11,12 @@ export interface Box {
   h: number;
 }
 
-/** Every page is one sheet of this size, in page units (16:9, so a page is
-    also a slide). The camera can't leave it and nothing sits past its edge. */
+/** The page's size before the whiteboard is sized to the window (pages
+    used to be this fixed 16:9 sheet; content made then sits inside it).
+    The real page is `pageBox` (keepFilled.ts): the window's shape. */
 export const SHEET: Box = { x: 0, y: 0, w: 1920, h: 1080 };
 
-/** How far `b` must move to sit inside `sheet`. Something bigger than the
+/** How far `b` must move to sit inside `sheet` (the page). Something bigger than the
     sheet lines up with its top or left edge. */
 export function insideDelta(b: Box, sheet: Box = SHEET): Delta {
   const axis = (pos: number, size: number, min: number, room: number) => {

@@ -3,7 +3,7 @@
 // A board is drawn at its natural size (Boardkit's list widths, every card
 // shown) and scaled as a whole, like a picture: `scale` is the only size
 // the user sets (by dragging a corner). Its box on the page is natural size
-// x scale, so it grows when cards are added, but never past the sheet: a
+// x scale, so it grows when cards are added, but never past the page: a
 // board that would overflow shrinks to fit (nothing sits across two pages).
 
 import type { Box } from "../pages/sheet";

@@ -1,7 +1,7 @@
 import { useEditor, useValue } from "tldraw";
 
 import { zoomPercent } from "../pages/camera";
-import { fillWindow } from "../pages/keepFilled";
+import { zoomTo100 } from "../pages/keepFilled";
 import "./chrome.css";
 
 const keepFocus = (e: React.PointerEvent) => e.preventDefault();
@@ -15,10 +15,10 @@ const UNDO = "M7.5 10.833 4.167 7.5 7.5 4.167M4.167 7.5h9.166a3.333 3.333 0 0 1 
 const REDO = "M12.5 10.833 15.833 7.5 12.5 4.167M15.833 7.5H6.667a3.333 3.333 0 1 0 0 6.667H7.5";
 
 /** Bottom-left, as in Excalidraw: zoom out / "100%" / zoom in, then undo
-    and redo. 100% is the whole page in view; clicking it goes back. */
+    and redo. 100% is one page unit per screen pixel; clicking it goes back. */
 export function ZoomUndo() {
   const editor = useEditor();
-  const percent = useValue("zoom percent", () => zoomPercent(editor.getZoomLevel(), editor.getBaseZoom()), [editor]);
+  const percent = useValue("zoom percent", () => zoomPercent(editor.getZoomLevel()), [editor]);
   const canUndo = useValue("can undo", () => editor.getCanUndo(), [editor]);
   const canRedo = useValue("can redo", () => editor.getCanRedo(), [editor]);
   const readonly = useValue("readonly", () => editor.getIsReadonly(), [editor]);
@@ -37,9 +37,9 @@ export function ZoomUndo() {
           type="button"
           className="gauntlet-zoom-undo__percent"
           data-testid="zoom-percent"
-          title="Reset zoom: the whole page in view (Shift 0)"
+          title="Reset zoom to 100% (Shift 0)"
           onPointerDown={keepFocus}
-          onClick={run(() => fillWindow(editor))}
+          onClick={run(() => zoomTo100(editor))}
         >
           {percent}%
         </button>

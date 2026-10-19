@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { atom, createShapeId, useEditor, useValue, type Editor, type TLUiToolItem } from "tldraw";
 
+import { pageBox } from "../pages/keepFilled";
 import { SHEET } from "../pages/sheet";
 import { BOARD_TYPE, type BoardShape } from "./BoardShape";
 import { registryBoards, useRegistry } from "./registry";
@@ -90,8 +91,9 @@ export function BoardPicker() {
 function placeBoard(editor: Editor, boardId: string) {
   const id = createShapeId();
   const { w, h } = editor.getShapeUtil<BoardShape>(BOARD_TYPE).getDefaultProps();
+  const page = pageBox.get() ?? SHEET;
   editor.markHistoryStoppingPoint("add board");
-  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: SHEET.w / 2 - w / 2, y: SHEET.h / 2 - h / 2, props: { boardId } });
+  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: page.x + page.w / 2 - w / 2, y: page.y + page.h / 2 - h / 2, props: { boardId } });
   editor.setCurrentTool("select");
   editor.select(id);
   pickerOpen.set(false);

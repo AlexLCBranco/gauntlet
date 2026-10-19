@@ -1,26 +1,53 @@
 import { describe, expect, it } from "vitest";
 
-import { fillZoom, zoomPercent } from "./camera";
-import { SHEET } from "./sheet";
+import { coverZoom, pageForWindow, zoomPercent, zoomSteps } from "./camera";
 
-describe("fillZoom", () => {
-  it("fills a 16:9 window exactly", () => {
-    expect(fillZoom({ w: 1920, h: 1080 }, SHEET)).toBe(1);
-    expect(fillZoom({ w: 960, h: 540 }, SHEET)).toBe(0.5);
+describe("pageForWindow", () => {
+  it("is the window's size at 100% when everything fits", () => {
+    expect(pageForWindow({ w: 1915, h: 910 }, { x: 1800, y: 600 })).toEqual({ x: 0, y: 0, w: 1915, h: 910 });
+    expect(pageForWindow({ w: 1366, h: 768 }, { x: 0, y: 0 })).toEqual({ x: 0, y: 0, w: 1366, h: 768 });
   });
-  it("shows the whole sheet in a wide window (bars at the sides)", () => {
-    const z = fillZoom({ w: 1400, h: 600 }, SHEET);
-    expect(SHEET.h * z).toBe(600);
-    expect(SHEET.w * z).toBeLessThan(1400);
+  it("in a smaller window, stays as big as the content (the window shows part of it)", () => {
+    expect(pageForWindow({ w: 957, h: 910 }, { x: 1900, y: 500 })).toEqual({ x: 0, y: 0, w: 1900, h: 910 });
+    expect(pageForWindow({ w: 1915, h: 910 }, { x: 1920, y: 1080 })).toEqual({ x: 0, y: 0, w: 1920, h: 1080 });
   });
-  it("shows the whole sheet in a tall window (bars top and bottom)", () => {
-    const z = fillZoom({ w: 800, h: 900 }, SHEET);
-    expect(SHEET.w * z).toBe(800);
-    expect(SHEET.h * z).toBeLessThan(900);
+  it("covers the content exactly (or shapes on the edge get nudged inside)", () => {
+    for (const vw of [1915, 1366, 957, 2200])
+      for (const vh of [910, 768, 721])
+        for (const [ex, ey] of [[1920, 1080], [1920, 300], [100, 1080], [2345.7, 1999.3]]) {
+          const box = pageForWindow({ w: vw, h: vh }, { x: ex, y: ey });
+          expect(box.w).toBe(Math.max(vw, ex));
+          expect(box.h).toBe(Math.max(vh, ey));
+        }
+  });
+  it("zoomed out, still covers the window at that zoom (so a resize never has to change the zoom)", () => {
+    const box = pageForWindow({ w: 1915, h: 910 }, { x: 2000, y: 1500 }, 0.5);
+    expect(box).toEqual({ x: 0, y: 0, w: 3830, h: 1820 });
+    expect(coverZoom({ w: 1915, h: 910 }, box)).toBeLessThanOrEqual(0.5);
+  });
+  it("zoomed in, is still at least the window's size at 100%", () => {
+    expect(pageForWindow({ w: 1000, h: 800 }, { x: 10, y: 10 }, 3)).toEqual({ x: 0, y: 0, w: 1000, h: 800 });
+  });
+});
+
+describe("coverZoom", () => {
+  it("is 1 when the page is the window's size in either direction", () => {
+    expect(coverZoom({ w: 1915, h: 910 }, { x: 0, y: 0, w: 1915, h: 910 })).toBe(1);
+    expect(coverZoom({ w: 957, h: 910 }, { x: 0, y: 0, w: 1900, h: 910 })).toBe(1);
+  });
+  it("lets a page bigger both ways zoom out until one side fits", () => {
+    expect(coverZoom({ w: 960, h: 540 }, { x: 0, y: 0, w: 1920, h: 1620 })).toBeCloseTo(0.5, 10);
+  });
+});
+
+describe("zoomSteps", () => {
+  it("starts at the furthest zoom out, then Excalidraw-like steps", () => {
+    expect(zoomSteps(1)).toEqual([1, 1.5, 2, 3, 4, 6, 8]);
+    expect(zoomSteps(0.6)).toEqual([0.6, 0.75, 1, 1.5, 2, 3, 4, 6, 8]);
   });
 });
 
 describe("zoomPercent", () => {
-  it("is 100 when the page fills the window", () => expect(zoomPercent(0.79, 0.79)).toBe(100));
-  it("scales from there", () => expect(zoomPercent(1.185, 0.79)).toBe(150));
+  it("is 100 at one page unit per screen pixel", () => expect(zoomPercent(1)).toBe(100));
+  it("scales from there", () => expect(zoomPercent(1.5)).toBe(150));
 });
