@@ -1,3 +1,6 @@
+import { fileURLToPath } from "node:url";
+
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
@@ -31,9 +34,18 @@ function apps(mode: string): Plugin {
   };
 }
 
+const BOARDKIT_SRC = fileURLToPath(new URL("./node_modules/boardkit/src/", import.meta.url));
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), apps(mode)],
-  server: { port: 5180 },
+  plugins: [react(), tailwindcss(), apps(mode)],
+  // Boardkit (an npm git dependency, `src/boards/`) is imported as source:
+  // its own "@/..." imports point into it, and it is not pre-bundled.
+  // Its stylesheet imports shadcn's: src/boards/vendor/shadcn, a local
+  // css-only package.
+  resolve: { alias: [{ find: /^@\//, replacement: BOARDKIT_SRC }] },
+  optimizeDeps: { exclude: ["boardkit"] },
+  // Watches Boardkit too, for `scripts/sync-boardkit.mjs`.
+  server: { port: 5180, watch: { ignored: ["!**/node_modules/boardkit/**"] } },
   // Two pages: the older canvas at `/`, the whiteboard at `/whiteboard/`.
   // tldraw alone is ~1.7 MB (515 kB gzipped), loaded only by the whiteboard.
   build: {

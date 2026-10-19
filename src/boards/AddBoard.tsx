@@ -3,8 +3,7 @@ import { atom, createShapeId, useEditor, useValue, type Editor, type TLUiToolIte
 
 import { SHEET } from "../pages/sheet";
 import { BOARD_TYPE, type BoardShape } from "./BoardShape";
-import { registryBoards } from "./record";
-import { useRegistry } from "./store";
+import { registryBoards, useRegistry } from "./registry";
 
 const boardIcon = (
   <div>

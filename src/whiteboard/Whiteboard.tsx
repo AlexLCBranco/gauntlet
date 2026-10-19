@@ -28,6 +28,7 @@ import "tldraw/tldraw.css";
 
 import { BoardPicker, boardToolItem } from "../boards/AddBoard";
 import { BoardShapeUtil } from "../boards/BoardShape";
+import { BoardkitParts } from "../boards/BoardkitParts";
 import { LassoOverlay } from "../lasso/LassoOverlay";
 import { LassoTool } from "../lasso/LassoTool";
 import { fillWindow, keepFilled } from "../pages/keepFilled";
@@ -244,6 +245,7 @@ export function Whiteboard() {
         }}
       />
       {editor && <PageArrows editor={editor} />}
+      <BoardkitParts />
     </div>
   );
 }

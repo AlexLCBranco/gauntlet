@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import {
   BaseBoxShapeUtil,
   HTMLContainer,
@@ -12,9 +12,9 @@ import {
 } from "tldraw";
 
 import { SHEET } from "../pages/sheet";
-import { BoardView } from "./BoardView";
+import { WhiteboardBoard, useSelectionStore } from "./boardkit";
 import { fitBoard } from "./fit";
-import { redo, undo } from "./store";
+import { registryBoards, useRegistry } from "./registry";
 import "./boards.css";
 
 export const BOARD_TYPE = "boardkit-board";
@@ -96,29 +96,47 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     return () => ro.disconnect();
   }, [editor, shape.id]);
 
-  // Where the double-click was, so editing starts on the card under it.
-  const [startAt, setStartAt] = useState<{ x: number; y: number } | null>(null);
-  useLayoutEffect(() => {
-    if (!editing) return setStartAt(null);
-    const p = editor.inputs.getCurrentScreenPoint();
-    const vp = editor.getViewportScreenBounds();
-    setStartAt({ x: p.x + vp.x, y: p.y + vp.y });
-  }, [editing, editor]);
-
-  // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y while this board is being edited (and
-  // no text field has the keys) undo and redo its card edits.
+  // Editing began with a double-click on a card or list title: rename it,
+  // as a click on a title does in Boardkit.
   useEffect(() => {
     if (!editing) return;
+    const p = editor.inputs.getCurrentScreenPoint();
+    const vp = editor.getViewportScreenBounds();
+    const at = { x: p.x + vp.x, y: p.y + vp.y };
+    let frame = requestAnimationFrame(function find(tries = 0) {
+      const hit = document.elementFromPoint(at.x, at.y);
+      const root = content.current?.querySelector('[data-editing="true"]');
+      if (!root) {
+        if (tries < 10) frame = requestAnimationFrame(() => find(tries + 1));
+        return;
+      }
+      if (!hit || !root.contains(hit)) return;
+      const title = hit.closest("[data-card-title], h2")?.querySelector<HTMLElement>("button");
+      title?.click();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [editing, editor]);
+
+  // While editing, what happens inside the board is Boardkit's, not the
+  // whiteboard's. Keys: Delete must not delete the board, arrows must not
+  // nudge it. Presses: dragging a card must not move the board, a
+  // double-click must not start anything else. tldraw reads both on its
+  // container, before React; marking them handled makes it skip them,
+  // while they still reach the page (Boardkit's menus close on a press
+  // elsewhere, its drags follow the pointer there).
+  // Escape still ends editing, unless Boardkit has a use for it (a text
+  // field, a drag to cancel, a selection or copied cards to let go of).
+  useEffect(() => {
+    if (!editing) return;
+    const el = content.current;
+    if (!el) return;
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-      const t = e.target as HTMLElement | null;
-      if (t?.closest("textarea, input, [contenteditable='true']")) return;
-      const k = e.key.toLowerCase();
-      if (k !== "z" && k !== "y") return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (k === "y" || e.shiftKey) redo(boardId);
-      else undo(boardId);
+      if (e.key !== "Escape" || boardkitTakesEscape(e.target)) editor.markEventAsHandled(e);
+    };
+    const onPointer = (e: Event) => editor.markEventAsHandled(e);
+    // A drag can end anywhere, focus anywhere: Escape cancels it, and only that.
+    const onDragEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && boardkitDragging()) editor.markEventAsHandled(e);
     };
     // Keys that reach only the page (focus fell off a field or button that
     // went away) never reach tldraw: Escape still ends editing.
@@ -127,13 +145,20 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       editor.setEditingShape(null);
       editor.getContainer().focus({ preventScroll: true });
     };
-    window.addEventListener("keydown", onKey, true);
+    const pointerEvents = ["pointerdown", "pointerup", "click"] as const;
+    el.addEventListener("keydown", onKey);
+    el.addEventListener("keyup", onKey);
+    for (const type of pointerEvents) el.addEventListener(type, onPointer);
+    window.addEventListener("keydown", onDragEscape, true);
     window.addEventListener("keydown", onEscape);
     return () => {
-      window.removeEventListener("keydown", onKey, true);
+      el.removeEventListener("keydown", onKey);
+      el.removeEventListener("keyup", onKey);
+      for (const type of pointerEvents) el.removeEventListener(type, onPointer);
+      window.removeEventListener("keydown", onDragEscape, true);
       window.removeEventListener("keydown", onEscape);
     };
-  }, [editing, boardId, editor]);
+  }, [editing, editor]);
 
   return (
     <HTMLContainer id={shape.id} style={{ pointerEvents: editing ? "all" : "none", overflow: "visible" }}>
@@ -141,14 +166,31 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         ref={content}
         className="gb-scaled"
         style={{ transform: `scale(${scale || 1})`, visibility: scale ? "visible" : "hidden" }}
+        // A right-click inside the board being edited opens Boardkit's menu
+        // (or its thots), not the whiteboard's.
+        onContextMenu={editing ? (e) => e.stopPropagation() : undefined}
       >
-        <BoardView
-          boardId={boardId}
-          editing={editing}
-          startAt={startAt}
-          contentScale={() => editor.getZoomLevel() * (editor.getShape<BoardShape>(shape.id)?.props.scale || 1)}
-        />
+        <BoardName boardId={boardId} />
+        <WhiteboardBoard boardId={boardId} editing={editing} />
       </div>
     </HTMLContainer>
   );
+}
+
+/** A card or list of a board is being dragged (dnd-kit marks it pressed). */
+const boardkitDragging = () => document.querySelector('[data-boardkit-board] [aria-pressed="true"]') !== null;
+
+/** Whether Boardkit has a use for an Escape pressed on `target`. */
+function boardkitTakesEscape(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT" || el.isContentEditable)) return true;
+  if (boardkitDragging()) return true;
+  const { selected, clipboard } = useSelectionStore.getState();
+  return Object.keys(selected).length > 0 || clipboard.length > 0;
+}
+
+/** The board's name in Boardkit's list, kept current. */
+function BoardName({ boardId }: { boardId: string }) {
+  const name = registryBoards(useRegistry()).find((b) => b.id === boardId)?.name;
+  return name ? <div className="gb-name">{name}</div> : null;
 }

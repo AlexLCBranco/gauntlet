@@ -3,6 +3,163 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
+## NOW (2026-10-19): owner's hand test FAILED — full Boardkit parity, then backup
+
+Owner's message (summary): the whiteboard board is a stripped-down copy.
+Rule from now on: FULL PARITY WITH BOARDKIT'S BOARDS, except Boardkit's
+app-level toolbar (undo/redo, zoom, search, shortcuts dialog, copy board,
+download board) — those stay off the board; any the whiteboard lacks go in
+"Whiteboard-level ideas" below. Specific failures: (1) a card disappears
+while dragged to another list; (2) Enter on an empty composer must add a
+blank card at once; (3) card buttons ▤ ○ → missing; (4) list header count,
+‹, ▤, ⧉, ○, × missing. Also: write the full control inventory here, make
+every item work, an automatic test per control, say why if something can't
+work. Then the backup of the real Boardkit + Linkkit data (automatic,
+simple restore, restore tested automatically). Work on `phase-2` only, do
+NOT go live, update the preview link, then STOP and tell the owner.
+
+Approach chosen (why: a copy will always drift; Boardkit's board is ~5,000
+lines of UI + a 1,100-line store with merge/recovery logic): the whiteboard
+runs **Boardkit's own code** — its `ListColumn`, `CardItem`, drag context,
+menus, store — imported as an npm git dependency from the Boardkit repo
+(branch `whiteboard`, pinned commit; NOT Boardkit's `main`, so the live
+Boardkit is untouched until go-live). Boardkit changes needed (on its
+`whiteboard` branch): selectors read the store from a React context
+(default: Boardkit's own store, so Boardkit itself is unchanged), and a way
+to open a given board in the store at runtime (embed mode, which already
+exists for one board per page). The board being edited uses Boardkit's real
+store; the others are drawn by the same components from read-only stores.
+`src/boards/record.ts`, `store.ts`, `looks.ts`, `BoardView.tsx` (the copy)
+are replaced.
+
+### Parity work — status (2026-10-19, session cut off by usage limit)
+
+DONE (on `phase-2` + Boardkit branch `whiteboard`, pinned in package.json
+as a codeload tarball URL — npm git deps resolve to git+ssh, which Vercel
+can't fetch):
+- The whiteboard board is Boardkit's own code (`src/boards/boardkit.ts`,
+  `BoardShape.tsx`; Boardkit `src/app/whiteboard/`). Old copy deleted.
+- Owner's 4 problems fixed: card follows the pointer while dragged (overlay
+  drawn at page top level, scaled; sortable transforms divided by scale),
+  Enter on empty composer adds blank card, card buttons ▤ ○ → ×, header
+  count ‹ ▤ ⧉ ○ × all present (Boardkit's own components).
+- List resize/auto-fit correct at any zoom (`boardScale`).
+- Boardkit bug found and fixed (also affects LIVE Boardkit, fix only on the
+  `whiteboard` branch so far): a card dragged into another list and dropped
+  without a final reorder (e.g. into an empty list) was shown moved but
+  never saved. Test `store/dragSave.test.ts` (failed before the fix).
+- Events: inside the board being edited, pointer/key events are marked
+  handled for tldraw (not stopped), right-click stays Boardkit's.
+- `e2e/parity.e2e.ts`: 15 tests; 11 pass on the dev server.
+
+HALF-DONE / BROKEN (next concrete steps, in order):
+1. Clicking any Boardkit UI portaled to <body> (selection bar, menus,
+   customise panel, dialogs) ENDS EDITING: tldraw's
+   `handleBlurOnPointerDown` (TldrawEditor.mjs ~L350, body pointerdown not
+   inside the container → `editor.blur()` → `complete()`). Fix idea: a
+   capture-phase pointerdown listener on body (while editing) that, when the
+   target is inside a Boardkit portal (Radix `[data-radix-popper-content-wrapper]`,
+   `[role=dialog]`, `[role=alertdialog]`, Boardkit Popover, selection bar),
+   stops propagation; or portal Boardkit's overlays into the tldraw
+   container. This causes the B3 (selection bar) and likely L10 (Duplicate
+   list from menu) failures.
+2. Esc during a card drag ends editing: `boardkitDragging()` in
+   BoardShape.tsx checks `[aria-pressed=true]`, which pointer drags don't
+   set. Add `data-boardkit-lifted` on the DragOverlay wrapper in Boardkit's
+   DragContext and check that instead.
+3. parity test 1: hover the card before clicking "Customise card".
+4. Update `e2e/boards.e2e.ts` to the new DOM (`[data-boardkit-board]`,
+   `[data-card-id]`); it still uses the old `.gb-*` classes.
+5. Run full `node scripts/local-e2e.mjs`, `npm test`, `npm run build`.
+6. Dev tip: after `node scripts/sync-boardkit.mjs` restart the dev server
+   (Vite doesn't pick up node_modules changes despite the watch setting).
+
+NOT STARTED: the backup of the real Boardkit + Linkkit data (automatic,
+simple restore, restore e2e). Plan: gauntlet `src/backup/` — automatic
+snapshots of every `boardkit:*`/`linkkit:*` localStorage key (and Boardkit's
+image IndexedDB) into a separate IndexedDB on each load of / and /whiteboard
+and every ~10 min while open (keep recent + one per day), a "Backups" page
+listing them with one "Restore this" button (it first snapshots the current
+state), download/restore from a file; e2e: seed, back up, wipe, restore,
+compare. Note: the folder at OneDrive/Desktop/boardkit-backups has only one
+file (2026-10-06): Boardkit's own folder auto-backup is not running for the
+owner. Then update the preview link and STOP for the owner's re-test.
+
+### Boardkit board inventory (source: Boardkit `whiteboard` branch, b80beb8)
+
+Every control, menu, shortcut and gesture on Boardkit's boards, lists and
+cards. "Kept" = on the whiteboard board (works, through Boardkit's own
+code). Test column: the e2e in `e2e/parity.e2e.ts` that checks it.
+
+**Board**
+| # | Control | Where in Boardkit | Whiteboard |
+|---|---|---|---|
+| B1 | "+ Add a list" composer (Enter adds, blank allowed, keeps open) | `BoardCanvas` AddListSlot | kept |
+| B2 | Drag a list by its header to reorder | `DragContext` | kept |
+| B3 | Marquee: drag on empty board area selects cards (Shift adds), click empty clears | `useMarqueeSelection` | kept |
+| B4 | Selection bar: count, Copy, Number emphasis, Highlight colour + style, ↺ reset, × let go | `SelectionBar` | kept |
+| B5 | Background colour / image (shown) | `BoardBackdrop` | kept (shown; set in Boardkit's toolbar, see W-ideas) |
+| B6 | Read-only board saved by a newer Boardkit | `inert` rail | kept |
+
+**List header** (left to right)
+| # | Control | Whiteboard |
+|---|---|---|
+| L1 | keep/maybe/cut status badge (set in Linkkit) | kept |
+| L2 | list icon | kept |
+| L3 | title: click to rename (blank allowed) | kept |
+| L4 | card count (or number range when numbering continues) | kept |
+| L5 | ‹ Collapse list (and click the strip to expand; strip is a drop target) | kept |
+| L6 | ▤ thots for every card: hidden → pregame → postgame | kept |
+| L7 | ⧉ Copy list as image | kept |
+| L8 | ○ Customise list: colour (palette, custom picker, recent colours), icon, numbers format (plain/roman/letters/#/01/hidden), checks on/off, thots single/double, numbering restart/continue | kept |
+| L9 | × Delete list (asks first; goes to trash) | kept |
+| L10 | Right-click header (or strip): Collapse/Expand, Duplicate list, Continue numbering, Check circles, Just one thots box, Move/Copy list to another board, Delete list… (collapsed) | kept |
+| L11 | Right edge: drag to resize (Alt every list, Shift match), double-click to fit (Alt all, Shift copy width) | kept |
+| L12 | "+ Add a card" composer: Enter adds a card, **Enter on empty adds a blank card at once** and stays open | kept |
+| L13 | "Paste N cards" / × cancel paste (after Copy) | kept |
+| L14 | "List is full · 50 cards max" note | kept |
+
+**Card**
+| # | Control | Whiteboard |
+|---|---|---|
+| C1 | number (format + emphasis from list/card) | kept |
+| C2 | check circle: click cycles marks | kept |
+| C3 | keep/maybe/cut badge, cut cards faded | kept |
+| C4 | title: click to rename; right-click selected text → Move to thots | kept |
+| C5 | right-click card toggles its thots | kept |
+| C6 | thots row: ▾ label hides, ⇄ flips pregame/postgame, text editable, links clickable | kept |
+| C7 | → Move or copy card to another board (menu: board → list) | kept |
+| C8 | ▤ show/hide thots | kept |
+| C9 | ○ Customise card: colour, highlight colour + style, card type (normal/divider/note…), number emphasis | kept |
+| C10 | × Delete card (to trash; asks when trash is full) | kept |
+| C11 | Drag a card within / across lists, onto a collapsed strip; **the card follows the pointer the whole time**; Esc cancels | kept |
+
+**Keyboard** (Boardkit's shortcut registry, while the board is edited)
+| # | Keys | Whiteboard |
+|---|---|---|
+| K1 | Ctrl+Z / Ctrl+Shift+Z undo/redo board edits | kept |
+| K2 | Ctrl+C copy selected cards, Ctrl+V paste into list under pointer | kept |
+| K3 | Esc: clear selection, then copied cards (then, on the whiteboard, ends editing) | kept |
+| K4 | Card: arrows move focus, N / Shift+N new card below/above, E or F2 rename, T thots, Delete to trash | kept |
+| K5 | List header: ←/→ focus lists, ↓ first card, D duplicate, C collapse | kept |
+| K6 | Space + arrows: keyboard drag (dnd-kit) | kept |
+
+**Excluded (owner): Boardkit's app toolbar and header** — undo/redo
+buttons, zoom (− 100% +), search (Ctrl+K), keyboard-shortcuts dialog (?),
+copy board as image, download board (PNG/PDF); also the page header (board
+switcher, theme switch, trash panel) and version badge.
+
+### Whiteboard-level ideas (from the excluded Boardkit tools; for later, not built)
+- W1 Search across every board/map on the whiteboard (Boardkit's Ctrl+K).
+- W2 Download / copy a page (or selection) as PNG/PDF (Boardkit's copy and
+  download buttons).
+- W3 Keyboard-shortcuts help listing the whiteboard's and the boards' keys.
+- W4 Board background (colour/image) is set from Boardkit's toolbar, which
+  isn't on the whiteboard: set it in /boardkit for now, or add it to the
+  whiteboard's style panel later.
+- W5 Restoring deleted cards/lists (Boardkit's Trash panel, in its header):
+  use /boardkit for now.
+
 **Previews open without a Vercel login (2026-10-19, owner's request).**
 Phase 2 preview for the owner's hand test: https://gauntlet-home-git-phase-2-alexlcbrancos-projects.vercel.app/whiteboard/
 (it follows the latest push to `phase-2`). Vercel Authentication is off for
