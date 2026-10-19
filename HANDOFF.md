@@ -3,7 +3,39 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): phase 2 is LIVE (owner's OK, 2026-10-19)
+## NOW (2026-10-19): Linkkit opening is read-only (Linkkit v0.0.102)
+
+Owner's task: opening a map in Linkkit must never change or save box
+positions; bracket layout deterministic; window size never changes saved
+positions (a smaller window shows part of the map, as on the whiteboard).
+Fixed in Linkkit (its repo, `main`). Causes found (all three wrote on
+open, all three fixed):
+1. `MapCanvas` laid every saved bracket out again once per open
+   (`refitBracket`), page size from the window. Now a bracket is laid out
+   again only after an edit while it is open (a name, a result, rounds
+   hidden/shown), and always in the same room (`layoutRoom`: the content's
+   own size, top-left), so positions and page are the same in any window.
+2. The "keep a grown box on the page" effect treated every box as
+   "resized" the first time it was measured after opening, so any box past
+   the window's edge was pulled in and saved (14 of the owner's 18 maps at
+   half width; kqdHATDCm4 at 1366x768). Now only boxes the user changed or
+   added (`resizedByEdit`).
+3. A map linked to a board saved the board's newer names on open
+   ("Party": "Snacks" renamed in Boardkit). Now it shows them and stores
+   them with the next edit's save.
+Also: Linkkit now runs on previews of this site (`isPreviewAddress`, as
+Boardkit), with its automatic folder backups off there.
+Tests: real data `e2e/realdata.e2e.ts` "opening each Linkkit map at
+WxH changes no stored map, not one byte" (3 sizes; every map opened in
+Linkkit and in a frame, the bracket "Untitled" reopened 4 more times;
+failed on the old Linkkit at every size). Linkkit `e2e/readonly.e2e.ts`
+(throwaway bracket + tree, reload/reopen at 3 sizes, bracket re-laid out
+at half width = the wide layout; failed on the old code). Unit:
+Linkkit `page.test.ts`, `persistLinked.test.ts`, `address.test.ts`.
+Seen, not fixed: at 957 px wide Linkkit's toolbar "+" button covers the
+"Switch map" button (clicks land on "+").
+
+## Earlier (2026-10-19): phase 2 is LIVE (owner's OK, 2026-10-19)
 
 LIVE: Boardkit `main` fast-forwarded to `whiteboard` (`1a9f283`, v0.0.97,
 deployed); gauntlet `main` = `phase-2` merged (`f38e496`, deployed).
@@ -73,11 +105,11 @@ shape, panning reaches the far corner, the edge wall on a real shape
 (Ctrl+Z puts it back); all 11 Boardkit boards in Boardkit and as
 whiteboard widgets with every list and card (collapsed lists counted from
 their strip), records unchanged, the 1 background picture kept; all 18
-Linkkit maps load with every box, nothing lost. Skipped when the file
+Linkkit maps open without one byte of stored data changing (see NOW).
+Skipped when the file
 isn't there or the site isn't localhost. Run:
 `node scripts/local-e2e.mjs gauntlet e2e/realdata.e2e.ts`.
-FINDINGS (Linkkit itself, the same on the live site, not caused by phase
-2; the owner may want a Linkkit task): opening a map in Linkkit saves
+FINDINGS (FIXED 2026-10-19, see NOW): opening a map in Linkkit saved
 position changes. (a) A bracket map is laid out again on every open (its
 `refitBracket`: positions and page size follow the window); the owner's
 "Untitled" bracket (u6GU4wE337, 15 boxes) moves every box even in a window
@@ -148,9 +180,10 @@ Boardkit still shows a board's background".
 - Boardkit `npm audit` (7 high, in the shadcn CLI): leave as is; revisit
   only if we add new shadcn components.
 
-Preview limits (not bugs of this build): /boardkit on a preview is the
-LIVE Boardkit (main), and Linkkit shows its "moved" notice on previews, so
-tests that make a Linkkit map can't run there; the real-data test runs
+Preview limits (not bugs of this build): /boardkit and /linkkit on a
+preview are the LIVE Boardkit and Linkkit (each one's `main`); Linkkit
+runs on previews since v0.0.102 (it showed its "moved" notice before, so
+tests that make a Linkkit map couldn't run there); the real-data test runs
 only locally.
 
 

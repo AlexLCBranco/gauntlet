@@ -247,65 +247,61 @@ test("real data: every Boardkit board loads in Boardkit and as a whiteboard widg
   expect(pictures).toBe(filePictures);
 });
 
-// Linkkit itself (standalone, the same on the live site; phase 2 doesn't
-// change Linkkit or put maps on the whiteboard yet) moves boxes when a map
-// is opened, and saves that: a bracket map is laid out again on every open
-// (its `refitBracket`: box positions and page size follow the window),
-// and in a window smaller than the map's page a tree map's box can be
-// nudged (seen at 1366x768). Reported to the owner (HANDOFF.md). So this
-// checks nothing is LOST (every box, name, arrow, player, setting), and that
-// no position changes at all in a 1920 window except a bracket's layout.
-const LAYOUT = new Set(["page"]);
-const withoutLayout = (m: MapRec["map"] & { kind?: string }, all: boolean) =>
-  !all && m.kind !== "bracket"
-    ? m
-    : { ...Object.fromEntries(Object.entries(m).filter(([k]) => !LAYOUT.has(k))), nodes: Object.fromEntries(Object.entries(m.nodes).map(([k, n]) => [k, { ...(n as object), x: 0, y: 0 }])) };
+// Opening a map is read-only (owner, 2026-10-19): Linkkit must never move
+// or save anything just because a map was opened or the window has a size.
+// Every map is opened in Linkkit itself (as the map open last, the way a
+// reload or the map menu brings it up) and in a whiteboard frame
+// (`?embed=1`), at each window size; after each open every stored map is
+// byte for byte what the backup holds. The bracket "Untitled" is opened
+// again 4 times (2 in Linkkit, 2 in a frame) after the others. "Party" is
+// linked to a board renamed since ("Snacks"): it shows the board's name but
+// may not store it on open either.
+const mapKeys = (page: Page) =>
+  page.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith("linkkit:map:")).map((k) => [k, localStorage.getItem(k)!])));
 
-for (const [size, strict] of [[{ width: 1920, height: 1080 }, true], [{ width: 1366, height: 768 }, false]] as const)
-test(`real data: every Linkkit map loads with all its boxes at ${size.width}x${size.height}; nothing lost`, async ({ page }) => {
+async function openMap(page: Page, id: string, nodes: number, how: "app" | "embed") {
+  if (how === "app") {
+    await page.goto("/backup/");
+    await page.evaluate((id) => localStorage.setItem("linkkit:active", id), id);
+    await page.goto("/linkkit/");
+  } else {
+    await page.goto(`/linkkit/?embed=1&id=${encodeURIComponent(id)}`);
+  }
+  await expect(page.locator("[data-ready]")).toBeVisible({ timeout: 15_000 });
+  if (nodes > 0) await expect.poll(() => page.locator("[data-box-id]").count(), { message: `map ${id}` }).toBeGreaterThan(0);
+  // Longer than Linkkit's save delay (400 ms) and a tidy's glide.
+  await page.waitForTimeout(1_500);
+}
+
+for (const size of SIZES)
+test(`real data: opening each Linkkit map at ${size.width}x${size.height} changes no stored map, not one byte`, async ({ page }) => {
   const b = backup();
+  const stored = Object.fromEntries(Object.entries(b.localStorage).filter(([k]) => k.startsWith("linkkit:map:")));
   await page.setViewportSize(size);
   await restore(page, b);
   const registry = JSON.parse(b.localStorage["linkkit:registry"]) as { maps: { id: string; name: string }[] };
-  expect(registry.maps.length).toBeGreaterThan(0);
-  for (const { id, name } of registry.maps) {
-    const m = (JSON.parse(b.localStorage[`linkkit:map:${id}`]) as MapRec).map;
-    await page.goto(`/linkkit/?embed=1&id=${encodeURIComponent(id)}`);
-    const nodes = Object.keys(m.nodes).length;
-    if (nodes === 0) {
-      // An empty map: it opens (its start hint shows), with no boxes.
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(1_000);
-      expect(await page.locator("[data-box-id]").count(), `map ${name}`).toBe(0);
-      continue;
+  expect(registry.maps.length).toBe(18);
+  const nodesOf = (id: string) => Object.keys((JSON.parse(b.localStorage[`linkkit:map:${id}`]) as MapRec).map.nodes).length;
+  const bracket = "u6GU4wE337";
+  const opens = [
+    ...registry.maps.flatMap(({ id }) => [[id, "app"], [id, "embed"]] as const),
+    [bracket, "app"], [registry.maps[0].id, "app"], [bracket, "app"], [bracket, "embed"], [bracket, "embed"],
+  ] as const;
+  const changed = new Set<string>();
+  for (const [id, how] of opens) {
+    await openMap(page, id, nodesOf(id), how);
+    if (how === "app" || id === bracket) {
+      // Every box is there (a map that hides cut or collapsed boxes shows fewer).
+      const m = (JSON.parse(b.localStorage[`linkkit:map:${id}`]) as MapRec).map;
+      if (!m.hideCut && !(m.collapsed?.length ?? 0) && (m as { kind?: string }).kind !== "bracket")
+        await expect.poll(() => page.locator("[data-box-id]").count(), { message: `map ${id}` }).toBe(nodesOf(id));
     }
-    await expect(page.locator("[data-box-id]").first(), `map ${name}`).toBeVisible({ timeout: 15_000 });
-    const shown = () => page.locator("[data-box-id]").count();
-    if (m.hideCut || (m.collapsed?.length ?? 0) > 0) await expect.poll(shown, { message: `map ${name}` }).toBeGreaterThan(0);
-    else await expect.poll(shown, { message: `map ${name}` }).toBe(nodes);
-  }
-  const after = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith("linkkit:map:")).map((k) => [k, localStorage.getItem(k)!])));
-  for (const k of Object.keys(b.localStorage).filter((k) => k.startsWith("linkkit:map:"))) {
-    expect(after[k], k).toBeDefined();
-    // Settings Linkkit fills in with their defaults when it saves a map
-    // written by an older Linkkit (arrow and label style) aren't a change.
-    const was = { arrowStyle: "straight", labelStyle: "linkkit", ...(JSON.parse(b.localStorage[k]) as MapRec).map };
-    const now = { arrowStyle: "straight", labelStyle: "linkkit", ...(JSON.parse(after[k]) as MapRec).map };
-    // A map linked to a Boardkit board takes its boxes' names from the
-    // board's lists and cards when it opens (Linkkit's bridge): a name may
-    // change, but only to a title on that board.
-    const linked = (was as { linkedBoard?: string }).linkedBoard;
-    if (linked) {
-      const board = (JSON.parse(b.localStorage[`boardkit:board:${linked}`]) as BoardRec).board;
-      const titles = new Set([...Object.values(board.lists), ...Object.values(board.cards)].map((x) => (x as { title: string }).title));
-      for (const [id, n] of Object.entries(now.nodes) as [string, { name: string }][]) {
-        const old = (was.nodes as Record<string, { name: string }>)[id];
-        if (old && old.name !== n.name) {
-          expect(titles.has(n.name), `${k}: box renamed to a title not on its board`).toBe(true);
-          n.name = old.name;
-        }
-      }
+    // Each map changed is reported once, at the open that changed it.
+    const now = await mapKeys(page);
+    for (const [k, v] of Object.entries(stored)) {
+      if (changed.has(k) || now[k] === v) continue;
+      changed.add(k);
+      expect.soft(now[k], `${k} after opening ${id} (${how})`).toBe(v);
     }
-    expect(withoutLayout(now, !strict), k).toEqual(withoutLayout(was, !strict));
   }
 });
