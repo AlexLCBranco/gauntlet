@@ -3,6 +3,65 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
+## EXPERIMENT (2026-10-19): branch `fullscreen-page` (off `phase-2`) — the page fills the window — WAITING for the owner
+
+Owner's request: the whiteboard fills the whole browser window on every
+screen, like default tldraw: no grey bars, all of it real page. Rules: the
+page is the window's size and resizes with it; still pages (no infinite
+canvas, no scrolling past the edges, more room = next page); content keeps
+its place, a window smaller than the content zooms out just enough to show
+it all (never move/resize/delete content because of the window); existing
+content not lost or moved; toolbars, menu, zoom, arrows where they were.
+Experiment only: `phase-2` is untouched; nothing merged anywhere.
+
+Preview: https://gauntlet-home-git-fullscreen-page-alexlcbrancos-projects.vercel.app/whiteboard/
+(follows the latest push to `fullscreen-page`).
+
+How it works (`src/pages/camera.ts` `pageForWindow`, `keepFilled.ts`):
+- The page box (`pageBox` atom) = the window's shape, at "100%" one page
+  unit per screen pixel; if the page's content reaches further right/down
+  (drawn in a bigger window, or an old 1920x1080 page), the page grows to
+  cover it and the camera zooms out just enough (zoom < 1), still filling
+  the window. Content is never moved for this. It is the camera's bounds
+  (`sizePage`), sized again on every window resize and page change;
+  content arriving from another tab (store source "remote") that reaches
+  past it grows it at once, so "keep inside the page" never pulls it in.
+- "Keep inside the page" (`keepInside.ts`), a new board's place
+  (`AddBoard.tsx`) and a board's size cap (`BoardShape.tsx`/`fit.ts`) use
+  `pageBox` instead of the fixed `SHEET` (now only the start value).
+- 100% = the page fills the window (as before); zoom out stops there.
+- Note: an old page that fit 1920x1080 now shows a bit bigger in a
+  1920-wide window than before (old 100% scaled the sheet to the window;
+  now 1 unit = 1 pixel unless the content needs less).
+
+Bug found by the new tests and fixed: shapes touching the old sheet's
+right edge were nudged left by ~2e-13 units (the page size rounded a hair
+below the content, then "keep inside" moved them). `pageForWindow` now
+covers the content exactly; unit test "always covers the content exactly"
+(failed on the old code).
+
+Tests: `e2e/fullpage.e2e.ts` (6): no bars at 1915x910 and 1366x768 (page
+covers every edge/corner, nothing scrolls, shapes drawn at the window's
+right/bottom edges stay there); resizing resizes the page (5 sizes, and
+zoomed in); a shape near the right edge at 1915x910 is whole on screen at
+1366x768 (resize and reload), zoomed out, never moved, also after an edit;
+existing content (shapes on 2 pages up to the old sheet's far corner + a
+Boardkit board, made in the same saved format) unchanged after reloads at
+4 window sizes; two tabs (big + laptop) never pull a far shape in.
+`e2e/whiteboard.e2e.ts` now runs in a 1920x1080 window (page = 1920x1080,
+same coordinates as before); its "not 16:9 → dark bars" test is removed
+(replaced by fullpage.e2e.ts). `boards.e2e.ts` checks the board against the
+page box. Unit: `camera.test.ts` `pageForWindow` (5).
+Results (2026-10-19, commit 48dc941): `npm test` 70 unit + 5 proxy pass,
+build + lint clean; `node scripts/local-e2e.mjs` 56 + Linkkit 14 pass; on
+the preview 53 pass, 3 can't run there (backup x2 + canvas "add stones":
+all make a Linkkit map, and Linkkit shows its "moved" notice on previews;
+the known preview limit). NEXT: wait for the owner. Not merged into
+`phase-2`, nothing live.
+
+If the owner keeps it: merge `fullscreen-page` into `phase-2`. If not:
+delete the branch (owner's yes needed); `phase-2` never had it.
+
 ## NOW (2026-10-19): parity + backup DONE on `phase-2` — WAITING for the owner's re-test
 
 Status: every item below is done and pushed to `phase-2` (NOT live). Preview
