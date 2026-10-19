@@ -33,7 +33,35 @@ the permanent hobby key when it arrives.** Added 2026-10-18.
 - Live was redeployed with the key from the same phase 1 build (no phase 2
   push): all 10 whiteboard e2e pass live.
 
-## Current phase: 2 (Boardkit as a live object), IN PROGRESS (paused by the owner)
+## Phase 1 fixes from the owner's hand test (2026-10-18) — DO THESE BEFORE PHASE 2
+
+The owner tested phase 1 by hand on the live site. Fix ALL of these before
+continuing phase 2. Tick each off here as it's fixed; add automatic tests
+where possible.
+
+KEEP: the yellow, and tldraw's colours in general (prettier than Excalidraw's).
+
+- [ ] 1. Font size: text can't be made smaller. Add sizes smaller than the
+      current smallest.
+- [ ] 2. The colour/style menu doesn't go away. It should close when nothing
+      is selected or on a click elsewhere, like Excalidraw.
+- [ ] 3. The page loads zoomed to 79% with empty space around it. On load the
+      page must fill the window exactly; that is "100%".
+- [ ] 4. No "start from scratch". Add "clear page" to the main menu (like
+      Excalidraw's "Reset the canvas"), with a confirmation before it wipes
+      anything.
+- [ ] 5. Copy Excalidraw's layout: main menu top-left, tool toolbar
+      top-center, zoom + undo/redo bottom-left, page arrows bottom-right.
+- [ ] 6. Make the style panel (appears on selection: colours, stroke, fill,
+      font…) look and work like Excalidraw's.
+- [ ] 7. At 100% you can still pan and see empty space outside the page.
+      Seeing anything outside the page must be impossible. "Panning is only
+      allowed when…" — THE OWNER'S MESSAGE WAS CUT OFF HERE; ask for the
+      rest of item 7 (and any items after it) before working on it.
+
+Phase 2 status at the pause: `node scripts/local-e2e.mjs` passed in full
+(18 here + 14 Linkkit) on 2026-10-18; `npm test` passes. Not yet reported
+to the owner.
 
 Phase 2 started 2026-10-18. Owner chose: the board object reads and writes
 Boardkit's own record (PROJECT.md, DECISIONS: three phase 2 entries). Code
@@ -67,7 +95,7 @@ the live site still has phase 1 only.
      passed against the dev server:
      `BRIDGE_SITE=http://localhost:<port> npx playwright test e2e/boards.e2e.ts`.
      `npm test` passes (66 unit + proxy tests), `tsc -b` clean.
-   - NOT DONE: full pre-push run `node scripts/local-e2e.mjs` (every e2e
+   - DONE 2026-10-18: full pre-push run `node scripts/local-e2e.mjs` (every e2e
      here + Linkkit's). It was started when the owner paused the work; its
      result was not recorded. Run it again.
    - NOT DONE: push to main, then re-run the e2e live.
