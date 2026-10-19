@@ -32,6 +32,31 @@ backup first. The old home page (/) stays; revisit after phase 3.
   merge `main` into `phase-2` (only `src/backup/`, `backup/`, e2e, docs,
   `vite.config.ts` input, `vercel.json` redirect; expect conflicts only in
   HANDOFF.md/PROJECT.md/src/README.md/vite.config.ts: keep both sides).
+- AUTOMATIC BACKUPS (owner, 2026-10-19: "backup to live now, on its own"):
+  built on branch `backup-live` (from `main`), NOT merged yet; waiting for
+  the owner's OK. Added to the /backup/ page (`src/backup/auto.ts`,
+  `policy.ts`; PROJECT.md DECISIONS), same file format. Owner's questions:
+  (a) WHERE: in this browser, IndexedDB database `gauntlet-auto-backups`
+  (plus a small note `gauntlet:auto-backup` in localStorage). Same
+  browser storage as the data: clearing the browser's data (or a new
+  computer) loses the backups too. Only "Save a backup" (a file kept in
+  OneDrive) protects against that; the page says so.
+  (b) QUOTA: the site has one quota, shared with Boardkit's pictures and
+  the whiteboard. Backups use at most 20% of it (oldest dropped first),
+  and none is kept if the site would pass 60%; boards and maps are in
+  localStorage, which has its own limit, so backups can't take their room.
+  A backup that can't be kept (too big, nearly full, or the browser
+  refuses the write) is skipped: banner on the page + note on /backup/;
+  Boardkit's saves never share a database or transaction with it. Tests:
+  `src/backup/policy.test.ts`; `e2e/auto-backup.e2e.ts` "with the
+  browser's storage nearly full ..." (real quota override of 10 MB, a
+  2.5 MB picture: no backup, the warning, Boardkit still saves a board and
+  a 1 MB picture) and "when the browser refuses to store a backup ...".
+  Checks: local 28 + Linkkit 14 e2e pass, 67 unit; on the branch preview
+  25 pass, 3 can't run there (they make a Linkkit map; Linkkit shows
+  "moved" on previews): backup.e2e x2, canvas.e2e x1, all pass locally.
+  After merging: run `BRIDGE_SITE=https://gauntlet-home.vercel.app npx
+  playwright test e2e/backup.e2e.ts e2e/auto-backup.e2e.ts e2e/canvas.e2e.ts e2e/whiteboard.e2e.ts`.
 - WAITING FOR THE OWNER: they save their real backup (steps below; only
   they can, their data lives only in their browser). Once they say it's
   saved, condition (2) is met.
