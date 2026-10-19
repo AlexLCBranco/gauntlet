@@ -124,6 +124,7 @@ test("the whiteboard board has every control Boardkit's board has (lists, cards,
   const bkListPanel = await controlNames(bk.locator("body > *").filter({ has: bk.getByRole("group", { name: "Colour" }) }).last());
   await bk.keyboard.press("Escape");
   await bk.mouse.click(5, 5);
+  await bkRail.locator("[data-card-id]").first().hover();
   await bkRail.locator("[data-card-id]").first().getByRole("button", { name: "Customise card", exact: true }).click();
   const bkCardPanel = await controlNames(bk.locator("body > *").filter({ has: bk.getByRole("group", { name: "Colour" }) }).last());
   await bk.close();
@@ -141,6 +142,8 @@ test("the whiteboard board has every control Boardkit's board has (lists, cards,
   const wbListPanel = await controlNames(page.locator("body > *").filter({ has: page.getByRole("group", { name: "Colour" }) }).last());
   await page.keyboard.press("Escape");
   await expect(page.getByRole("group", { name: "Colour" })).toHaveCount(0);
+  // The card buttons show while the pointer is over the card.
+  await wb.locator("[data-card-id]").first().hover();
   await wb.locator("[data-card-id]").first().getByRole("button", { name: "Customise card", exact: true }).click();
   const wbCardPanel = await controlNames(page.locator("body > *").filter({ has: page.getByRole("group", { name: "Colour" }) }).last());
 
@@ -197,6 +200,47 @@ test("C11: a dragged card follows the pointer the whole way to another list, the
   await expect(editingEl(page)).toHaveCount(1);
   await page.waitForTimeout(600);
   expect((await record(page, id)).board.cardOrder[to]).toContain(cardId);
+});
+
+test("C11: a card dropped on the top edge of another list's first card lands there, without the board crashing; Boardkit itself too", async ({ page, context }) => {
+  // A drop at a list's top edge made the card flip between the two lists on
+  // every render until React gave up (error #185) and the board showed
+  // "Error". Boardkit's fix (a card crosses only into the list under the
+  // pointer) runs in Boardkit itself as well, unscaled: both are checked.
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => m.type() === "error" && /Maximum update depth|#185/.test(m.text()) && errors.push(m.text()));
+  const dropOnTopEdge = async (p: Page, scope: Locator) => {
+    const lists = await scope.locator("section[data-list-id]").evaluateAll((els) => els.map((e) => e.getAttribute("data-list-id")!));
+    const [from, to] = lists;
+    const card = scope.locator(`section[data-list-id="${from}"] article[data-card-id]`).first();
+    const cardId = (await card.getAttribute("data-card-id"))!;
+    const a = await box(card);
+    const b = await box(scope.locator(`section[data-list-id="${to}"] article[data-card-id]`).first());
+    const start = { x: a.x + 20, y: a.y + a.height / 2 };
+    const end = { x: b.x + 20, y: b.y + 4 };
+    await p.mouse.move(start.x, start.y);
+    await p.mouse.down();
+    for (let i = 1; i <= 8; i++) await p.mouse.move(start.x + ((end.x - start.x) * i) / 8, start.y + ((end.y - start.y) * i) / 8);
+    await p.mouse.up();
+    return { from, to, cardId };
+  };
+
+  const { id } = await setUp(page, context);
+  const wb = await dropOnTopEdge(page, editingEl(page));
+  const r = await saved(page, id, (r) => r.board.cardOrder[wb.to][0] === wb.cardId && !r.board.cardOrder[wb.from].includes(wb.cardId), "card moved on the whiteboard");
+  await expect(listEl(page, wb.to).locator("article[data-card-id]").first()).toHaveAttribute("data-card-id", wb.cardId);
+  await expect(editingEl(page)).toHaveCount(1);
+
+  const bk = await context.newPage();
+  bk.on("pageerror", (e) => errors.push(e.message));
+  await bk.goto("/boardkit/");
+  const rail = bk.locator("[data-board-canvas]");
+  await expect(rail.locator("article[data-card-id]").first()).toBeVisible();
+  const own = await dropOnTopEdge(bk, rail);
+  await saved(bk, id, (r) => r.board.cardOrder[own.to][0] === own.cardId && !r.board.cardOrder[own.from].includes(own.cardId), "card moved in Boardkit");
+  expect(r.rev).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
 });
 
 test("L12: Enter on an empty 'Add a card' adds a blank card at once, and keeps adding", async ({ page, context }) => {

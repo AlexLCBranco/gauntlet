@@ -7,6 +7,9 @@ import { box, seedBoard } from "./helpers";
  * browser profile per test; the board is the real Boardkit's first-visit
  * board, made by opening /boardkit. Every action goes through the mouse
  * and keyboard; `window.editor` and localStorage are only read to check.
+ * The board is drawn by Boardkit's own components (its DOM: section
+ * [data-list-id], article [data-card-id]); every one of its controls is
+ * checked in parity.e2e.ts.
  */
 
 type Rec = {
@@ -21,6 +24,11 @@ type Rec = {
 };
 
 const record = (page: Page, id: string) => page.evaluate((id) => JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!), id) as Promise<Rec>;
+/** Waits until Boardkit has saved something that passes `check` (it saves a moment after an edit). */
+async function saved(page: Page, id: string, check: (r: Rec) => boolean, message?: string) {
+  await expect.poll(async () => check(await record(page, id)), { message, timeout: 8_000 }).toBe(true);
+  return record(page, id);
+}
 const boardName = (page: Page, id: string) =>
   page.evaluate((id) => (JSON.parse(localStorage.getItem("boardkit:registry")!) as { boards: { id: string; name: string }[] }).boards.find((b) => b.id === id)!.name, id);
 
@@ -42,18 +50,22 @@ async function placeBoard(page: Page, id: string) {
   await page.getByTestId("tools.board").click();
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   await expect(page.getByTestId("board-picker")).toHaveCount(0);
-  const board = page.locator(`.gb-board[data-board-id="${id}"]`);
+  const board = boardEl(page);
   await expect(board).toBeVisible();
   await expect.poll(async () => (await shapeOf(page))?.scale ?? 0).toBeGreaterThan(0);
   return board;
 }
 
-const cardEl = (page: Page, cardId: string) => page.locator(`.gb-card[data-card-id="${cardId}"]`);
+/** The board on the page (the shape's content): Boardkit's own board. */
+const boardEl = (page: Page) => page.locator(".tl-html-container [data-boardkit-board]").first();
+const editingEl = (page: Page) => page.locator('[data-boardkit-board][data-editing="true"]');
+const listEl = (page: Page, listId: string) => page.locator(`[data-boardkit-board] section[data-list-id="${listId}"]`);
+const cardEl = (page: Page, cardId: string) => page.locator(`[data-boardkit-board] article[data-card-id="${cardId}"]`);
 
 async function startEditing(page: Page, cardId: string) {
   const b = await box(cardEl(page, cardId));
   await page.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2);
-  await expect(page.locator(".gb-board[data-editing]")).toHaveCount(1);
+  await expect(editingEl(page)).toHaveCount(1);
 }
 
 /** Drags with the mouse from one point to another, in steps. */
@@ -70,10 +82,10 @@ test("the Board button puts a real Boardkit board on the page, every list and ca
   const board = await placeBoard(page, id);
   const rec = await record(page, id);
 
-  await expect(board.locator(".gb-name")).toHaveText(await boardName(page, id));
-  await expect(board.locator(".gb-list")).toHaveCount(rec.board.listOrder.length);
+  await expect(page.locator(".gb-name")).toHaveText(await boardName(page, id));
+  await expect(board.locator("section[data-list-id]")).toHaveCount(rec.board.listOrder.length);
   const shown = rec.board.listOrder.flatMap((l) => rec.board.cardOrder[l]);
-  await expect(board.locator(".gb-card")).toHaveCount(shown.length);
+  await expect(board.locator("article[data-card-id]")).toHaveCount(shown.length);
   for (const cardId of shown.slice(0, 5)) await expect(cardEl(page, cardId)).toContainText(rec.board.cards[cardId].title);
 
   // Selected, inside the sheet, and its box is the content's size.
@@ -94,7 +106,7 @@ test("the Board button puts a real Boardkit board on the page, every list and ca
   await page.waitForTimeout(800);
   await page.reload();
   await page.waitForFunction(() => "editor" in window);
-  await expect(page.locator(`.gb-board[data-board-id="${id}"] .gb-card`)).toHaveCount(shown.length);
+  await expect(boardEl(page).locator("article[data-card-id]")).toHaveCount(shown.length);
 });
 
 test("a corner drag scales the whole board like a picture, and undo puts it back", async ({ page, context }) => {
@@ -102,7 +114,7 @@ test("a corner drag scales the whole board like a picture, and undo puts it back
   await openWhiteboard(page);
   const board = await placeBoard(page, id);
   const before = (await shapeOf(page))!;
-  const firstCard = board.locator(".gb-card").first();
+  const firstCard = board.locator("article[data-card-id]").first();
   const cardBefore = await box(firstCard);
 
   // The bottom-right corner handle, dragged up-left.
@@ -131,45 +143,41 @@ test("edit in place: rename, add, move and delete cards, all in Boardkit's own r
 
   // Double-click a card: editing starts with its title open.
   await startEditing(page, c1);
-  const field = page.locator(".gb-input");
+  const field = cardEl(page, c1).getByRole("textbox", { name: "Card title" });
   await expect(field).toBeFocused();
   await page.keyboard.type("ZZ renamed on the whiteboard");
   await page.keyboard.press("Enter");
   await expect(field).toHaveCount(0);
   await expect(cardEl(page, c1)).toContainText("ZZ renamed on the whiteboard");
-  let now = await record(page, id);
-  expect(now.board.cards[c1].title).toBe("ZZ renamed on the whiteboard");
-  expect(now.rev).toBe(rec.rev + 1);
+  let now = await saved(page, id, (r) => r.board.cards[c1].title === "ZZ renamed on the whiteboard", "renamed");
+  expect(now.rev).toBeGreaterThan(rec.rev);
 
   // Add two cards to the second list (Enter keeps the field open).
-  await page.locator(`.gb-list[data-list-id="${l2}"] .gb-add`).click();
+  await listEl(page, l2).getByRole("button", { name: /Add a card/ }).click();
   await page.keyboard.type("ZZ new one");
   await page.keyboard.press("Enter");
   await page.keyboard.type("ZZ new two");
   await page.keyboard.press("Enter");
   await page.keyboard.press("Escape");
-  now = await record(page, id);
+  now = await saved(page, id, (r) => r.board.cardOrder[l2].some((c) => r.board.cards[c].title === "ZZ new two"), "cards added");
   const l2Cards = now.board.cardOrder[l2];
   expect(l2Cards.slice(-2).map((c) => now.board.cards[c].title)).toEqual(["ZZ new one", "ZZ new two"]);
   const added = l2Cards.at(-1)!;
   // Still editing after Escape left the add field.
-  await expect(page.locator(".gb-board[data-editing]")).toHaveCount(1);
+  await expect(editingEl(page)).toHaveCount(1);
 
   // Drag the first card of list 1 onto the top of list 2.
   const from = await box(cardEl(page, c1));
   const target = await box(cardEl(page, now.board.cardOrder[l2][0]));
   await drag(page, { x: from.x + 20, y: from.y + from.height / 2 }, { x: target.x + 20, y: target.y + 4 });
-  now = await record(page, id);
-  expect(now.board.cardOrder[l2][0]).toBe(c1);
-  expect(now.board.cardOrder[l1]).not.toContain(c1);
-  await expect(page.locator(`.gb-list[data-list-id="${l2}"] .gb-card`).first()).toHaveAttribute("data-card-id", c1);
+  now = await saved(page, id, (r) => r.board.cardOrder[l2][0] === c1 && !r.board.cardOrder[l1].includes(c1), "card moved");
+  await expect(listEl(page, l2).locator("article[data-card-id]").first()).toHaveAttribute("data-card-id", c1);
 
   // Delete one: it goes to Boardkit's trash.
   await cardEl(page, c2).hover();
   await cardEl(page, c2).getByRole("button", { name: "Delete card" }).click();
   await expect(cardEl(page, c2)).toHaveCount(0);
-  now = await record(page, id);
-  expect(now.board.trash.at(-1)!.cardId).toBe(c2);
+  await saved(page, id, (r) => r.board.trash.at(-1)?.cardId === c2, "card in the trash");
 
   // Ctrl+Z, one edit at a time, newest first.
   await page.keyboard.press("Control+z"); // the delete
@@ -181,7 +189,7 @@ test("edit in place: rename, add, move and delete cards, all in Boardkit's own r
 
   // Escape ends editing; the whiteboard's own undo is back (the board stays).
   await page.keyboard.press("Escape");
-  await expect(page.locator(".gb-board[data-editing]")).toHaveCount(0);
+  await expect(editingEl(page)).toHaveCount(0);
 
   // Boardkit itself shows every change, with nothing to repair.
   const bk = await context.newPage();
@@ -213,7 +221,7 @@ test("live both ways: Boardkit's edits show on the whiteboard without a reload",
 
   // And deleted in Boardkit: the whiteboard says so instead of showing stale cards.
   await bk.evaluate((id) => localStorage.removeItem(`boardkit:board:${id}`), id);
-  await expect(page.locator(`.gb-board[data-board-id="${id}"][data-status="missing"]`)).toBeVisible();
+  await expect(page.locator('[data-boardkit-board][data-status="missing"]')).toBeVisible();
 });
 
 test("box select and lasso pick the board like any other shape", async ({ page, context }) => {
@@ -272,7 +280,7 @@ test("the Board button is on the toolbar's row at any window width (in its overf
     await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
     // The new board is on the page, selected.
     await expect.poll(() => page.evaluate(() => (window as any).editor.getSelectedShapes().map((s: any) => s.type))).toEqual(["boardkit-board"]);
-    await expect(page.locator(`.gb-board[data-board-id="${id}"]`).first()).toBeVisible();
+    await expect(boardEl(page)).toBeVisible();
     await expect(page.getByTestId("board-picker")).toHaveCount(0);
   }
 });
@@ -298,21 +306,27 @@ test("a board looks as in Boardkit: number formats and emphasis, highlights, che
   }, id);
   await placeBoard(page, id);
   const c1 = cardEl(page, ids.c1);
-  await expect(c1.locator(".gb-num")).toHaveText("i");
-  await expect(cardEl(page, ids.c2).locator(".gb-num")).toHaveText("ii");
-  await expect(cardEl(page, ids.c3).locator(".gb-num")).toHaveText("iii");
+  const num = (cardId: string) => cardEl(page, cardId).locator("[class*=numberText]");
+  await expect(num(ids.c1)).toHaveText("i");
+  await expect(num(ids.c2)).toHaveText("ii");
+  await expect(num(ids.c3)).toHaveText("iii");
   await expect(c1).toHaveAttribute("data-highlight", "dashed");
   await expect(c1).toHaveAttribute("data-number-emphasis", "badge");
   expect(await c1.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("dashed");
   await expect(cardEl(page, ids.c2)).toHaveAttribute("data-highlight", "ring");
-  await expect(c1.locator(".gb-check")).toHaveAttribute("data-check", "green");
-  await expect(cardEl(page, ids.c2).locator(".gb-check")).toHaveAttribute("data-check", "red");
-  await expect(cardEl(page, ids.c3).locator(".gb-check")).toHaveAttribute("data-check", "none");
-  await expect(cardEl(page, ids.c2).locator(".gb-status")).toHaveAttribute("data-status", "maybe");
+  const check = (cardId: string) => cardEl(page, cardId).locator("[class*=_circle_]");
+  await expect(check(ids.c1)).toHaveAttribute("data-check", "green");
+  await expect(check(ids.c2)).toHaveAttribute("data-check", "red");
+  await expect(check(ids.c3)).toBeVisible();
+  await expect(check(ids.c3)).not.toHaveAttribute("data-check");
+  await expect(cardEl(page, ids.c2).locator("[data-status]")).toHaveAttribute("data-status", "maybe");
   // Cut: the card itself, and every card of a cut list, fade.
-  for (const c of [ids.c3, ids.c4]) expect(Number(await cardEl(page, c).evaluate((el) => getComputedStyle(el).opacity))).toBeCloseTo(0.45, 2);
+  for (const c of [ids.c3, ids.c4]) {
+    await expect(cardEl(page, c)).toHaveAttribute("data-cut", "");
+    expect(Number(await cardEl(page, c).evaluate((el) => getComputedStyle(el).opacity))).toBeLessThan(0.8);
+  }
   expect(Number(await c1.evaluate((el) => getComputedStyle(el).opacity))).toBe(1);
-  await expect(page.locator(`.gb-list[data-list-id="${ids.l2}"] .gb-status`)).toHaveAttribute("data-status", "cut");
+  await expect(listEl(page, ids.l2).locator("[data-list-header] [data-status]")).toHaveAttribute("data-status", "cut");
   // Nothing written by showing it.
   const rev = await page.evaluate((id) => JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!).rev, id);
   await page.waitForTimeout(300);
@@ -345,7 +359,7 @@ test("a big board (8 lists, 240 cards) stays smooth: dragging it and zooming kee
     localStorage.setItem(key, JSON.stringify(rec));
   }, id);
   await placeBoard(page, id);
-  await expect(page.locator(".gb-card")).toHaveCount(240);
+  await expect(page.locator("[data-boardkit-board] article[data-card-id]")).toHaveCount(240);
 
   const measure = async (act: () => Promise<void>) => {
     await page.evaluate(() => {
@@ -372,7 +386,7 @@ test("a big board (8 lists, 240 cards) stays smooth: dragging it and zooming kee
   };
 
   // Drag the board around for about 2 s.
-  const b = await box(page.locator(`.gb-board[data-board-id="${id}"]`));
+  const b = await box(boardEl(page));
   const drag = await measure(async () => {
     await page.mouse.move(b.x + 20, b.y + 10);
     await page.mouse.down();

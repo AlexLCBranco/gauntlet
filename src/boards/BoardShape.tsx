@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, type DOMAttributes, type SyntheticEvent } from "react";
 import {
   BaseBoxShapeUtil,
   HTMLContainer,
@@ -6,6 +6,7 @@ import {
   resizeBox,
   useEditor,
   useIsEditing,
+  type Editor,
   type RecordProps,
   type TLResizeInfo,
   type TLShape,
@@ -125,7 +126,8 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   // while they still reach the page (Boardkit's menus close on a press
   // elsewhere, its drags follow the pointer there).
   // Escape still ends editing, unless Boardkit has a use for it (a text
-  // field, a drag to cancel, a selection or copied cards to let go of).
+  // field, a drag to cancel, a menu or panel to close, a selection or
+  // copied cards to let go of).
   useEffect(() => {
     if (!editing) return;
     const el = content.current;
@@ -134,14 +136,16 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       if (e.key !== "Escape" || boardkitTakesEscape(e.target)) editor.markEventAsHandled(e);
     };
     const onPointer = (e: Event) => editor.markEventAsHandled(e);
-    // A drag can end anywhere, focus anywhere: Escape cancels it, and only that.
-    const onDragEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && boardkitDragging()) editor.markEventAsHandled(e);
+    // A drag can end anywhere, and a menu or panel can be open with focus
+    // anywhere: Escape cancels the drag or closes it, and only that. Seen
+    // first (window, capture), before Boardkit closes the menu.
+    const onBoardkitEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && (boardkitDragging() || boardkitOverlayOpen(editor.getContainer()))) editor.markEventAsHandled(e);
     };
     // Keys that reach only the page (focus fell off a field or button that
     // went away) never reach tldraw: Escape still ends editing.
     const onEscape = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented || e.target !== document.body) return;
+      if (e.key !== "Escape" || e.defaultPrevented || editor.wasEventAlreadyHandled(e) || e.target !== document.body) return;
       editor.setEditingShape(null);
       editor.getContainer().focus({ preventScroll: true });
     };
@@ -149,13 +153,13 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     el.addEventListener("keydown", onKey);
     el.addEventListener("keyup", onKey);
     for (const type of pointerEvents) el.addEventListener(type, onPointer);
-    window.addEventListener("keydown", onDragEscape, true);
+    window.addEventListener("keydown", onBoardkitEscape, true);
     window.addEventListener("keydown", onEscape);
     return () => {
       el.removeEventListener("keydown", onKey);
       el.removeEventListener("keyup", onKey);
       for (const type of pointerEvents) el.removeEventListener(type, onPointer);
-      window.removeEventListener("keydown", onDragEscape, true);
+      window.removeEventListener("keydown", onBoardkitEscape, true);
       window.removeEventListener("keydown", onEscape);
     };
   }, [editing, editor]);
@@ -166,9 +170,12 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         ref={content}
         className="gb-scaled"
         style={{ transform: `scale(${scale || 1})`, visibility: scale ? "visible" : "hidden" }}
+        {...portalEventsHandled(editor)}
         // A right-click inside the board being edited opens Boardkit's menu
         // (or its thots), not the whiteboard's.
-        onContextMenu={editing ? (e) => e.stopPropagation() : undefined}
+        onContextMenu={(e) => {
+          if (editing || !e.currentTarget.contains(e.target as Node)) e.stopPropagation();
+        }}
       >
         <BoardName boardId={boardId} />
         <WhiteboardBoard boardId={boardId} editing={editing} />
@@ -177,8 +184,34 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   );
 }
 
-/** A card or list of a board is being dragged (dnd-kit marks it pressed). */
-const boardkitDragging = () => document.querySelector('[data-boardkit-board] [aria-pressed="true"]') !== null;
+/**
+ * Boardkit draws its menus, dialogs, customise panels and selection bar at
+ * the page's top level (React portals). React still sends their events up
+ * through the board, and from there into tldraw's canvas: a press in a menu
+ * then made tldraw take the pointer (the item never got its click) and end
+ * editing, as for a press outside the board. Those events are marked
+ * handled here, so tldraw's canvas skips them. Not stopped: React's
+ * stopPropagation also stops the page's own listeners (Escape no longer
+ * closed Boardkit's customise panel, a dragged card's lifted copy, a
+ * portal too, no longer dropped).
+ */
+const PORTAL_EVENTS = ["onPointerDown", "onPointerUp", "onPointerCancel", "onClick", "onTouchStart", "onTouchEnd"] as const;
+function portalEventsHandled(editor: Editor): DOMAttributes<HTMLDivElement> {
+  const mark = (e: SyntheticEvent<HTMLElement>) => {
+    if (!e.currentTarget.contains(e.target as Node)) editor.markEventAsHandled(e);
+  };
+  return Object.fromEntries(PORTAL_EVENTS.map((name) => [name, mark]));
+}
+
+/** A card or list of a board is being dragged: Boardkit's lifted copy is up. */
+const boardkitDragging = () => document.querySelector("[data-boardkit-lifted]") !== null;
+
+/** One of Boardkit's menus, panels or dialogs is open. They are drawn at the
+    page's top level, outside the whiteboard (whose own menus live inside). */
+function boardkitOverlayOpen(container: HTMLElement): boolean {
+  const open = document.querySelectorAll('[data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"], [role="menu"]');
+  return [...open].some((el) => !container.contains(el));
+}
 
 /** Whether Boardkit has a use for an Escape pressed on `target`. */
 function boardkitTakesEscape(target: EventTarget | null): boolean {

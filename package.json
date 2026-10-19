@@ -12,7 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/0108856f8f1c2f6e10a72d5c1b91f505b6b98a10",
+    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/c4af6dce36b5042e9f4013be0ed8e9b2aa9dbd79",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "shadcn": "file:src/boards/vendor/shadcn",
