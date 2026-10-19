@@ -1,8 +1,9 @@
-import { Fragment, useEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 
 import { useEditor } from "tldraw";
 
 import { cardNumbers, MAX_CARDS_PER_LIST, newCardId, type Board, type Card, type List } from "./record";
+import { checkOf, emphasisOf, formatNumber, highlightOf, looksCut, statusOf, type Status } from "./looks";
 import { edit, useBoard, useBoardName, type EditResult } from "./store";
 
 // Boardkit's palette (`styles/tokens.css`); a picked colour is a hex.
@@ -233,7 +234,7 @@ function ListColumn(props: {
   const style = { "--list-accent": accent ?? "transparent", width: collapsed ? undefined : (list.width ?? 288) } as CSSProperties;
 
   return (
-    <div className="gb-list" data-list-id={list.id} data-collapsed={collapsed || undefined} style={style}>
+    <div className="gb-list" data-list-id={list.id} data-collapsed={collapsed || undefined} data-cut={statusOf(list) === "cut" || undefined} style={style}>
       <div
         className="gb-list-title"
         data-list-title={list.id}
@@ -252,7 +253,10 @@ function ListColumn(props: {
             }}
           />
         ) : (
-          <span>{list.title || "Untitled"}</span>
+          <>
+            {statusOf(list) && <StatusBadge status={statusOf(list)!} />}
+            <span>{list.title || "Untitled"}</span>
+          </>
         )}
         {collapsed && <span className="gb-count">{order.length}</span>}
       </div>
@@ -332,16 +336,33 @@ function CardRow(props: {
   const { card, list } = props;
   const kind = card.kind === "divider" || card.kind === "note" ? card.kind : "normal";
   const accent = colorOf(card.color) ?? (kind === "note" ? PALETTE.yellow : colorOf(list.color));
+  const highlight = highlightOf(card);
+  const check = checkOf(card, list);
+  const status = statusOf(card);
   return (
     <div
       className="gb-card"
       data-card-id={card.id}
       data-kind={kind}
+      data-highlight={highlight}
+      data-number-emphasis={emphasisOf(card)}
+      data-cut={looksCut(card, list) || undefined}
       data-lifted={props.lift ? true : undefined}
-      style={{ "--card-accent": accent ?? "transparent", transform: props.lift ? `translate(${props.lift.dx}px, ${props.lift.dy}px)` : undefined } as CSSProperties}
+      style={{ "--card-accent": accent ?? "transparent", "--card-highlight": highlight ? colorOf(card.highlight) : undefined, transform: props.lift ? `translate(${props.lift.dx}px, ${props.lift.dy}px)` : undefined } as CSSProperties}
       onPointerDown={props.onPointerDown}
     >
-      {props.number != null && <span className="gb-num">{props.number}</span>}
+      {props.number != null && (
+        <span className="gb-num">
+          <span className="gb-num-text">{formatNumber(props.number, list.numberFormat)}</span>
+        </span>
+      )}
+      {check && (
+        <span className="gb-check" data-check={check} role="img" aria-label={CHECK_LABELS[check]}>
+          {check === "green" && TICK}
+          {check === "red" && CROSS}
+        </span>
+      )}
+      {status && <StatusBadge status={status} />}
       {props.renaming ? (
         <TitleEditor initial={card.title} onDone={props.onRenamed} />
       ) : (
@@ -420,5 +441,30 @@ function TitleEditor({ initial, placeholder, onDone }: { initial: string; placeh
       onPointerDown={(e) => e.stopPropagation()}
       onBlur={() => finish(value, "blur")}
     />
+  );
+}
+
+// ---- Boardkit's small marks (its CheckCircle and StatusBadge, display only)
+
+const icon = (d: string, width = 3) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={d} />
+  </svg>
+);
+const TICK = icon("M20 6 9 17l-5-5");
+const CROSS = icon("M18 6 6 18M6 6l12 12");
+const CHECK_LABELS = { none: "Not checked", green: "Green check", red: "Red X" } as const;
+const STATUS_META: Record<Status, { label: string; icon: ReactNode }> = {
+  keep: { label: "Keep", icon: icon("M20 6 9 17l-5-5", 2) },
+  maybe: { label: "Maybe", icon: icon("M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01", 2) },
+  cut: { label: "Cut", icon: icon("M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12", 2) },
+};
+
+function StatusBadge({ status }: { status: Status }) {
+  const { label, icon } = STATUS_META[status];
+  return (
+    <span className="gb-status" data-status={status} role="img" aria-label={label} title={label}>
+      {icon}
+    </span>
   );
 }

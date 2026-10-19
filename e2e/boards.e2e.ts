@@ -276,3 +276,45 @@ test("the Board button is on the toolbar's row at any window width (in its overf
     await expect(page.getByTestId("board-picker")).toHaveCount(0);
   }
 });
+
+test("a board looks as in Boardkit: number formats and emphasis, highlights, check circles, keep/maybe/cut", async ({ page, context }) => {
+  const id = await seedBoard(context);
+  await openWhiteboard(page);
+  // Boardkit's own fields, set on its record as Boardkit would store them.
+  const ids = await page.evaluate((id) => {
+    const key = `boardkit:board:${id}`;
+    const rec = JSON.parse(localStorage.getItem(key)!);
+    const b = rec.board;
+    const [l1, l2] = b.listOrder;
+    const [c1, c2, c3] = b.cardOrder[l1];
+    Object.assign(b.lists[l1], { numberFormat: "roman", hasChecks: true });
+    Object.assign(b.lists[l2], { status: "cut" });
+    Object.assign(b.cards[c1], { highlight: "red", highlightStyle: "dashed", check: "green", numberEmphasis: "badge" });
+    Object.assign(b.cards[c2], { highlight: "blue", check: "red", status: "maybe" });
+    Object.assign(b.cards[c3], { status: "cut" });
+    rec.rev += 1;
+    localStorage.setItem(key, JSON.stringify(rec));
+    return { l1, l2, c1, c2, c3, c4: b.cardOrder[l2][0] };
+  }, id);
+  await placeBoard(page, id);
+  const c1 = cardEl(page, ids.c1);
+  await expect(c1.locator(".gb-num")).toHaveText("i");
+  await expect(cardEl(page, ids.c2).locator(".gb-num")).toHaveText("ii");
+  await expect(cardEl(page, ids.c3).locator(".gb-num")).toHaveText("iii");
+  await expect(c1).toHaveAttribute("data-highlight", "dashed");
+  await expect(c1).toHaveAttribute("data-number-emphasis", "badge");
+  expect(await c1.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("dashed");
+  await expect(cardEl(page, ids.c2)).toHaveAttribute("data-highlight", "ring");
+  await expect(c1.locator(".gb-check")).toHaveAttribute("data-check", "green");
+  await expect(cardEl(page, ids.c2).locator(".gb-check")).toHaveAttribute("data-check", "red");
+  await expect(cardEl(page, ids.c3).locator(".gb-check")).toHaveAttribute("data-check", "none");
+  await expect(cardEl(page, ids.c2).locator(".gb-status")).toHaveAttribute("data-status", "maybe");
+  // Cut: the card itself, and every card of a cut list, fade.
+  for (const c of [ids.c3, ids.c4]) expect(Number(await cardEl(page, c).evaluate((el) => getComputedStyle(el).opacity))).toBeCloseTo(0.45, 2);
+  expect(Number(await c1.evaluate((el) => getComputedStyle(el).opacity))).toBe(1);
+  await expect(page.locator(`.gb-list[data-list-id="${ids.l2}"] .gb-status`)).toHaveAttribute("data-status", "cut");
+  // Nothing written by showing it.
+  const rev = await page.evaluate((id) => JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!).rev, id);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate((id) => JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!).rev, id)).toBe(rev);
+});

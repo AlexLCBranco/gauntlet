@@ -88,7 +88,54 @@
   align-items: center;
 }
 .gb-card[data-kind="divider"]::after { content: ""; flex: 1; height: 2px; background: var(--card-accent, var(--border-subtle)); }
-.gb-num { flex: 0 0 auto; min-width: 20px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.gb-num { flex: 0 0 auto; min-width: 20px; color: var(--text-muted); font-size: 12px; line-height: 19px; text-align: center; font-variant-numeric: tabular-nums; }
+.gb-num-text { display: inline-block; min-width: 18px; padding: 0 3px; border-radius: 999px; line-height: 18px; }
+/* Number emphasis (Boardkit `domain/numberStyle.ts`). */
+.gb-card[data-number-emphasis="badge"] .gb-num-text { background: var(--text-primary); color: var(--surface-raised); font-weight: 700; }
+.gb-card[data-number-emphasis="ring"] .gb-num-text { box-shadow: inset 0 0 0 1px currentColor; color: var(--text-primary); }
+.gb-card[data-number-emphasis="bold"] .gb-num-text { color: var(--text-primary); font-weight: 700; }
+.gb-card[data-number-emphasis="muted"] .gb-num-text { opacity: 0.45; }
+
+/* Highlights (Boardkit `domain/highlight.ts`): paint only, never size. */
+.gb-card[data-highlight] { border-color: var(--card-highlight); }
+.gb-card[data-highlight="ring"], .gb-card[data-highlight="pulse"] { box-shadow: inset 0 0 0 1px var(--card-highlight), 0 1px 2px rgba(0, 0, 0, 0.4); }
+.gb-card[data-highlight="outline"] { box-shadow: 0 0 0 3px var(--card-highlight), 0 1px 2px rgba(0, 0, 0, 0.4); }
+.gb-card[data-highlight="dashed"] { border-color: transparent; outline: 2px dashed var(--card-highlight); outline-offset: -2px; }
+.gb-card[data-highlight="double"] { outline: 1px solid var(--card-highlight); outline-offset: 2px; }
+.gb-card[data-highlight="bar"] { border-color: var(--border-subtle); border-top-color: var(--card-highlight); box-shadow: inset 0 4px 0 0 var(--card-highlight), 0 1px 2px rgba(0, 0, 0, 0.4); }
+.gb-card[data-highlight="pulse"]::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px var(--card-highlight);
+  pointer-events: none;
+  animation: gb-pulse 1.6s ease-in-out infinite;
+}
+@keyframes gb-pulse { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gb-card[data-highlight="pulse"]::before { animation: none; } }
+
+/* Cut (Boardkit `domain/status.ts`): faded, dashed edge. */
+.gb-card[data-cut] { opacity: 0.45; border-style: dashed; }
+.gb-list[data-cut] .gb-list-title > span:not(.gb-status) { opacity: 0.45; }
+
+/* Check circles and keep / maybe / cut badges, at the start of the title. */
+.gb-check, .gb-status {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 1.5px;
+  border-radius: 999px;
+}
+.gb-check { border: 1.5px solid var(--text-muted); color: #fff; }
+.gb-check svg { width: 11px; height: 11px; }
+.gb-check[data-check="green"] { border-color: #2f9e44; background: #2f9e44; }
+.gb-check[data-check="red"] { border-color: #e03131; background: #e03131; }
+.gb-status { border: 1px solid rgba(255, 255, 255, 0.16); background: var(--surface-raised); color: var(--text-secondary); }
+.gb-status svg { width: 10px; height: 10px; }
+.gb-status[data-status="keep"] { border-color: var(--text-secondary); color: var(--text-primary); }
 .gb-title { flex: 1 1 auto; min-width: 0; }
 
 .gb-board[data-editing] .gb-card { cursor: grab; }

@@ -89,6 +89,14 @@ the live site has phase 1 only.
      many tools as fit (`src/whiteboard/toolbarFit.ts`), the rest in its
      overflow menu (Board then is `tools.more.board`). e2e "the Board
      button is on the toolbar's row at any window width".
+   - DONE: a board shows Boardkit's card looks, so it reads like the
+     screenshot the owner pastes today: number formats (roman, letters,
+     #, 01) and emphasis (badge, ring, bold, muted), highlights (ring,
+     outline, dashed, double, bar, pulse), check circles in lists with
+     checks, keep / maybe / cut badges, cut cards and cut lists faded.
+     `src/boards/looks.ts` (pure, `looks.test.ts`), drawn in
+     `BoardView.tsx`, `boards.css`. Display only (checks can't be
+     clicked on the whiteboard yet). e2e "a board looks as in Boardkit".
 
 ### Bugs found by the e2e and fixed (phase 2)
 - Escape in a card's text field also ended editing the board: tldraw
