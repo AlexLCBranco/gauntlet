@@ -3,10 +3,31 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): Linkkit v0.0.104, four asks; two WAIT for the owner
+## NOW (2026-10-19): Linkkit fit to view on open (v0.0.105, `dfa2412`, LIVE)
+
+Owner's OK (2026-10-19) on the proposal below: a saved map with no zoom of
+its own opens fitted to the window (never above 100%, down to 10%) and
+scrolled to its boxes; the fit is for the visit only (viewStore `fits`),
+never in `linkkit:zoom` or the map; the pill wins (stores the map's own
+zoom; a map set with the pill, even to 100%, isn't refitted that visit).
+Decided while building: fits once per opening (no refit on resize or
+edit); maps made this visit (new, duplicate, template, board, restore)
+show at 100% where names are typed (`savedBeforeThisVisit`, mapStore);
+the page is `data-ready` only after the fit, so a frame's remembered
+scroll (`gauntlet:scroll`) is applied after it and wins. A map put back to
+100% has no `linkkit:zoom` entry, so it is fitted again next visit.
+Tests: `zoom.test.ts`, `viewStore.test.ts`, `e2e/fitview.e2e.ts` (on;
+failed on v0.0.104); `bracket.e2e.ts` pin test resets to 100% after its
+reload (a saved bracket now opens fitted). Results: unit 964 pass, build +
+lint clean (2 old warnings); local `node scripts/local-e2e.mjs` gauntlet
+72 pass (incl. 5 real-data: opening each of the owner's 18 maps still
+changes no byte) + Linkkit 19 pass. Live: Linkkit 19 pass; gauntlet 67
+pass, 5 skipped (real data: local only).
+
+## Earlier (2026-10-19): Linkkit v0.0.104, four asks
 
 Linkkit `1a89a0b`, LIVE. Owner's 4 asks:
-1. Fit to view on open: NOT BUILT, WAITING. View state is already
+1. Fit to view on open: (then) NOT BUILT, WAITING; now built, above. View state is already
    persisted: each map's zoom in `linkkit:zoom` (Linkkit
    `src/store/viewStore.ts`, `{ "<map id>": 1.5 }`, written only by the
    zoom pill, 100% = no entry), the align spot for all maps in
