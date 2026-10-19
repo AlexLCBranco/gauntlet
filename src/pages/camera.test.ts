@@ -8,15 +8,15 @@ describe("fillZoom", () => {
     expect(fillZoom({ w: 1920, h: 1080 }, SHEET)).toBe(1);
     expect(fillZoom({ w: 960, h: 540 }, SHEET)).toBe(0.5);
   });
-  it("fills a wide window edge to edge (the sheet's height runs past it)", () => {
+  it("shows the whole sheet in a wide window (bars at the sides)", () => {
     const z = fillZoom({ w: 1400, h: 600 }, SHEET);
-    expect(SHEET.w * z).toBe(1400);
-    expect(SHEET.h * z).toBeGreaterThan(600);
+    expect(SHEET.h * z).toBe(600);
+    expect(SHEET.w * z).toBeLessThan(1400);
   });
-  it("fills a tall window edge to edge (the sheet's width runs past it)", () => {
+  it("shows the whole sheet in a tall window (bars top and bottom)", () => {
     const z = fillZoom({ w: 800, h: 900 }, SHEET);
-    expect(SHEET.h * z).toBe(900);
-    expect(SHEET.w * z).toBeGreaterThan(800);
+    expect(SHEET.w * z).toBe(800);
+    expect(SHEET.h * z).toBeLessThan(900);
   });
 });
 

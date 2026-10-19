@@ -101,6 +101,24 @@ That's the whole list (1–10). Fix them on top of the live phase 1 version
 site, then stop and tell the owner what to re-test.
 
 
+## Owner's two decisions after the re-test (2026-10-18) — DONE, LIVE
+
+- [x] Non-16:9 windows: show the WHOLE page with dark bars at the sides; at
+      100% no scrolling at all. `camera.ts` (`fillZoom` = min of the two
+      ratios), Whiteboard.tsx camera `fit-max` + tldraw's `contain`
+      (centres the axis where the page is narrower). e2e "in a window that
+      isn't 16:9 ..." (1400x900, 900x900, 1800x700).
+- [x] One Ctrl+Z undoes a shape just drawn, even after Escape. Cause:
+      tldraw's Select tool marks "clearing selection" (Escape) and
+      "selecting none" (click on empty space) as their own undo steps, so the
+      first Ctrl+Z only re-selected the shape. Fix:
+      `src/whiteboard/undoSkipsSelection.ts`: undo/redo carry on past steps
+      that change nothing on the page. Ctrl+Y also redoes (Excalidraw on
+      Windows). e2e "one Ctrl+Z undoes a shape just drawn ..." (failed on the
+      old code).
+- Before the push `node scripts/local-e2e.mjs` passed (22 here + 14
+  Linkkit), `npm test` passes.
+
 ## Current phase: 1 (the floor): fixes 1–10 live, waiting for the owner's re-test; phase 2 paused on branch `phase-2`
 
 The whiteboard is a tldraw app at /whiteboard (see DECISIONS). Code areas

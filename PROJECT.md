@@ -167,3 +167,12 @@ Changes to the plan, newest last. Each says what and why.
   is on). Styles tldraw lacks are kept in each shape's `meta`: font size
   apart from stroke width (two sizes smaller than tldraw's smallest) and a
   background colour apart from the outline.
+- 2026-10-18 — Replaces the "100%" part of the fix-list entry above
+  (owner's decision after the re-test): "100%" shows the WHOLE page,
+  centred; a window that isn't 16:9 gets dark bars at the sides (or top
+  and bottom). At 100% nothing scrolls, on any screen. Zoomed in, you pan
+  only up to the page's edges (along an axis where the page is still
+  narrower than the window it stays centred).
+- 2026-10-18 — Undo and redo skip steps that only change the selection, as
+  in Excalidraw: one Ctrl+Z undoes a shape just drawn, even after Escape
+  (tldraw made deselecting its own undo step). Ctrl+Y also redoes.

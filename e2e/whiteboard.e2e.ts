@@ -100,7 +100,7 @@ async function panEverywhere(page: Page) {
   }
 }
 
-test("starts dark at 100%: the page fills the window exactly, and nothing outside it ever shows", async ({ page }) => {
+test("starts dark at 100%: the page fills a 16:9 window exactly, and nothing outside it ever shows", async ({ page }) => {
   await open(page);
   expect(await ed(page, (e) => e.user.getIsDarkMode())).toBe(true);
   await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
@@ -135,22 +135,58 @@ test("starts dark at 100%: the page fills the window exactly, and nothing outsid
   await expect.poll(() => view(page)).toEqual(fit);
 });
 
-test("in a window that isn't 16:9 the page still fills it edge to edge, and keeps filling it when the window changes", async ({ page }) => {
-  for (const size of [{ width: 1400, height: 900 }, { width: 900, height: 900 }]) {
+/** Zoomed in, the view stays on the sheet: along an axis where the sheet is
+    wider than the window it never shows past the edge; along one where the
+    sheet is narrower it stays centred (dark bars on both sides). */
+function expectBounded(v: Bounds) {
+  if (v.w <= SHEET.w + 0.5) { expect(v.x).toBeGreaterThanOrEqual(-0.5); expect(v.x + v.w).toBeLessThanOrEqual(SHEET.w + 0.5); }
+  else expect(v.x + v.w / 2).toBeCloseTo(SHEET.w / 2, 0);
+  if (v.h <= SHEET.h + 0.5) { expect(v.y).toBeGreaterThanOrEqual(-0.5); expect(v.y + v.h).toBeLessThanOrEqual(SHEET.h + 0.5); }
+  else expect(v.y + v.h / 2).toBeCloseTo(SHEET.h / 2, 0);
+}
+
+test("in a window that isn't 16:9 the whole page shows, centred, with dark bars, nothing scrolls at 100%, and it stays so when the window changes", async ({ page }) => {
+  for (const size of [{ width: 1400, height: 900 }, { width: 900, height: 900 }, { width: 1800, height: 700 }]) {
     await page.setViewportSize(size);
     await open(page);
     await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
     const v = await view(page);
-    expectInsideSheet(v);
-    // Edge to edge on one axis; the other runs past the window.
-    const fillsX = Math.abs(v.w - SHEET.w) < 0.5;
-    const fillsY = Math.abs(v.h - SHEET.h) < 0.5;
-    expect(fillsX || fillsY).toBe(true);
+    // The whole sheet is in view, touching the window on one axis.
+    expect(v.x).toBeLessThanOrEqual(0.5);
+    expect(v.y).toBeLessThanOrEqual(0.5);
+    expect(v.x + v.w).toBeGreaterThanOrEqual(SHEET.w - 0.5);
+    expect(v.y + v.h).toBeGreaterThanOrEqual(SHEET.h - 0.5);
+    expect(Math.abs(v.w - SHEET.w) < 0.5 || Math.abs(v.h - SHEET.h) < 0.5).toBe(true);
+    // Centred: the bars on either side are the same size.
+    const box = (await page.getByTestId("sheet").boundingBox())!;
+    expect(box.x).toBeCloseTo(size.width - (box.x + box.width), 0);
+    expect(box.y).toBeCloseTo(size.height - (box.y + box.height), 0);
+    // The bars are dark (dark theme by default).
+    const bar = await page.evaluate(([x, y]) => {
+      const el = document.elementsFromPoint(x, y).find((n) => n.classList.contains("gauntlet-outside"));
+      return el ? getComputedStyle(el).backgroundColor : null;
+    }, box.x > 2 ? [box.x / 2, size.height / 2] : [size.width / 2, box.y / 2 + 60]);
+    expect(bar).toBe("rgb(38, 38, 44)");
+    // At 100% nothing scrolls, whichever way.
     const middle = await screen(page, { x: SHEET.w / 2, y: SHEET.h / 2 });
     await page.mouse.move(middle.x, middle.y);
-    await panEverywhere(page);
+    for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
+      for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
+      expect(await view(page)).toEqual(v);
+    }
+    // Zoomed in, panning stays on the sheet.
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -300);
+    await page.keyboard.up("Control");
+    await expect(page.getByTestId("zoom-percent")).not.toHaveText("100%");
+    for (const [dx, dy] of [[-5000, 0], [5000, 0], [0, -5000], [0, 5000]]) {
+      for (let i = 0; i < 5; i++) await page.mouse.wheel(dx / 5, dy / 5);
+      expectBounded(await view(page));
+    }
   }
-  // Resizing the window at 100% keeps the page filling it.
+  // Resizing the window at 100% keeps the whole page in view.
+  await page.getByTestId("zoom-percent").click();
+  await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
   await page.setViewportSize({ width: 1600, height: 900 });
   await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
   await expect.poll(async () => Math.round((await view(page)).w)).toBe(SHEET.w);
@@ -585,4 +621,34 @@ test("fix 9: a shape with text gets its own background colour and text colour, a
   // Transparent takes the background away again.
   await page.getByTestId("background-transparent").click();
   expect((await shapeOf(page, a)).props.fill).toBe("none");
+});
+
+test("one Ctrl+Z undoes a shape just drawn, even after Escape, as in Excalidraw; Ctrl+Y brings it back", async ({ page }) => {
+  await open(page);
+  const keep = await rect(page, 100, 100); // rect() ends with Escape
+  const id = await rect(page, 400, 300);
+  // A shape drawn and left selected (no Escape) also goes in one press.
+  await page.keyboard.press("4");
+  await drag(page, { x: 800, y: 300 }, { x: 950, y: 420 });
+  const ellipse = (await shapeIds(page)).find((s) => s !== keep && s !== id)!;
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep]);
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([]);
+  await page.keyboard.press("Control+y");
+  await expect.poll(() => shapeIds(page)).toEqual([keep]);
+  await page.keyboard.press("Control+Shift+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
+  expect(ellipse).toBeTruthy();
+  // Deselecting with a click on empty space isn't an undo step either.
+  await page.keyboard.press("2");
+  await drag(page, { x: 1200, y: 600 }, { x: 1350, y: 700 });
+  const empty = await screen(page, { x: 1700, y: 950 });
+  await page.mouse.click(empty.x, empty.y);
+  await expect.poll(() => selected(page)).toEqual([]);
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
 });

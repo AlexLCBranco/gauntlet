@@ -4,11 +4,12 @@ import type { Box } from "./sheet";
 
 type Size = { w: number; h: number };
 
-/** "100%": the zoom at which the sheet fills the window exactly, edge to
-    edge, so nothing outside it shows. When the window isn't 16:9 the
-    sheet's other axis runs past the window and pans along that axis only. */
+/** "100%": the zoom at which the whole sheet fits the window, centred.
+    When the window isn't 16:9 the sheet fills it along one axis and dark
+    bars show at the sides (or top and bottom) of the other; at 100%
+    there is nothing to scroll to. */
 export function fillZoom(viewport: Size, sheet: Box): number {
-  return Math.max(viewport.w / sheet.w, viewport.h / sheet.h);
+  return Math.min(viewport.w / sheet.w, viewport.h / sheet.h);
 }
 
 /** The zoom shown to the owner, as a whole percentage of "100%". */

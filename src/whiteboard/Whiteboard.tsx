@@ -37,6 +37,7 @@ import { shapeUtils } from "../style/shapeUtils";
 import { applyNextMeta, StylePanel } from "../style/StylePanel";
 import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
+import { undoSkipsSelection } from "./undoSkipsSelection";
 import { ZoomUndo } from "./ZoomUndo";
 import "./whiteboard.css";
 
@@ -48,16 +49,17 @@ const PERSISTENCE_KEY = "gauntlet-whiteboard";
 const DEFAULTS_KEY = "gauntlet:whiteboard:defaults";
 
 const camera: Partial<TLCameraOptions> = {
-  // Zoom steps are multiples of "100%", where the sheet fills the window
-  // edge to edge (see fillZoom): you can zoom in, never out past it, and
-  // nothing outside the sheet ever shows.
+  // Zoom steps are multiples of "100%", where the whole sheet fits the
+  // window, centred, with dark bars where the window isn't 16:9 (see
+  // fillZoom): you can zoom in, never out past it. At 100% nothing
+  // scrolls; zoomed in, you pan only up to the sheet's edges.
   zoomSteps: [1, 1.5, 2, 3, 4, 6, 8],
   constraints: {
     bounds: SHEET,
     padding: { x: 0, y: 0 },
     origin: { x: 0.5, y: 0.5 },
-    initialZoom: "fit-min",
-    baseZoom: "fit-min",
+    initialZoom: "fit-max",
+    baseZoom: "fit-max",
     behavior: "contain",
   },
 };
@@ -101,6 +103,8 @@ const overrides: TLUiOverrides = {
   // the window (tldraw's own toggles to its 100% when already there).
   actions(editor, actions) {
     if (actions["reset-zoom"]) actions["reset-zoom"] = { ...actions["reset-zoom"], onSelect: () => fillWindow(editor) };
+    // Ctrl+Y redoes too, as in Excalidraw on Windows.
+    if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y" };
     return actions;
   },
   translations: { en: { "tool.lasso": "Lasso select" } },
@@ -187,7 +191,9 @@ function setUp(editor: Editor) {
   const stopInside = keepInsideSheet(editor);
   const stopNext = applyNextMeta(editor);
   const stopFilled = keepFilled(editor);
+  const stopUndo = undoSkipsSelection(editor);
   return () => {
+    stopUndo();
     stopInside();
     stopNext();
     stopFilled();
