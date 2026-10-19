@@ -1,0 +1,30 @@
+/* The Backups page: dark, like the rest of the site (src/index.css tokens). */
+body { overflow: auto; }
+.bk-page { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+.bk-head { display: flex; align-items: baseline; gap: 16px; }
+.bk-head h1 { font-size: 22px; margin: 0; flex: 1; }
+.bk-head nav { display: flex; gap: 12px; }
+.bk-head a { color: var(--muted); text-decoration: none; }
+.bk-head a:hover { color: var(--fg); }
+.bk-intro { color: var(--muted); max-width: 70ch; }
+.bk-actions, .bk-row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.bk-page button {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.bk-page button:hover:not(:disabled) { background: #232731; }
+.bk-page button:disabled { opacity: 0.5; cursor: default; }
+.bk-page button.bk-danger { border-color: #e5484d; color: #ff8b8e; }
+.bk-message { padding: 8px 12px; border-radius: 6px; background: #17251c; border: 1px solid #2f6b43; }
+.bk-message[data-bad] { background: #2a1517; border-color: #7a2b30; }
+.bk-confirm { margin: 16px 0; padding: 12px 16px; border: 1px solid #7a5b20; border-radius: 8px; background: #221d12; }
+.bk-list { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 8px; }
+.bk-list li { padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.bk-when { display: flex; gap: 12px; align-items: baseline; }
+.bk-when span { color: var(--muted); font-size: 13px; }
+.bk-contents { margin: 4px 0; color: var(--muted); overflow-wrap: anywhere; }
+.bk-row-actions { margin: 6px 0 0; }

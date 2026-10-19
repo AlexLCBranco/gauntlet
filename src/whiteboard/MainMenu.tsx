@@ -71,6 +71,14 @@ export function MainMenu() {
             addDialog({ component: ClearPageDialog });
           }}
         />
+        <TldrawUiMenuItem
+          id="backups"
+          label={"Backups" as never}
+          icon="external-link"
+          onSelect={() => {
+            window.location.href = "/backups/";
+          }}
+        />
       </TldrawUiMenuGroup>
       <DefaultMainMenuContent />
     </DefaultMainMenu>

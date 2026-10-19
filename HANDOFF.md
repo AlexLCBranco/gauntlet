@@ -52,30 +52,55 @@ can't fetch):
   handled for tldraw (not stopped), right-click stays Boardkit's.
 - `e2e/parity.e2e.ts`: 15 tests; 11 pass on the dev server.
 
-HALF-DONE / BROKEN (next concrete steps, in order):
-1. Clicking any Boardkit UI portaled to <body> (selection bar, menus,
-   customise panel, dialogs) ENDS EDITING: tldraw's
-   `handleBlurOnPointerDown` (TldrawEditor.mjs ~L350, body pointerdown not
-   inside the container → `editor.blur()` → `complete()`). Fix idea: a
-   capture-phase pointerdown listener on body (while editing) that, when the
-   target is inside a Boardkit portal (Radix `[data-radix-popper-content-wrapper]`,
-   `[role=dialog]`, `[role=alertdialog]`, Boardkit Popover, selection bar),
-   stops propagation; or portal Boardkit's overlays into the tldraw
-   container. This causes the B3 (selection bar) and likely L10 (Duplicate
-   list from menu) failures.
-2. Esc during a card drag ends editing: `boardkitDragging()` in
-   BoardShape.tsx checks `[aria-pressed=true]`, which pointer drags don't
-   set. Add `data-boardkit-lifted` on the DragOverlay wrapper in Boardkit's
-   DragContext and check that instead.
-3. parity test 1: hover the card before clicking "Customise card".
-4. Update `e2e/boards.e2e.ts` to the new DOM (`[data-boardkit-board]`,
-   `[data-card-id]`); it still uses the old `.gb-*` classes.
-5. Run full `node scripts/local-e2e.mjs`, `npm test`, `npm run build`.
+DONE 2026-10-19 (second session), was "HALF-DONE / BROKEN":
+1. Clicks on Boardkit's menus, panels, dialogs and selection bar did
+   nothing / ended editing. Real cause (the old guess, tldraw's
+   `handleBlurOnPointerDown`, only runs with `?tldraw_preserve_focus`):
+   those are React portals, and React sends their events up the React
+   tree through the board into tldraw's canvas handlers; tldraw took
+   pointer capture on its canvas, so the menu item never got its click.
+   Fix: `portalEventsHandled` in `BoardShape.tsx` marks pointer/click/
+   touch events coming from outside the board's DOM as handled, so
+   tldraw's canvas skips them. NOT stopPropagation: React's also stops
+   the native event at React's root, which broke Boardkit's document
+   listeners (Escape in the customise panel, the drop of a dragged card).
+   Also: Escape that closes a Boardkit menu/panel no longer ends editing
+   (`boardkitOverlayOpen`).
+2. Esc during a pointer drag: Boardkit marks the lifted copy
+   `data-boardkit-lifted` (Boardkit `f5a650d`), `boardkitDragging()` checks it.
+3. Parity test 1 hovers the card before "Customise card".
+4. `e2e/boards.e2e.ts` uses Boardkit's DOM (`[data-boardkit-board]`,
+   `section[data-list-id]`, `article[data-card-id]`) and waits for saves.
+5. NEW BUG FOUND by (4) and fixed: dropping a card on the top edge of
+   another list's first card crashed the board ("Error", React #185): the
+   card flipped between the two lists on every render (nearest-centre
+   collision; on the scaled board moved cards measure off by the scale).
+   Boardkit `c4af6dc` (branch `whiteboard`, pinned): with a pointer, a card
+   crosses only into the list whose column the pointer is in. Changes
+   Boardkit itself too (on merge to its `main`: bump its version). Test:
+   parity "C11: a card dropped on the top edge ..." (whiteboard AND
+   Boardkit itself; failed on the old code).
 6. Dev tip: after `node scripts/sync-boardkit.mjs` restart the dev server
    (Vite doesn't pick up node_modules changes despite the watch setting).
+   `local-e2e.mjs` joins its arguments into a shell line: use
+   `file:line`, not `-g "a|b"`.
 
-NOT STARTED: the backup of the real Boardkit + Linkkit data (automatic,
-simple restore, restore e2e). Plan: gauntlet `src/backup/` — automatic
+BACKUP: BUILT on `phase-2` (2026-10-19), NOT live. `src/backup/`
+(README row), page `/backups/` (link on the home page toolbar and in the
+whiteboard's main menu). Backs up every `boardkit:`/`linkkit:`/`gauntlet:`
+localStorage key + Boardkit's and Linkkit's IndexedDB `kv` stores (images,
+folder link) into IndexedDB `gauntlet-backups`: 3 s after opening `/`,
+`/whiteboard/` or `/backups/` and every 10 min, only if changed; keeps the
+newest 30 + one a day for 90 days. "Restore this" asks first, backs up the
+current data ("Before a restore"), then writes the backup back (records
+with a `rev` get rev above the current one so open tabs adopt them).
+Download as a .json file / "Restore from a file" (images inline; the
+folder link can't go in a file). It never creates the apps' databases.
+Tests: `src/backup/snapshot.test.ts` (10), `e2e/backup.e2e.ts` (5: auto
+backup on the home page, wipe, restore, Boardkit/Linkkit show it; file
+round trip; rev; no stray databases; links). It only protects data on an
+address where the new build runs: real data is protected once this is
+live (owner's go-live condition (2)). Original plan was: gauntlet `src/backup/` — automatic
 snapshots of every `boardkit:*`/`linkkit:*` localStorage key (and Boardkit's
 image IndexedDB) into a separate IndexedDB on each load of / and /whiteboard
 and every ~10 min while open (keep recent + one per day), a "Backups" page
