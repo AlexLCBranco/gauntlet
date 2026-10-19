@@ -33,7 +33,7 @@ the permanent hobby key when it arrives.** Added 2026-10-18.
 - `phase-2` has every phase 1 fix (merged from `main` 2026-10-18). If a
   phase 1 fix lands on `main` later, merge `main` into `phase-2` again.
 
-## Current phase: 2 (Boardkit as a live object), on branch `phase-2` — resumed 2026-10-18
+## Current phase: 2 (Boardkit as a live object), on branch `phase-2` — DONE 2026-10-19, waiting for the owner's hand test
 
 Phase 2 started 2026-10-18. Owner chose: the board object reads and writes
 Boardkit's own record (PROJECT.md, DECISIONS: three phase 2 entries). Code
@@ -78,7 +78,7 @@ the live site has phase 1 only.
    - After the merge `tsc -b` clean, `npm test` 77 pass, whiteboard +
      boards e2e 24 pass against the dev server (boards.e2e needed no
      change). Committed and pushed to `phase-2`.
-8. IN PROGRESS — Finish phase 2 against PROJECT.md section 6 ("resize from
+8. DONE — Finish phase 2 against PROJECT.md section 6 ("resize from
    the corners, edit cards in place, my existing boards move over"), fix
    the known gaps below that block real use, then tell the owner what to
    try by hand (PROJECT.md rule 3) and STOP.
@@ -100,8 +100,17 @@ the live site has phase 1 only.
    - DONE: speed check, e2e "a big board (8 lists, 240 cards) stays
      smooth": dragging it and zooming, median frame 16.7 ms (60 fps),
      95th percentile 33 ms, no long tasks (dev server, headless Edge).
-   - NEXT: full `node scripts/local-e2e.mjs`, then report to the owner
-     what to try by hand, and STOP (PROJECT.md rule 3).
+   - DONE 2026-10-19: full `node scripts/local-e2e.mjs` passed (30 here +
+     14 Linkkit), `npm test` 88 pass, build clean, `npm audit` 0.
+     Vercel built the `phase-2` Preview (success). The Preview sits
+     behind Vercel's login and is its own origin, so it has none of the
+     owner's boards (they live in gauntlet-home.vercel.app's browser
+     storage); a board made at <preview>/boardkit/ shows there.
+   - Reported to the owner what to try by hand (2026-10-19). WAIT.
+9. OPEN, the owner decides — (a) phase 2 goes live (`phase-2` into
+   `main`) only on the owner's word; (b) DECISIONS says the whiteboard
+   takes over the home page / "at the latest when boards move over in
+   phase 2": asked the owner, no answer yet.
 
 ### Bugs found by the e2e and fixed (phase 2)
 - Escape in a card's text field also ended editing the board: tldraw
@@ -234,5 +243,6 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
-- See phase 2's plan above.
+- Phase 2 is done on `phase-2`; wait for the owner's hand test and the
+  two decisions in phase 2's step 9. Do not start phase 3.
 - Swap in the hobby key when it arrives, before 2026-11-01 (see top).
