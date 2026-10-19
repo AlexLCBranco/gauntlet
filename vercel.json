@@ -1,7 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "redirects": [{ "source": "/whiteboard", "destination": "/whiteboard/", "permanent": false }],
+  "redirects": [
+    { "source": "/whiteboard", "destination": "/whiteboard/", "permanent": false },
+    { "source": "/backup", "destination": "/backup/", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/boardkit", "destination": "https://boardkit-iota.vercel.app/boardkit/" },
     { "source": "/boardkit/", "destination": "https://boardkit-iota.vercel.app/boardkit/" },

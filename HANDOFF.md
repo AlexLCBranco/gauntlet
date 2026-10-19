@@ -16,8 +16,13 @@ address: it has none of the owner's real boards; Boardkit runs there
 **Before phase 2 goes live (owner, 2026-10-19), BOTH:** (1) the owner has
 tested it by hand; (2) the owner's real Boardkit AND Linkkit data on
 gauntlet-home.vercel.app has a backup the owner can restore. Set up that
-backup first. NOT DONE YET. The old home page (/) stays; revisit after
-phase 3.
+backup first. The old home page (/) stays; revisit after phase 3.
+- IN PROGRESS 2026-10-19 (a side session, on branch `backup-page` from
+  `main`, worktree `../gauntlet-main-backup`): a backup page at
+  `/backup/` (`src/backup/`): one file with ALL of this site's browser
+  storage (every localStorage key + the IndexedDB databases: Boardkit's
+  images, the whiteboard's pages), and a restore from that file. Not
+  phase 2 work, so it goes to `main`.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
