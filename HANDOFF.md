@@ -5,6 +5,14 @@ file after every step.
 
 **Nothing is broken on the live site.** The home page (/) is untouched.
 
+**Branches (2026-10-18, owner's instruction):** all current work, including
+unfinished phase 2, is on the GitHub branch **`phase-2`**. Work there and
+push there (`git push origin phase-2`). Do NOT push to `main` — a push to
+`main` deploys the live site, which must stay on phase 1 until the owner
+has tested it by hand and says phase 2 may go live. `origin/main` is phase
+1 only. (Local `main` has the same commits as `phase-2`; don't push it.)
+Vercel builds a Preview (not the live site) for each `phase-2` push.
+
 **tldraw key is a temporary evaluation key, expires Nov 1 2026; swap for
 the permanent hobby key when it arrives.** Added 2026-10-18.
 - Where it's stored: Vercel project `gauntlet-home` → Settings →
