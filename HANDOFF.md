@@ -33,8 +33,8 @@ backup first. The old home page (/) stays; revisit after phase 3.
   `vite.config.ts` input, `vercel.json` redirect; expect conflicts only in
   HANDOFF.md/PROJECT.md/src/README.md/vite.config.ts: keep both sides).
 - AUTOMATIC BACKUPS (owner, 2026-10-19: "backup to live now, on its own"):
-  built on branch `backup-live` (from `main`), NOT merged yet; waiting for
-  the owner's OK. Added to the /backup/ page (`src/backup/auto.ts`,
+  LIVE on `main` (`7787690`, merged from branch `backup-live` on the
+  owner's OK, 2026-10-19): all 28 e2e pass against gauntlet-home.vercel.app. Added to the /backup/ page (`src/backup/auto.ts`,
   `policy.ts`; PROJECT.md DECISIONS), same file format. Owner's questions:
   (a) WHERE: in this browser, IndexedDB database `gauntlet-auto-backups`
   (plus a small note `gauntlet:auto-backup` in localStorage). Same
