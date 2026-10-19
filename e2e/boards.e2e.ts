@@ -318,3 +318,78 @@ test("a board looks as in Boardkit: number formats and emphasis, highlights, che
   await page.waitForTimeout(300);
   expect(await page.evaluate((id) => JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!).rev, id)).toBe(rev);
 });
+
+test("a big board (8 lists, 240 cards) stays smooth: dragging it and zooming keep frames short, no long stalls", async ({ page, context }) => {
+  const id = await seedBoard(context);
+  await openWhiteboard(page);
+  await page.evaluate((id) => {
+    const key = `boardkit:board:${id}`;
+    const rec = JSON.parse(localStorage.getItem(key)!);
+    const b = rec.board;
+    b.lists = {};
+    b.cards = {};
+    b.cardOrder = {};
+    b.listOrder = [];
+    for (let l = 0; l < 8; l++) {
+      const lid = `perf-l${l}`;
+      b.listOrder.push(lid);
+      b.lists[lid] = { id: lid, title: `List ${l + 1}`, color: ["red", "blue", "green", "yellow"][l % 4] };
+      b.cardOrder[lid] = [];
+      for (let c = 0; c < 30; c++) {
+        const cid = `perf-c${l}-${c}`;
+        b.cards[cid] = { id: cid, title: `Game ${c + 1}: Team ${l}A vs Team ${l}B, 7:05pm`, ...(c % 7 === 0 ? { highlight: "red" } : {}) };
+        b.cardOrder[lid].push(cid);
+      }
+    }
+    rec.rev += 1;
+    localStorage.setItem(key, JSON.stringify(rec));
+  }, id);
+  await placeBoard(page, id);
+  await expect(page.locator(".gb-card")).toHaveCount(240);
+
+  const measure = async (act: () => Promise<void>) => {
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__frames = [];
+      w.__long = [];
+      new PerformanceObserver((l) => l.getEntries().forEach((e) => w.__long.push(e.duration))).observe({ type: "longtask" });
+      let last = performance.now();
+      w.__on = true;
+      const loop = (t: number) => {
+        w.__frames.push(t - last);
+        last = t;
+        if (w.__on) requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    });
+    await act();
+    return page.evaluate(() => {
+      const w = window as any;
+      w.__on = false;
+      const f = (w.__frames as number[]).slice(2).sort((a, b) => a - b);
+      return { median: f[Math.floor(f.length / 2)], p95: f[Math.floor(f.length * 0.95)], longest: Math.max(0, ...(w.__long as number[])) };
+    });
+  };
+
+  // Drag the board around for about 2 s.
+  const b = await box(page.locator(`.gb-board[data-board-id="${id}"]`));
+  const drag = await measure(async () => {
+    await page.mouse.move(b.x + 20, b.y + 10);
+    await page.mouse.down();
+    for (let i = 1; i <= 120; i++) await page.mouse.move(b.x + 20 + Math.sin(i / 15) * 200, b.y + 10 + i);
+    await page.mouse.up();
+  });
+  // Zoom in and out with the wheel.
+  const zoom = await measure(async () => {
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 20; i++) await page.mouse.wheel(0, i < 10 ? -120 : 120);
+    await page.keyboard.up("Control");
+  });
+  console.log(`big board: drag ${JSON.stringify(drag)}, zoom ${JSON.stringify(zoom)} (ms)`);
+  for (const m of [drag, zoom]) {
+    expect(m.median).toBeLessThan(25); // about 40+ frames a second
+    expect(m.p95).toBeLessThan(60);
+    expect(m.longest).toBeLessThan(250);
+  }
+});

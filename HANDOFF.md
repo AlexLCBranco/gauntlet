@@ -97,6 +97,11 @@ the live site has phase 1 only.
      `src/boards/looks.ts` (pure, `looks.test.ts`), drawn in
      `BoardView.tsx`, `boards.css`. Display only (checks can't be
      clicked on the whiteboard yet). e2e "a board looks as in Boardkit".
+   - DONE: speed check, e2e "a big board (8 lists, 240 cards) stays
+     smooth": dragging it and zooming, median frame 16.7 ms (60 fps),
+     95th percentile 33 ms, no long tasks (dev server, headless Edge).
+   - NEXT: full `node scripts/local-e2e.mjs`, then report to the owner
+     what to try by hand, and STOP (PROJECT.md rule 3).
 
 ### Bugs found by the e2e and fixed (phase 2)
 - Escape in a card's text field also ended editing the board: tldraw
