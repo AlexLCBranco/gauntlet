@@ -10,7 +10,7 @@ import { addStone, alignedPage, box, canvasEl, canvasScroll, dragBy, frameOf, pa
 
 const MAP = "ZZ canvas map";
 
-/** The stone's box is inside its page's box (2 px for borders). */
+/** The widget's box is inside its page's box (2 px for borders). */
 async function expectInside(page: Page, stoneIndex: number, pageIndex: number) {
   const s = await box(stones(page).nth(stoneIndex));
   const p = await box(pageEl(page, pageIndex));
@@ -79,7 +79,7 @@ test("add stones, move and resize inside the page, undo/redo, and the layout sur
   await page.keyboard.press("Control+Shift+z");
   await page.keyboard.press("Control+Shift+z");
   await expect.poll(async () => (await savedLayout(page)).pages[0].stones[0]).toEqual(big);
-  // Undo of an add takes the stone off; redo brings it back.
+  // Undo of an add takes the widget off; redo brings it back.
   for (let i = 0; i < 5; i++) await page.keyboard.press("Control+z");
   await expect(stones(page)).toHaveCount(1);
   await page.keyboard.press("Control+y");
@@ -99,7 +99,7 @@ test("add stones, move and resize inside the page, undo/redo, and the layout sur
   await page.waitForTimeout(500);
   expect(JSON.stringify(await savedLayout(page))).toBe(before);
 
-  // A reload: same pages, same stones, same places, same names.
+  // A reload: same pages, same widgets, same places, same names.
   const boxes = [await box(board), await box(map)];
   await page.reload();
   await expect(stones(page)).toHaveCount(2);
@@ -111,7 +111,7 @@ test("add stones, move and resize inside the page, undo/redo, and the layout sur
     expect(after[i].width).toBeCloseTo(b.width, 0);
   }
 
-  // Removing a stone, and undoing that.
+  // Removing a widget, and undoing that.
   await stones(page).nth(1).getByRole("button", { name: `Remove ${MAP} from the canvas` }).click();
   await expect(stones(page)).toHaveCount(1);
   await canvasEl(page).focus();

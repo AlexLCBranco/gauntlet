@@ -123,7 +123,7 @@ export function Canvas() {
 
   // ------------------------------------------------------------------ focus
   const [focused, setFocused] = useState<string | null>(null);
-  // The stone touched last is drawn on top of any it overlaps (not saved).
+  // The widget touched last is drawn on top of any it overlaps (not saved).
   const [raised, setRaised] = useState<string[]>([]);
   const raise = useCallback((stoneId: string) => setRaised((r) => (r.at(-1) === stoneId ? r : [...r.filter((id) => id !== stoneId), stoneId])), []);
   const onFrameFocus = useCallback(

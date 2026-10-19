@@ -1,5 +1,5 @@
 /**
- * Talking to the stones' frames. One `message` listener for the whole
+ * Talking to the widgets' frames. One `message` listener for the whole
  * canvas, attached when this module loads, so it is always in place before
  * any frame gets its address (frames send `stone:ready` once, early).
  * A message counts only from this origin and from a frame registered here,

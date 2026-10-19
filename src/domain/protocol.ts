@@ -1,5 +1,5 @@
 /**
- * The stone protocol (both apps' `domain/embed.ts`, gauntlet phase 3).
+ * The widget protocol (both apps' `domain/embed.ts`, gauntlet phase 3).
  * Frame → canvas: stone:ready, stone:status, stone:scroll, stone:flushed.
  * Canvas → frame: stone:flush, stone:scroll-to.
  */
@@ -35,5 +35,5 @@ export function parseFromFrame(data: unknown): FromFrame | null {
   }
 }
 
-/** The address of a stone's frame. */
+/** The address of a widget's frame. */
 export const frameUrl = (app: App, itemId: string) => `/${app}/?embed=1&id=${encodeURIComponent(itemId)}`;

@@ -15,7 +15,7 @@ lands.
 gauntlet-home.vercel.app is the shared home for the owner's widgets
 ("stones"). Boardkit lives at `/boardkit` and Linkkit at `/linkkit`, with
 their data already there. The gauntlet is a canvas on the home page where
-stones live as **live** frames: edit a card in Boardkit and the same item
+widgets live as **live** frames: edit a card in Boardkit and the same item
 updates in Linkkit, and vice versa.
 
 Users are regular people: everything is done with the mouse, typing only for
@@ -28,7 +28,7 @@ content. Fluidity and efficiency come first; anything clunky is a bug.
 | 0 | Investigate and plan | **Done** (this file, and the canvas section of `PROJECT.md`) |
 | 1 | Linkkit automatic backups | **Done**, live in Linkkit v0.0.100 (commit `3431efd`) |
 | 2 | Shared storage (bridge step 3) | **Skipped**: already built and working (see Findings) |
-| 3 | Embed mode for each stone | **Done** 2026-10-18: Linkkit v0.0.101 (`33801c2`), Boardkit v0.0.94 (`2a854dc`), e2e `linkkit/e2e/embed.e2e.ts`. Local e2e route built first (`scripts/`, `b732665`) |
+| 3 | Embed mode for each widget | **Done** 2026-10-18: Linkkit v0.0.101 (`33801c2`), Boardkit v0.0.94 (`2a854dc`), e2e `linkkit/e2e/embed.e2e.ts`. Local e2e route built first (`scripts/`, `b732665`) |
 | 4 | Canvas v0 on the gauntlet home page | **Done** 2026-10-18 (gauntlet `0739342`). See "Phase 4: what was built" |
 | 5 | Prove it's alive (e2e) | **Next.** Read "Notes for phase 5" first |
 | — | Snapshot-thumbnail feasibility note | Open: write it, don't build it |
@@ -38,7 +38,7 @@ content. Fluidity and efficiency come first; anything clunky is a bug.
 - Phases in order. Push to `main` only when every test passes (see the next
   section: e2e included, run **before** the push).
 - No new widget features (no bracket mode, presets, tree mode 14b–14e, …).
-  Exception: fixes needed for stones to work inside the canvas.
+  Exception: fixes needed for widgets to work inside the canvas.
 - Automate every check that can be automated (unit, or Playwright e2e on the
   live site with throwaway data it makes and deletes, or a fresh browser
   profile). Manual steps only for what truly can't be automated (feel), each
@@ -322,7 +322,7 @@ menus or app chrome, and editing still works normally.
   answers a flush counts as busy (the plan already says so).
 - **Status is final per load**: a frame that went `missing` or `deleted`
   stays so until reloaded, even if the item comes back (restored from the
-  trash). The canvas can offer "Reload" or remove the stone.
+  trash). The canvas can offer "Reload" or remove the widget.
 - **Wheel**: `overscroll-behavior: contain` is on in both apps' embed mode,
   so a wheel over a frame never scrolls the canvas: frame header bars and
   page margins are where the canvas scrolls (as planned; check the feel).
@@ -423,7 +423,7 @@ localhost (they allow it) with their own local data.
 - **Add stone:** pick a Boardkit board or a Linkkit map. Read
   `boardkit:registry` and `linkkit:registry` directly (same origin); a map
   is linked if `linkkit:map:<id>` has `linkedBoard`. List **all** maps and
-  show a **badge** on linked ones. The stone is placed as a frame on the
+  show a **badge** on linked ones. The widget is placed as a frame on the
   current page.
 - **Frames:** move and resize with the mouse, and they stay inside the page.
   Taller content scrolls inside the frame. Positions and sizes are stored as
@@ -453,7 +453,7 @@ localhost (they allow it) with their own local data.
   frame) isn't possible in v0.**
 
 Tests: unit tests for the layout logic (clamping inside the page, fractions,
-page jumps, reorder, undo/redo). e2e on the live site for adding a stone,
+page jumps, reorder, undo/redo). e2e on the live site for adding a widget,
 move/resize staying in the page, key jumps landing aligned, the overview
 jump and reorder, the layout surviving a reload, undo/redo, the focus
 outline, and unloading/reloading a far frame keeping its scroll and never
@@ -484,9 +484,9 @@ Gauntlet `0739342` on `main`. How it works and the known gaps: gauntlet
   with `dev-proxy.mjs`'s own `rewrite`/`forward` and `vercel.json`;
   `npm run dev` to the live deployments, `npm run dev:local` to the local
   dev servers. `dev-proxy.mjs` (pre-push e2e) now serves `dist/`.
-- **Bug found by the e2e and fixed:** a stone resized under another one
-  (later stones paint on top) couldn't be grabbed: the header drag hit the
-  other frame. Now the stone grabbed or focused last is on top. The move
+- **Bug found by the e2e and fixed:** a widget resized under another one
+  (later widgets paint on top) couldn't be grabbed: the header drag hit the
+  other frame. Now the widget grabbed or focused last is on top. The move
   test fails on the old code (the drag did nothing).
 - **Tests:** unit `src/domain/layout.test.ts` and `sources.test.ts` (27:
   clamping, fractions, geometry, page jumps, reorder, undo/redo, reading
@@ -517,7 +517,7 @@ Gauntlet `0739342` on `main`. How it works and the known gaps: gauntlet
 - `e2e/helpers.ts` has `seedBoard`, `seedMap`, `addStone` (through the
   picker), `frameOf`, `dragBy`, `alignedPage`, `savedLayout`. Making a
   *linked* map: copy the flow from `linkkit/e2e/bridge.e2e.ts`.
-- Stones are `[data-stone-id]` with `data-app`, `data-loaded`,
+- Widgets are `[data-stone-id]` with `data-app`, `data-loaded`,
   `data-focused`; pages `section[data-page-index]`. Frames on far pages
   unload: get a frame again (`frameOf`) after coming back.
 - Two frames of one map on one page: add the same map twice (the second
