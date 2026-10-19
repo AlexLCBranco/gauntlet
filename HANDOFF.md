@@ -117,7 +117,10 @@ site, then stop and tell the owner what to re-test.
       Windows). e2e "one Ctrl+Z undoes a shape just drawn ..." (failed on the
       old code).
 - Before the push `node scripts/local-e2e.mjs` passed (22 here + 14
-  Linkkit), `npm test` passes.
+  Linkkit), `npm test` passes. Pushed to `main` (`7943a14`); after the
+  deploy all 19 whiteboard e2e passed live.
+- Next: phase 2 resumes on branch `phase-2` (owner, 2026-10-18): merge
+  `main` into it, then continue phase 2. Phase 2 never goes to `main`.
 
 ## Current phase: 1 (the floor): fixes 1–10 live, waiting for the owner's re-test; phase 2 paused on branch `phase-2`
 
