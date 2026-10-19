@@ -31,10 +31,11 @@ the permanent hobby key when it arrives.** Added 2026-10-18.
   `main` when done.
 - `phase-2` = all phase 2 work (unfinished, paused). Vercel only makes a
   Preview for it, never the live site. Never push phase 2 to `main` until
-  the owner says it may go live. After the phase 1 fixes land, `main` is
-  merged into `phase-2`.
+  the owner says it may go live. It does NOT have the phase 1 fixes yet:
+  merging `main` into it is the first step when phase 2 resumes (see
+  "Next concrete step").
 
-## Phase 1 fixes from the owner's hand test (2026-10-18) — DO THESE BEFORE PHASE 2
+## Phase 1 fixes from the owner's hand test (2026-10-18) — ALL DONE, LIVE
 
 The owner tested phase 1 by hand on the live site. Fix ALL of these before
 continuing phase 2. Tick each off here as it's fixed; add automatic tests
@@ -100,7 +101,7 @@ That's the whole list (1–10). Fix them on top of the live phase 1 version
 site, then stop and tell the owner what to re-test.
 
 
-## Current phase: 1 (the floor): fixing the owner's list above; phase 2 paused on branch `phase-2`
+## Current phase: 1 (the floor): fixes 1–10 live, waiting for the owner's re-test; phase 2 paused on branch `phase-2`
 
 The whiteboard is a tldraw app at /whiteboard (see DECISIONS). Code areas
 are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
@@ -136,4 +137,13 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   history (`git show 28662b9:PROJECT.md`) and GAUNTLET-PLAN.md.
 
 ### Next concrete step
-- Fix the list at the top, item by item, ticking each off.
+- Fixes 1–10 are live (pushed to `main` 2026-10-18, `0121e3b`). Before the
+  push `node scripts/local-e2e.mjs` passed (21 here + 14 Linkkit); after
+  it every e2e passed live (21). The owner re-tests by hand; wait.
+- When the owner says phase 2 continues: merge `main` into `phase-2`.
+  Expect conflicts in HANDOFF.md, PROJECT.md, `src/whiteboard/Whiteboard.tsx`
+  (phase 2 adds `shapeUtils` and the Board button: combine with
+  `src/style/shapeUtils.ts` and the new components) and
+  `e2e/whiteboard.e2e.ts`. Then update `e2e/boards.e2e.ts` for the new
+  camera (100% = page fills the window; tests use a 16:9 window) and the
+  style panel over the top-left of the page, and run every e2e.
