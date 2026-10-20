@@ -3,7 +3,29 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): renamed board shows everywhere; menu opening writes nothing
+## NOW (2026-10-19): flaky fullpage.e2e.ts:314 fixed (gauntlet `e3c07e9`)
+
+- CAUSE (a real app race, diagnosed first): tldraw saves the current page
+  350 ms after a change, to IndexedDB; its flush on unload is an async
+  write a reload cuts off. A page change just before a reload was lost: in
+  a check, 12 of 12 reloads right after "Previous page" reopened on page 2.
+  The "existing content survives" test reloads right after "Previous
+  page"; when the machine was busy (full runs) that reload beat the save,
+  the whiteboard reopened on page 2 (no board there), and the board was
+  "not found". Not the board loading slowly: it renders at once.
+- FIX: `src/pages/rememberPage.ts` keeps the tab's current page in
+  sessionStorage (written at once, per tab, as tldraw's own) and puts it
+  back on open. Session state only; no drawing or board is written.
+- Test (fails on the old code: "Page 2 2 / 2"): `whiteboard.e2e.ts` "a
+  reload right after changing page opens on that page".
+- Same tldraw limit still applies to SHAPES: something drawn less than
+  ~350 ms before a reload or tab close can be lost. Not changed (tldraw's
+  own save); tests wait before reloading.
+Results (real exit codes): unit 81 + lint exit 0; full local e2e 3 runs in
+a row exit 0 (gauntlet 73, Linkkit 20 each); live gauntlet exit 0 (68
+pass, 5 skipped: real data, local only).
+
+## Earlier (2026-10-19): renamed board shows everywhere; menu opening writes nothing
 
 Owner's OK (2026-10-19) on the read-only stale-name fix. LIVE: Linkkit
 v0.0.107 (`ce9359b`), Boardkit v0.0.98 (`ea81ab1`, on `main`; its
@@ -39,7 +61,7 @@ not in the whiteboard widget), gauntlet `31580f4`.
   `localStorage.key(i)`.
 - Flaky: gauntlet `fullpage.e2e.ts:314` ("existing content survives",
   Boardkit board widget not found in 5 s) failed in 2 of the last 4 full
-  local runs, passed 13/13 each rerun. Not investigated yet.
+  local runs, passed 13/13 each rerun. Fixed since: see NOW.
 Results (real exit codes): unit Linkkit 968, Boardkit 202, gauntlet 81 +
 proxy tests, all exit 0; builds and lint exit 0 (Linkkit 2 and Boardkit 27
 old lint warnings, unchanged). Local full e2e: Linkkit 20 pass; gauntlet
