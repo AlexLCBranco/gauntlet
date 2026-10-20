@@ -13,9 +13,10 @@ import {
 } from "tldraw";
 
 import { pageBox } from "../pages/keepFilled";
+import { insideDelta } from "../pages/sheet";
+import { BoardName } from "./BoardName";
 import { WhiteboardBoard, useSelectionStore } from "./boardkit";
 import { fitBoard } from "./fit";
-import { registryBoards, useRegistry } from "./registry";
 import "./boards.css";
 
 export const BOARD_TYPE = "boardkit-board";
@@ -88,8 +89,14 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       const fit = fitBoard({ w: el.offsetWidth, h: el.offsetHeight }, current.props.scale, pageBox.get() ?? { w: Infinity, h: Infinity });
       const p = current.props;
       if (Math.abs(fit.w - p.w) < 0.5 && Math.abs(fit.h - p.h) < 0.5 && fit.scale === p.scale) return;
-      // Placed new: grow from the middle, where it was put.
-      const move = p.scale === 0 ? { x: current.x + (p.w - fit.w) / 2, y: current.y + (p.h - fit.h) / 2 } : {};
+      // Placed new: grow from the middle, where it was put, inside the page.
+      let move = {};
+      if (p.scale === 0) {
+        const at = { x: current.x + (p.w - fit.w) / 2, y: current.y + (p.h - fit.h) / 2 };
+        const page = pageBox.get();
+        const d = page ? insideDelta({ ...at, w: fit.w, h: fit.h }, page) : { x: 0, y: 0 };
+        move = { x: at.x + d.x, y: at.y + d.y };
+      }
       editor.run(() => editor.updateShape<BoardShape>({ id: shape.id, type: BOARD_TYPE, ...move, props: fit }), { history: "ignore" });
     };
     measure();
@@ -99,7 +106,8 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   }, [editor, shape.id]);
 
   // Editing began with a double-click on a card or list title: rename it,
-  // as a click on a title does in Boardkit.
+  // as a click on a title does in Boardkit. On "+ Add a card" or "+ Add a
+  // list" (anywhere, on a board with no lists yet): open it.
   useEffect(() => {
     if (!editing) return;
     const p = editor.inputs.getCurrentScreenPoint();
@@ -112,9 +120,11 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         if (tries < 10) frame = requestAnimationFrame(() => find(tries + 1));
         return;
       }
-      if (!hit || !root.contains(hit)) return;
-      const title = hit.closest("[data-card-title], h2")?.querySelector<HTMLElement>("button");
-      title?.click();
+      if (!hit || !content.current?.contains(hit)) return;
+      const adds = [...root.querySelectorAll<HTMLElement>("button")].filter((b) => b.textContent?.startsWith("+ Add a "));
+      const empty = !root.querySelector("section[data-list-id]");
+      const title = root.contains(hit) ? hit.closest("[data-card-title], h2")?.querySelector<HTMLElement>("button") : null;
+      (title ?? adds.find((b) => b.contains(hit)) ?? (empty ? adds[0] : null))?.click();
     });
     return () => cancelAnimationFrame(frame);
   }, [editing, editor]);
@@ -178,7 +188,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
           if (editing || !e.currentTarget.contains(e.target as Node)) e.stopPropagation();
         }}
       >
-        <BoardName boardId={boardId} />
+        <BoardName shapeId={shape.id} boardId={boardId} shown={scale > 0} />
         <WhiteboardBoard boardId={boardId} editing={editing} />
       </div>
     </HTMLContainer>
@@ -221,10 +231,4 @@ function boardkitTakesEscape(target: EventTarget | null): boolean {
   if (boardkitDragging()) return true;
   const { selected, clipboard } = useSelectionStore.getState();
   return Object.keys(selected).length > 0 || clipboard.length > 0;
-}
-
-/** The board's name in Boardkit's list, kept current. */
-function BoardName({ boardId }: { boardId: string }) {
-  const name = registryBoards(useRegistry()).find((b) => b.id === boardId)?.name;
-  return name ? <div className="gb-name">{name}</div> : null;
 }

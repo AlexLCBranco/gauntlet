@@ -3,4 +3,4 @@
 // import from Boardkit goes through this file.
 import "./boardkit.css";
 
-export { WhiteboardBoard, flushBoard, useSelectionStore, useThemeStore, IconSprite, Toaster } from "boardkit/src/app/whiteboard";
+export { WhiteboardBoard, createWhiteboardBoard, renameWhiteboardBoard, flushBoard, useSelectionStore, useThemeStore, IconSprite, Toaster } from "boardkit/src/app/whiteboard";

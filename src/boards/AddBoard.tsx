@@ -2,9 +2,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { atom, createShapeId, useEditor, useValue, type Editor, type TLUiToolItem } from "tldraw";
 
 import { pageBox } from "../pages/keepFilled";
-import { SHEET } from "../pages/sheet";
+import { insideDelta, SHEET } from "../pages/sheet";
 import { BOARD_TYPE, type BoardShape } from "./BoardShape";
-import { registryBoards, useRegistry } from "./registry";
+import { namingBoard } from "./BoardName";
+import { createWhiteboardBoard } from "./boardkit";
+import { registryBoards, registryChanged, useRegistry } from "./registry";
 
 const boardIcon = (
   <div>
@@ -37,17 +39,20 @@ const BUTTON = '[data-testid="tools.board"], [data-testid="tools.more.board"]';
 
 /** The list of Boardkit's boards, under the Board button (or under the
     toolbar when the button is in the overflow menu). A click puts that
-    board on the current page, in the middle, selected. */
+    board on the current page, in the middle, selected. "+ New board" first
+    makes a new one in Boardkit (newBoard). */
 export function BoardPicker() {
   const editor = useEditor();
   const open = useValue(pickerOpen);
   const raw = useRegistry();
   const box = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<{ left: number; top: number } | null>(null);
+  const [failed, setFailed] = useState(false);
   const boards = registryBoards(raw);
 
   useLayoutEffect(() => {
     if (!open) return;
+    setFailed(false);
     // The button on show (tldraw keeps hidden copies for measuring), else
     // the toolbar; kept inside the window.
     const shown = [...document.querySelectorAll(BUTTON), document.querySelector(".gauntlet-top-toolbar")]
@@ -77,8 +82,12 @@ export function BoardPicker() {
   if (!open || !at) return null;
   return (
     <div className="gb-picker" role="menu" data-testid="board-picker" ref={box} style={at}>
+      <button role="menuitem" data-testid="new-board" className="gb-picker-new" onClick={() => setFailed(!newBoard(editor))}>
+        + New board
+      </button>
+      {failed && <div className="gb-picker-empty">The board could not be saved: this browser's storage is full.</div>}
       <div className="gb-picker-title">Boardkit boards</div>
-      {boards.length === 0 && <div className="gb-picker-empty">No boards yet: make one at /boardkit.</div>}
+      {boards.length === 0 && <div className="gb-picker-empty">No boards yet.</div>}
       {boards.map((b) => (
         <button key={b.id} role="menuitem" data-board={b.id} onClick={() => placeBoard(editor, b.id)}>
           {b.name}
@@ -88,13 +97,39 @@ export function BoardPicker() {
   );
 }
 
+/**
+ * "+ New board": a new, empty Boardkit board named "Untitled" (in Boardkit's
+ * storage, so /boardkit lists it), placed in the middle of the view, inside
+ * the page, selected, with its name ready to type (BoardName). One Ctrl+Z
+ * takes it off the whiteboard; the board stays in Boardkit, as when a board
+ * widget is deleted. Returns false when Boardkit could not store it.
+ */
+function newBoard(editor: Editor): boolean {
+  const boardId = createWhiteboardBoard("Untitled");
+  if (!boardId) return false;
+  registryChanged();
+  const { w, h } = editor.getShapeUtil<BoardShape>(BOARD_TYPE).getDefaultProps();
+  const view = editor.getViewportPageBounds();
+  const at = { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
+  const d = insideDelta(at, pageBox.get() ?? SHEET);
+  const id = place(editor, boardId, at.x + d.x, at.y + d.y, "new board");
+  namingBoard.set(id);
+  return true;
+}
+
 function placeBoard(editor: Editor, boardId: string) {
-  const id = createShapeId();
   const { w, h } = editor.getShapeUtil<BoardShape>(BOARD_TYPE).getDefaultProps();
   const page = pageBox.get() ?? SHEET;
-  editor.markHistoryStoppingPoint("add board");
-  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: page.x + page.w / 2 - w / 2, y: page.y + page.h / 2 - h / 2, props: { boardId } });
+  place(editor, boardId, page.x + page.w / 2 - w / 2, page.y + page.h / 2 - h / 2, "add board");
+}
+
+/** One undo step: the widget for `boardId` at (x, y), selected. */
+function place(editor: Editor, boardId: string, x: number, y: number, step: string) {
+  const id = createShapeId();
+  editor.markHistoryStoppingPoint(step);
+  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x, y, props: { boardId } });
   editor.setCurrentTool("select");
   editor.select(id);
   pickerOpen.set(false);
+  return id;
 }

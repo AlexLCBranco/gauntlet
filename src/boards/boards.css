@@ -47,3 +47,21 @@
   color: #a3abb9;
   font: 600 14px/1.3 system-ui, sans-serif;
 }
+
+/* "+ New board", first in the Board picker. */
+.gb-picker .gb-picker-new { font-weight: 600; }
+
+/* The name just after "New board": typed in place, looking like the name. */
+.gb-name-field {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 200px;
+  margin: 0 0 6px;
+  padding: 2px 4px;
+  border: 1px solid #4f7cff;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.25);
+  outline: none;
+  pointer-events: all; /* the widget lets presses through to the whiteboard */
+}

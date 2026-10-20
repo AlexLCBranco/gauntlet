@@ -31,8 +31,13 @@ function readRaw(): string | null {
   }
 }
 
-/** Boardkit's board list as saved, kept current (another tab's saves, and
-    this page's on focus). */
+/** This page changed Boardkit's board list itself (a new board, a rename):
+    the browser sends no `storage` event for that, so readers are told here. */
+const CHANGED = "gauntlet:registry-changed";
+export const registryChanged = () => window.dispatchEvent(new Event(CHANGED));
+
+/** Boardkit's board list as saved, kept current (another tab's saves, this
+    page's own, and on focus). */
 export function useRegistry(): string | null {
   return useSyncExternalStore((changed) => {
     const onStorage = (e: StorageEvent) => {
@@ -40,9 +45,11 @@ export function useRegistry(): string | null {
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener("focus", changed);
+    window.addEventListener(CHANGED, changed);
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", changed);
+      window.removeEventListener(CHANGED, changed);
     };
   }, readRaw);
 }

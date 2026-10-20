@@ -3,7 +3,45 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-20): Linkkit's full-run failures were test races (no app bug); perf zoom limit 108 ms
+## NOW (2026-10-20): "+ New board" in the whiteboard's Board picker
+
+Boardkit v0.0.99 (`69e83a2`, `main`, pinned in package.json) + gauntlet.
+- Boardkit `store/boardStore.ts`: `createWhiteboardBoard(name)` stores an
+  empty board (Boardkit's own "+ New board" starts empty: `createEmptyBoard`)
+  and its registry entry at once, without opening it or changing the
+  app's active board; `renameWhiteboardBoard(id, name)`. Both flush a
+  pending list save first (else a waiting rename was lost; unit test fails
+  without the flush) and put the stored list into the store. Unit:
+  `whiteboardBoards.test.ts` (7).
+- gauntlet `src/boards/AddBoard.tsx`: "+ New board" first in the picker
+  (the only "insert an existing board" menu; the toolbar button and its
+  overflow copy open the same picker). Places the widget in the middle of
+  the VIEW (existing boards still go to the page's middle, unchanged),
+  kept inside the page, selected, one undo step.
+  `BoardName.tsx`: the name is a field, "Untitled" selected; Enter or a
+  press elsewhere keeps the typed name, Escape or nothing typed keeps
+  "Untitled"; keys never reach tldraw; Ctrl+Z with nothing typed undoes
+  the creation. `registry.ts`: same-page `registryChanged()` (no storage
+  event for this page's own writes). `BoardShape.tsx`: a new board grows
+  from the middle inside the page; double-click on "+ Add a card"/"+ Add a
+  list", or anywhere on a board with no lists, opens that field (how the
+  first list is added without leaving the whiteboard).
+- UNDO (DECISIONS): widget off the whiteboard, board stays in Boardkit's
+  list (as deleting a widget does; Boardkit has no board trash). Redo
+  brings the same board back. Untitled duplicates allowed, as in Boardkit.
+- e2e `e2e/newboard.e2e.ts` (6): middle of view/selected/Untitled/ready
+  to type; typing (incl. r, x, Backspace), Escape, press elsewhere, /boardkit
+  list; first list added on the whiteboard shows in /boardkit and a card
+  added there shows on the whiteboard; page corner; undo/redo; two in a
+  row + reload. On HEAD src: 6/6 fail (no "New board"). The corner test
+  also passes with my clamp removed: the existing keepInside pulls the
+  board in a moment later; the clamp only avoids that jump.
+Results (real exit codes): Boardkit unit 209, lint 0 (27 old warnings),
+build 0. gauntlet lint 0, unit 81 + 5 exit 0, build 0 (old chunk warning,
+2,009.7 kB). Full local `node scripts/local-e2e.mjs` 3 runs in a row, exit
+0 each: gauntlet 88/88 (realdata 5/5) + Linkkit 20/20.
+
+## Earlier (2026-10-20): Linkkit's full-run failures were test races (no app bug); perf zoom limit 108 ms
 
 No app code changed (gauntlet, Linkkit, Boardkit). Each failure was
 reproduced and its cause measured before any change.
@@ -493,9 +531,8 @@ Boardkit still shows a board's background".
   zoomed-out view.
 
 ### NEXT ROUND — recorded, NOT started (owner, 2026-10-19)
-- Create widgets from inside the whiteboard: the insert menu gets "New
-  board" and "New map" next to adding existing ones, so the owner never
-  has to leave the whiteboard to make one.
+- "New board": DONE 2026-10-20 (see NOW). "New map" waits for phase 3:
+  Linkkit maps can't be on the whiteboard before then.
 - Boardkit: cards can have images (not in Boardkit today, not even on its
   site). Build it in Boardkit itself, so it works on the site and inside
   the whiteboard.

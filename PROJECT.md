@@ -239,3 +239,12 @@ Changes to the plan, newest last. Each says what and why.
   /backup/). They live in the same browser storage as the data: clearing
   the browser's data loses them too; only a saved file protects against
   that.
+- 2026-10-20 — "+ New board" in the whiteboard's Board picker makes a real
+  Boardkit board through Boardkit's own code (`createWhiteboardBoard`):
+  empty, as Boardkit's own "+ New board" makes one, named "Untitled"
+  (owner's wording; Boardkit's own dialog suggests "Untitled board N" but
+  lets two boards share a name, so two untitled boards are both
+  "Untitled"). Undo takes the widget off the whiteboard and leaves the
+  board in Boardkit's list, as deleting a board widget does: Boardkit has
+  no board trash, and deleting a board there is permanent. Redo puts the
+  same board back. Such boards are deleted at /boardkit if unwanted.
