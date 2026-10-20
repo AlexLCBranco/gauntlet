@@ -254,16 +254,31 @@ test("real data: every Boardkit board loads in Boardkit and as a whiteboard widg
 // (`?embed=1`), at each window size; after each open every stored map is
 // byte for byte what the backup holds. The bracket "Untitled" is opened
 // again 4 times (2 in Linkkit, 2 in a frame) after the others. "Party" is
-// linked to a board renamed since ("Snacks"): it shows the board's name but
-// may not store it on open either.
+// linked to a board whose card "Snacks" was renamed in Boardkit since: it
+// shows the card's new name but may not store it on open either. Then every map once more, picked in
+// Linkkit's map menu (switching maps used to save the map opened). The map
+// list (`linkkit:registry`) is checked byte for byte too.
 const mapKeys = (page: Page) =>
-  page.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith("linkkit:map:")).map((k) => [k, localStorage.getItem(k)!])));
+  page.evaluate(() =>
+    Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith("linkkit:map:") || k === "linkkit:registry").map((k) => [k, localStorage.getItem(k)!])),
+  );
 
-async function openMap(page: Page, id: string, nodes: number, how: "app" | "embed") {
+async function openMap(page: Page, id: string, nodes: number, how: "app" | "embed" | "menu") {
   if (how === "app") {
     await page.goto("/backup/");
     await page.evaluate((id) => localStorage.setItem("linkkit:active", id), id);
     await page.goto("/linkkit/");
+  } else if (how === "menu") {
+    // Picked in Linkkit's map menu, as the owner switches maps (found by id:
+    // names repeat). Maps past the newest 8 are under "All maps".
+    if (!page.url().endsWith("/linkkit/")) {
+      await page.goto("/linkkit/");
+      await expect(page.locator("[data-ready]")).toBeVisible({ timeout: 15_000 });
+    }
+    await page.getByRole("button", { name: /^Switch map/ }).click();
+    const item = page.locator(`[role="menuitem"][data-map-id="${id}"]`);
+    if (!(await item.isVisible())) await page.getByRole("menuitem", { name: /^All maps/ }).click();
+    await item.click();
   } else {
     await page.goto(`/linkkit/?embed=1&id=${encodeURIComponent(id)}`);
   }
@@ -276,7 +291,7 @@ async function openMap(page: Page, id: string, nodes: number, how: "app" | "embe
 for (const size of SIZES)
 test(`real data: opening each Linkkit map at ${size.width}x${size.height} changes no stored map, not one byte`, async ({ page }) => {
   const b = backup();
-  const stored = Object.fromEntries(Object.entries(b.localStorage).filter(([k]) => k.startsWith("linkkit:map:")));
+  const stored = Object.fromEntries(Object.entries(b.localStorage).filter(([k]) => k.startsWith("linkkit:map:") || k === "linkkit:registry"));
   await page.setViewportSize(size);
   await restore(page, b);
   const registry = JSON.parse(b.localStorage["linkkit:registry"]) as { maps: { id: string; name: string }[] };
@@ -286,11 +301,12 @@ test(`real data: opening each Linkkit map at ${size.width}x${size.height} change
   const opens = [
     ...registry.maps.flatMap(({ id }) => [[id, "app"], [id, "embed"]] as const),
     [bracket, "app"], [registry.maps[0].id, "app"], [bracket, "app"], [bracket, "embed"], [bracket, "embed"],
+    ...registry.maps.map(({ id }) => [id, "menu"] as const),
   ] as const;
   const changed = new Set<string>();
   for (const [id, how] of opens) {
     await openMap(page, id, nodesOf(id), how);
-    if (how === "app" || id === bracket) {
+    if (how !== "embed" || id === bracket) {
       // Every box is there (a map that hides cut or collapsed boxes shows fewer).
       const m = (JSON.parse(b.localStorage[`linkkit:map:${id}`]) as MapRec).map;
       if (!m.hideCut && !(m.collapsed?.length ?? 0) && (m as { kind?: string }).kind !== "bracket")

@@ -16,9 +16,25 @@ describe("what can go on the canvas", () => {
     expect(sources(get)).toEqual([
       { app: "boardkit", id: "b1", name: "Plan", linked: false },
       { app: "boardkit", id: "b2", name: "Untitled", linked: false },
-      { app: "linkkit", id: "m1", name: "Linked", linked: true },
+      // Named after its board (Linkkit's list may still hold an old name).
+      { app: "linkkit", id: "m1", name: "Plan", linked: true },
       { app: "linkkit", id: "m2", name: "Loose", linked: false },
       { app: "linkkit", id: "m3", name: "No record", linked: false },
+    ]);
+  });
+
+  it("names a linked map after its board as Boardkit's list has it now (renamed in Boardkit); Linkkit's name where the list has none", () => {
+    const get = store({
+      "boardkit:registry": { version: 1, boards: [{ id: "move", name: "Relocate" }, { id: "blank", name: "  " }] },
+      "linkkit:registry": { version: 1, maps: [{ id: "m1", name: "Move?" }, { id: "m2", name: "Old" }, { id: "m3", name: "Gone" }] },
+      "linkkit:map:m1": { version: 2, rev: 3, map: { name: "Move?", linkedBoard: "move" } },
+      "linkkit:map:m2": { version: 2, rev: 3, map: { name: "Old", linkedBoard: "blank" } },
+      "linkkit:map:m3": { version: 2, rev: 3, map: { name: "Gone", linkedBoard: "deleted" } },
+    });
+    expect(sources(get).filter((s) => s.app === "linkkit")).toEqual([
+      { app: "linkkit", id: "m1", name: "Relocate", linked: true },
+      { app: "linkkit", id: "m2", name: "Old", linked: true },
+      { app: "linkkit", id: "m3", name: "Gone", linked: true },
     ]);
   });
 
