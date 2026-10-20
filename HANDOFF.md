@@ -56,7 +56,8 @@ Results (real exit codes): lint 0, unit 81 + 5 exit 0, build 0 (chunk
 3 runs: gauntlet 82/82 each (realdata 5/5 each); Linkkit 19/20, 20/20,
 18/20 (bridge 3.5 trash restore; tips + readonly: Linkkit not ready in
 15 s on a slow run). Those open only /linkkit/, never the whiteboard;
-Linkkit rerun alone 20/20 exit 0. Live gauntlet: see below.
+Linkkit rerun alone 20/20 exit 0. Live gauntlet (`abc4128`): exit 0, 77
+pass, 5 skipped (real data: local only); zoom p95 50.1 ms.
 
 ## Earlier (2026-10-20): follow-up on the page-reload fix (gauntlet `3713595`, tests only)
 
