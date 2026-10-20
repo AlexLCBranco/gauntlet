@@ -207,6 +207,14 @@ test("two tabs: a change made in the other tab after this one closed wins over t
   const kept = await rect(a, 1100, 200);
   // Tab B shows them at once (tldraw tells the other tabs).
   await expect.poll(() => shapeIds(b)).toHaveLength(3);
+  // All three moved again just before the close, and B shown the move: the
+  // journal keeps only the last 10 s of changes, and on a busy run drawing
+  // the three took longer, so the first was left out.
+  await a.keyboard.press("Control+a");
+  await a.keyboard.press("Shift+ArrowRight");
+  const places = (p: Page) => ed(p, (e) => e.getCurrentPageShapes().map((s: any) => [s.id, s.x, s.y]).sort());
+  const nudged = await places(a);
+  await expect.poll(() => places(b)).toEqual(nudged);
   await a.close();
   // A's journal has all three (one never saved by tldraw).
   await expect.poll(() => b.evaluate((k) => Object.keys(JSON.parse(localStorage.getItem(k) ?? '{"records":{}}').records), JOURNAL)).toEqual(expect.arrayContaining([moved, gone, kept]));

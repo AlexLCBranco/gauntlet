@@ -505,7 +505,10 @@ test("K1, K3, K4, K5: Boardkit's keys while editing — new card, rename, thots,
   await page.keyboard.press("n");
   await page.keyboard.type("Made with N");
   await page.keyboard.press("Enter");
-  let r = await saved(page, id, (r) => r.board.cardOrder[list].length === n + 1);
+  // The title too, not just one card more: N stores the new card as "New
+  // card" first, and on a busy run the count was seen before the typed
+  // title was saved.
+  let r = await saved(page, id, (r) => r.board.cardOrder[list].length === n + 1 && r.board.cards[r.board.cardOrder[list][1]]?.title === "Made with N", "the new card, titled");
   const made = r.board.cardOrder[list][1];
   expect(r.board.cards[made].title).toBe("Made with N");
 
