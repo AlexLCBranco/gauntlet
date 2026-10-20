@@ -3,7 +3,50 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): Linkkit v0.0.106 (`19b4672`): an explicit zoom sticks; stale names reported
+## NOW (2026-10-19): renamed board shows everywhere; menu opening writes nothing
+
+Owner's OK (2026-10-19) on the read-only stale-name fix. LIVE: Linkkit
+v0.0.107 (`ce9359b`), Boardkit v0.0.98 (`ea81ab1`, on `main`; its
+`whiteboard` branch stays at `1a9f283`, and gauntlet still pins
+`1a9f283`: the change is in standalone Boardkit's delete-board question,
+not in the whiteboard widget), gauntlet `31580f4`.
+- A linked map takes its board's name from boardkit:registry wherever a
+  stored name showed: Linkkit map list / All maps / Find a map
+  (`loadRegistry`, refreshed on a Boardkit-tab rename), the entry after
+  `switchMap`, "Linked to" (`boardLinks`); gauntlet `sources.ts` (widget
+  names, Overview, Add a stone); Boardkit `findLinkedMap`. List writes
+  start from the stored names (`storedRegistry`), so a board name is stored
+  only with an edit.
+- FOUND AND FIXED while testing (diagnosed first): opening a map from
+  Linkkit's MAP MENU saved it. `autoSave.ts` saved on any new `state.map`,
+  and `switchMap` puts a new map object in the store. On the owner's data
+  that rewrote "Party" (ZX4KCqADxR: linked, card renamed in Boardkit) and
+  "Process" (ELZ9dyqJPi: rev 14 -> 15, two empty `order` lists dropped).
+  The real-data test opened maps only by reload / in a frame, so it never
+  saw this. Now a switch stores only `linkkit:active`; every new map is
+  stored where it is made (`createStored`).
+- Tests (each fails on the old code): Linkkit `persistLinked.test.ts`,
+  `mapStore.test.ts` (one with autosave on), `e2e/boardname.e2e.ts` (rename
+  in Boardkit: Linkkit list, reload, "Linked to", switch, canvas "Add a
+  stone", Boardkit delete question; Linkkit's maps + list unchanged);
+  gauntlet `sources.test.ts`; Boardkit `linkedMap.test.ts`. gauntlet
+  `realdata.e2e.ts` now also opens all 18 maps from the map menu (by the
+  new `data-map-id` on menu items) and checks `linkkit:registry` byte for
+  byte; it failed with the old autosave, passes now.
+- Also fixed in my own new tests: snapshots built with `{ ...localStorage }`
+  were empty in unit tests (the memory storage spreads to {}), so three
+  "writes nothing" checks compared {} with {}; now they walk
+  `localStorage.key(i)`.
+- Flaky: gauntlet `fullpage.e2e.ts:314` ("existing content survives",
+  Boardkit board widget not found in 5 s) failed in 2 of the last 4 full
+  local runs, passed 13/13 each rerun. Not investigated yet.
+Results (real exit codes): unit Linkkit 968, Boardkit 202, gauntlet 81 +
+proxy tests, all exit 0; builds and lint exit 0 (Linkkit 2 and Boardkit 27
+old lint warnings, unchanged). Local full e2e: Linkkit 20 pass; gauntlet
+71 pass + fullpage:314 flaky (13/13 on rerun); real-data 6 pass. Live (exit 0 each): Linkkit 20 pass (incl. boardname across all
+three apps); gauntlet 67 pass, 5 skipped (real data: local only).
+
+## Earlier (2026-10-19): Linkkit v0.0.106 (`19b4672`): an explicit zoom sticks; stale names reported
 
 1. Stale linked name, CORRECTED. My earlier HANDOFF wording ("Party" "linked
    to a board renamed since") was wrong: in the owner's backup the board is
