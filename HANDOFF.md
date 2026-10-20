@@ -3,7 +3,67 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-20): drawings made just before a reload or tab close are kept; perf zoom limit 100 ms
+## NOW (2026-10-20): Linkkit's full-run failures were test races (no app bug); perf zoom limit 108 ms
+
+No app code changed (gauntlet, Linkkit, Boardkit). Each failure was
+reproduced and its cause measured before any change.
+- perf.e2e.ts: zoom p95 limit 100 ms -> 6.5 refreshes (108.3 ms), half a
+  refresh past a whole number as the file's rule says (100 sat on 6).
+  Alone 10x, exit 0 each; zoom p95 66.7, 50.1, 50.1, 66.7, 50.1, 49.9,
+  50.0, 49.9, 50.1, 50.1 ms.
+- Linkkit bridge.e2e.ts 3.5 (A3 restored from the trash): NOT a sync bug.
+  Reproduced (1 in 10 at 4x CPU throttle; again beside the gauntlet suite).
+  Captured state at the failure: Boardkit and both apps' storage had A3 last
+  under List A (rev 18, x 700), in the right place; Linkkit showed it
+  moments later. Timeline: Boardkit saves 0.5 s after Restore, Linkkit gets
+  the event at once and has A3's box in the DOM ~130 ms later, but its
+  ARROW (which the check reads) came 0.5-0.8 s after that. Why: "Open in
+  Boardkit" (3.3) puts Boardkit in front, and a tab behind the other drops
+  to ~2 frames/s a few seconds after losing the front (measured: 2 fps
+  behind, 60 in front; not CPU, not Chromium flags: the usual
+  anti-throttling flags changed nothing). React Flow draws a new box's arrow
+  only after a frame, so on a busy run it missed the 3 s LIVE window.
+  Under load the tab behind also gets the other app's storage events late
+  (3 s and 7.5 s seen: 4.6 failed that way, the cut badge).
+- FIX (test only): `front(page)` in bridge.e2e.ts; every switch to the other
+  app brings it to the front, after the shared storage is quiet for 800 ms
+  (past both apps' 400 ms save delay), so the app being left has stored its
+  change while still in front. (Switching at once failed 4.1/4.5/4.7 under
+  load: the app sent behind saved late.) With Linkkit in front, A3's arrow
+  follows its box in 20-70 ms (was 450-800).
+- Also found in the load runs, both test races: 2.4 counted a Boardkit
+  backup written just before 4.7's edit as "after step 4" (step 4 has 10 s
+  quiet spells on a slow run): 1.4/2.4 now wait for the NEWEST backup to
+  hold the edits. 2.3 hit an OPFS NotFoundError reading a backup an app
+  replaced mid-listing: `backupFiles` skips a file that vanishes.
+- "Linkkit not ready within 15 s" (tips, readonly): legitimately slow, not
+  a hang. Ready = modules loaded + boxes measured + fitted; the time is the
+  Vite dev server sending Linkkit's 203 unbundled modules: ~1 s idle, 3.9 s
+  at 4x CPU, 6.5-7.4 s at 8x, 1.0-9.9 s (40 opens) beside the gauntlet
+  suite, where the slowest had modules arriving until 9.7 s and was ready
+  0.2 s later (store: needsTidy true, then false, no stall). Live serves a
+  bundle. Now one `READY` (30 s) in Linkkit e2e/helpers.ts, used by every
+  wait for `[data-ready]` (boardname, fitview, header, readonly, tips).
+- gauntlet tests fixed, both failed only beside the Linkkit suite (CPU
+  shared): parity.e2e.ts K1 (N makes "New card" first, the typed title is
+  saved next; the test waited only for the count, now for the title) and
+  unsaved.e2e.ts "two tabs" (the journal keeps 10 s of changes; drawing 3
+  rectangles took longer, so the first was left out. Proved with a 10.5 s
+  pause: old test fails the same way, new passes. Now all three are moved
+  again just before the close, and B is shown the move first).
+- Not fixed: unsaved.e2e.ts:176 (Ctrl+D x10 then close) fails 2 of 6 when
+  two copies of that test run at once (`--repeat-each 6 --workers 2`);
+  6/6 alone, and it never runs beside itself in the suite. Ctrl+D is
+  sometimes not taken in a fresh tab; not investigated further.
+Results (real exit codes): lint 0 both repos (Linkkit's 2 old warnings);
+unit gauntlet 81 + 5, Linkkit 968, exit 0; builds 0 (old chunk-size
+warnings). Full local `node scripts/local-e2e.mjs` 3 runs in a row, exit 0
+each: gauntlet 82/82 (realdata 5/5) + Linkkit 20/20 every run. Beside the
+gauntlet suite (load): Linkkit bridge 4/4 + tips, readonly, boardname 2/2.
+Live, exit 0: gauntlet (`56f1424`) 77 pass, 5 skipped (real data: local
+only), zoom p95 50.1 ms; Linkkit (`b1d2561`) 20 pass.
+
+## Earlier (2026-10-20): drawings made just before a reload or tab close are kept; perf zoom limit 100 ms (108 since, see NOW)
 
 - CAUSE (known): tldraw 5.5.2 saves to IndexedDB 350 ms after a change;
   its pagehide flush is an async write the unload cuts off. tldraw has no
