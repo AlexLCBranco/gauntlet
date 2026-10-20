@@ -304,6 +304,27 @@ test("pages: next makes a new page on the last one, previous/next and PageUp/Pag
   expect(await ed(page, (e) => e.getPages().map((p: any) => e.getPageShapeIds(p.id).size))).toEqual([1, 2, 0]);
 });
 
+test("a reload right after changing page opens on that page, not the one before", async ({ page }) => {
+  await open(page);
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect(position(page)).toHaveText(/2 \/ 2/);
+  await page.waitForTimeout(800); // page 2 saved
+  // tldraw saves the current page 350 ms after a change: reload well
+  // before that, as a busy machine or a quick F5 does. Then the other way.
+  for (const [arrow, where] of [["Previous page", /1 \/ 2/], ["Next page", /2 \/ 2/], ["Previous page", /1 \/ 2/]] as const) {
+    await page.getByRole("button", { name: arrow }).click();
+    await expect(position(page)).toHaveText(where);
+    await page.reload();
+    await page.waitForFunction(() => "editor" in window);
+    await expect(position(page)).toHaveText(where);
+    // Opens at 100%, top left, as a page always does.
+    await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
+    const view = await ed(page, (e) => ({ x: e.getViewportPageBounds().x, y: e.getViewportPageBounds().y }));
+    expect(view.x).toBeCloseTo(0, 6);
+    expect(view.y).toBeCloseTo(0, 6);
+  }
+});
+
 test("present: the page as a slide, arrow keys go page to page, Escape stops", async ({ page }) => {
   await open(page);
   await rect(page, 100, 100);

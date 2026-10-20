@@ -35,6 +35,7 @@ import { edgeWall } from "../pages/edgeWall";
 import { keepFilled, showPageStart, zoomTo100 } from "../pages/keepFilled";
 import { keepInsideSheet } from "../pages/keepInside";
 import { PageArrows } from "../pages/PageArrows";
+import { rememberPage } from "../pages/rememberPage";
 import { SHEET } from "../pages/sheet";
 import { SheetBackground } from "../pages/SheetBackground";
 import { shapeUtils as styleShapeUtils } from "../style/shapeUtils";
@@ -210,6 +211,8 @@ function setUp(editor: Editor) {
   }
   // For the e2e tests (and the console).
   (window as unknown as { editor: Editor }).editor = editor;
+  // The page this tab was on before a reload.
+  const stopPage = rememberPage(editor);
   // Size the page to the window (and what's on it); open it at 100%, top
   // left. A saved camera (from another window size) may sit outside it.
   showPageStart(editor);
@@ -220,6 +223,7 @@ function setUp(editor: Editor) {
   const stopUndo = undoSkipsSelection(editor);
   return () => {
     stopUndo();
+    stopPage();
     stopInside();
     stopWall();
     stopNext();
