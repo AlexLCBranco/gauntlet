@@ -5,6 +5,52 @@ import { expect, type BrowserContext, type Frame, type Locator, type Page } from
  * profile, so the only boards and maps are the ones it makes here.
  */
 
+/**
+ * Waits until tldraw has saved the whiteboard to IndexedDB: every drawing
+ * record in the page's store is stored as it is now (and nothing stored
+ * that isn't), and this tab's saved session is on the current page. tldraw
+ * saves 350 ms after a change, and a reload or a new tab before that loses
+ * it: wait for this, not a fixed time, before either.
+ */
+export async function whiteboardSaved(page: Page) {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const editor = (window as any).editor;
+          const stable = (v: unknown): string =>
+            JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x));
+          const want = editor.store.serialize("document") as Record<string, unknown>;
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            const open = indexedDB.open("TLDRAW_DOCUMENT_v2gauntlet-whiteboard");
+            open.onsuccess = () => resolve(open.result);
+            open.onerror = () => reject(open.error);
+          });
+          const read = <T,>(store: string, op: (s: IDBObjectStore) => IDBRequest<T>) =>
+            new Promise<T>((resolve, reject) => {
+              const req = op(db.transaction(store).objectStore(store));
+              req.onsuccess = () => resolve(req.result);
+              req.onerror = () => reject(req.error);
+            });
+          try {
+            const keys = (await read("records", (s) => s.getAllKeys())).map(String);
+            const values = await read("records", (s) => s.getAll());
+            const stored = Object.fromEntries(keys.map((k, i) => [k, values[i]]));
+            if (keys.length !== Object.keys(want).length) return `stored ${keys.length} records, store has ${Object.keys(want).length}`;
+            const stale = Object.keys(want).find((id) => stable(stored[id]) !== stable(want[id]));
+            if (stale) return `${stale} not saved yet`;
+            const session = await read<{ snapshot?: { currentPageId?: string } } | undefined>("session_state", (s) => s.get((window as any).TLDRAW_TAB_ID_v2 ?? ""));
+            if (session?.snapshot?.currentPageId !== editor.getCurrentPageId()) return "current page not saved yet";
+            return "saved";
+          } finally {
+            db.close();
+          }
+        }),
+      { message: "tldraw saved the whiteboard to IndexedDB", timeout: 10_000 },
+    )
+    .toBe("saved");
+}
+
 /** Boardkit's first-visit board: its id. */
 export async function seedBoard(context: BrowserContext): Promise<string> {
   const bk = await context.newPage();

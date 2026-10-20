@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { box, seedBoard } from "./helpers";
+import { box, seedBoard, whiteboardSaved } from "./helpers";
 
 /**
  * Boardkit boards on the whiteboard (whiteboard phase 2). Fresh, empty
@@ -104,7 +104,7 @@ test("the Board button puts a real Boardkit board on the page, every list and ca
   expect((await record(page, id)).rev).toBe(rec.rev);
 
   // Survives a reload (tldraw saves to IndexedDB a moment after a change).
-  await page.waitForTimeout(800);
+  await whiteboardSaved(page);
   await page.reload();
   await page.waitForFunction(() => "editor" in window);
   await expect(boardEl(page).locator("article[data-card-id]")).toHaveCount(shown.length);

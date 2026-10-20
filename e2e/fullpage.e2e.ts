@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedBoard } from "./helpers";
+import { seedBoard, whiteboardSaved } from "./helpers";
 
 /**
  * The page and the window, as in Excalidraw. The page is at least the
@@ -342,7 +342,7 @@ test("existing content survives: a page drawn on the old 1920x1080 sheet keeps e
   await page.waitForTimeout(500);
   const before = await allShapes(page);
   expect(before.flat()).toHaveLength(6);
-  await page.waitForTimeout(800); // saved
+  await whiteboardSaved(page);
 
   const covers = async () => {
     const p = await pageBounds(page);
@@ -350,6 +350,7 @@ test("existing content survives: a page drawn on the old 1920x1080 sheet keeps e
   };
   for (const size of [BIG, LAPTOP, HALF, { width: 1000, height: 1000 }, { width: 2200, height: 900 }]) {
     await page.setViewportSize(size);
+    await whiteboardSaved(page);
     await page.reload();
     await page.waitForFunction(() => "editor" in window);
     await expect(page.getByTestId("sheet")).toBeVisible();

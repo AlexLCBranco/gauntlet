@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { whiteboardSaved } from "./helpers";
+
 /**
  * The whiteboard (whiteboard phase 1: the floor) at /whiteboard/. Fresh,
  * empty browser profile per test, so every shape here is made by the test.
@@ -297,7 +299,7 @@ test("pages: next makes a new page on the last one, previous/next and PageUp/Pag
   await expect(position(page)).toHaveText(/2 \/ 3/);
 
   // Everything survives a reload (tldraw saves to IndexedDB).
-  await page.waitForTimeout(800);
+  await whiteboardSaved(page);
   await page.reload();
   await page.waitForFunction(() => "editor" in window);
   await expect(position(page)).toHaveText(/\/ 3/);
@@ -308,7 +310,7 @@ test("a reload right after changing page opens on that page, not the one before"
   await open(page);
   await page.getByRole("button", { name: "Next page" }).click();
   await expect(position(page)).toHaveText(/2 \/ 2/);
-  await page.waitForTimeout(800); // page 2 saved
+  await whiteboardSaved(page); // page 2 saved by tldraw too
   // tldraw saves the current page 350 ms after a change: reload well
   // before that, as a busy machine or a quick F5 does. Then the other way.
   for (const [arrow, where] of [["Previous page", /1 \/ 2/], ["Next page", /2 \/ 2/], ["Previous page", /1 \/ 2/]] as const) {
@@ -323,6 +325,52 @@ test("a reload right after changing page opens on that page, not the one before"
     expect(view.x).toBeCloseTo(0, 6);
     expect(view.y).toBeCloseTo(0, 6);
   }
+});
+
+test("a remembered page that is gone (deleted in another tab, or never there) opens the first page, with no error and nothing stored changed", async ({ page, context }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(m.text());
+  });
+  await open(page);
+  await rect(page, 100, 100);
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect(position(page)).toHaveText(/2 \/ 2/);
+  const gone = await ed(page, (e) => e.getCurrentPageId() as string);
+  await whiteboardSaved(page);
+
+  // Another tab deletes page 2 while this one is on it.
+  const other = await context.newPage();
+  await open(other);
+  await expect.poll(() => ed(other, (e) => e.getPages().length)).toBe(2);
+  await ed(other, (e, id: string) => void e.deletePage(id), gone);
+  await expect.poll(() => ed(page, (e) => e.getPages().length)).toBe(1);
+  await whiteboardSaved(other);
+  await other.close();
+  const stored = await ed(page, (e) => JSON.stringify(e.store.serialize("document")));
+
+  for (const remembered of [gone, "page:never-there"]) {
+    // This tab still remembers the gone page (as one closed before the
+    // delete reached it would).
+    await page.evaluate((id) => sessionStorage.setItem("gauntlet:whiteboard:page", id), remembered);
+    await page.reload();
+    await page.waitForFunction(() => "editor" in window);
+    await expect(page.getByTestId("sheet")).toBeVisible();
+    await expect(position(page)).toHaveText(/Page 1\s+1 \/ 1/);
+    expect(await shapeIds(page)).toHaveLength(1);
+    await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
+    // The first page is remembered now; the whiteboard still works.
+    const first = await ed(page, (e) => e.getCurrentPageId() as string);
+    expect(await page.evaluate(() => sessionStorage.getItem("gauntlet:whiteboard:page"))).toBe(first);
+    await rect(page, 400, 300);
+    expect(await shapeIds(page)).toHaveLength(2);
+    await page.keyboard.press("Control+z");
+    expect(await shapeIds(page)).toHaveLength(1);
+    await whiteboardSaved(page);
+    expect(await ed(page, (e) => JSON.stringify(e.store.serialize("document")))).toBe(stored);
+  }
+  expect(errors).toEqual([]);
 });
 
 test("present: the page as a slide, arrow keys go page to page, Escape stops", async ({ page }) => {
