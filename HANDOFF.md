@@ -3,12 +3,68 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-20): follow-up on the page-reload fix (gauntlet `3713595`, tests only)
+## NOW (2026-10-20): drawings made just before a reload or tab close are kept; perf zoom limit 100 ms
+
+- CAUSE (known): tldraw 5.5.2 saves to IndexedDB 350 ms after a change;
+  its pagehide flush is an async write the unload cuts off. tldraw has no
+  synchronous flush or save-complete hook (checked TLLocalSyncClient), so:
+- FIX `src/whiteboard/unsavedJournal.ts` (called from Whiteboard setUp,
+  before rememberPage; tldraw's own save untouched). Each tab notes which
+  drawing records it changed (store listener, user + document). On
+  pagehide/beforeunload, records changed in the last 10 s are written to
+  localStorage `gauntlet:whiteboard:unsaved` as {id: record | null
+  (deleted)}, merged into any waiting journal. On open, after tldraw has
+  loaded, each record not already as journaled is put back (one store
+  change, not undoable; tldraw saves it and tells other tabs), then the
+  journal is cleared (also a broken one).
+- Other tabs: a tab that changes a journaled record while the journal
+  waits (it hears of it by the storage event) writes its own version
+  into it, deletes included, so the journal never brings back an older
+  record. A tab opened later replays and clears it before any edit.
+- Not "cleared when a normal save completes" as first proposed: tldraw
+  has no public signal for that. Instead entries equal to the store are
+  skipped, and any newer edit rewrites its entry, so a leftover journal
+  (back/forward cache) can't put back old data.
+- Skipped on replay: a shape whose page/parent is gone, a binding whose
+  shape is gone, a delete that would leave something without its parent,
+  deleting the last page, a journal from another tldraw schema. Any
+  storage error: the write is dropped (journal removed) and the open goes
+  on as tldraw saved it.
+- NOT covered: (1) two tabs editing the SAME shape within a few ms of one
+  closing (before tldraw's broadcast / the storage event arrive): the
+  closed tab's version can win. (2) A browser crash or kill (no pagehide).
+  (3) Assets: an image pasted just before close is journaled only as its
+  record (tldraw keeps the file in IndexedDB separately); a huge record
+  over the localStorage quota is dropped.
+- Cost (temporary timing, removed): open with a 60-record journal median
+  1.6 ms, max 5.7 (22 opens); leaving median 0.5 ms, max 2.2 (60 records,
+  30 KB; runs on beforeunload and pagehide).
+- Tests `e2e/unsaved.e2e.ts` (8): quick draw + reload x5; move, style
+  change, delete; copy + tab close x10; two tabs (B's move and delete win,
+  A's unsaved shape kept); reload twice x3 (identical, no doubles); board
+  nudged + reload (shape equal, boardkit:* unchanged); gone page (journal
+  updated by the deleting tab; hand-made orphan skipped, rest applied);
+  broken journal / storage full. Fix: 64/64 (x8). HEAD src: 8/8 fail (x3
+  and x5 earlier). The racy ones repeat inside the test because tldraw's
+  own flush sometimes lands on the old code (single tries passed 2/5 for
+  reload, 4/5 for close).
+- perf.e2e.ts: zoom p95 limit 75 -> 100 ms (6 refreshes), comment says
+  why; drag keeps 4.5 refreshes. Alone 25x: exit 0 every run; zoom p95
+  33.4-33.5 (5 runs), 49.9-50.1 (16), 66.6-66.9 (4).
+Results (real exit codes): lint 0, unit 81 + 5 exit 0, build 0 (chunk
+> 2000 kB warning, already on HEAD: 2,004 -> 2,006.6 kB). Full local e2e
+3 runs: gauntlet 82/82 each (realdata 5/5 each); Linkkit 19/20, 20/20,
+18/20 (bridge 3.5 trash restore; tips + readonly: Linkkit not ready in
+15 s on a slow run). Those open only /linkkit/, never the whiteboard;
+Linkkit rerun alone 20/20 exit 0. Live gauntlet: see below.
+
+## Earlier (2026-10-20): follow-up on the page-reload fix (gauntlet `3713595`, tests only)
 
 - perf.e2e.ts run alone 25 times (real exit codes): 0 failures. Zoom p95
   50 ms in most runs, 66.4-66.9 ms (4 refreshes) in 5, once 33.5; limit
   < 75 ms. The one failure seen (zoom p95 83.3 ms, 5 refreshes) was on the
-  code BEFORE rememberPage, so not caused by it. Margin is one refresh.
+  code BEFORE rememberPage, so not caused by it. Margin is one refresh
+  (raised since: zoom p95 limit 100 ms, see NOW).
 - rememberPage on mount: median 0.2 ms, max 1.2 ms (21 loads, measured
   with temporary timing code, removed).
 - Audit: e2e that edit the whiteboard then reload behind a fixed sleep:
@@ -43,9 +99,8 @@ pass, 5 skipped: real data, local only).
   back on open. Session state only; no drawing or board is written.
 - Test (fails on the old code: "Page 2 2 / 2"): `whiteboard.e2e.ts` "a
   reload right after changing page opens on that page".
-- Same tldraw limit still applies to SHAPES: something drawn less than
-  ~350 ms before a reload or tab close can be lost. Not changed (tldraw's
-  own save); tests wait before reloading.
+- Same tldraw limit applied to SHAPES (drawn < ~350 ms before a reload or
+  tab close: lost). Fixed since (2026-10-20, unsavedJournal.ts): see NOW.
 Results (real exit codes): unit 81 + lint exit 0; full local e2e 3 runs in
 a row exit 0 (gauntlet 73, Linkkit 20 each); live gauntlet exit 0 (68
 pass, 5 skipped: real data, local only).

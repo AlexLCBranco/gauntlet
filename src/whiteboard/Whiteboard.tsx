@@ -44,6 +44,7 @@ import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
 import { toolbarItems } from "./toolbarFit";
 import { undoSkipsSelection } from "./undoSkipsSelection";
+import { unsavedJournal } from "./unsavedJournal";
 import { ZoomUndo } from "./ZoomUndo";
 import "./whiteboard.css";
 
@@ -211,6 +212,8 @@ function setUp(editor: Editor) {
   }
   // For the e2e tests (and the console).
   (window as unknown as { editor: Editor }).editor = editor;
+  // What was drawn just before a reload or tab close, not yet saved by tldraw.
+  const stopJournal = unsavedJournal(editor);
   // The page this tab was on before a reload.
   const stopPage = rememberPage(editor);
   // Size the page to the window (and what's on it); open it at 100%, top
@@ -223,6 +226,7 @@ function setUp(editor: Editor) {
   const stopUndo = undoSkipsSelection(editor);
   return () => {
     stopUndo();
+    stopJournal();
     stopPage();
     stopInside();
     stopWall();
