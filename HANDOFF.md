@@ -3,7 +3,32 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-19): flaky fullpage.e2e.ts:314 fixed (gauntlet `e3c07e9`)
+## NOW (2026-10-20): follow-up on the page-reload fix (gauntlet `3713595`, tests only)
+
+- perf.e2e.ts run alone 25 times (real exit codes): 0 failures. Zoom p95
+  50 ms in most runs, 66.4-66.9 ms (4 refreshes) in 5, once 33.5; limit
+  < 75 ms. The one failure seen (zoom p95 83.3 ms, 5 refreshes) was on the
+  code BEFORE rememberPage, so not caused by it. Margin is one refresh.
+- rememberPage on mount: median 0.2 ms, max 1.2 ms (21 loads, measured
+  with temporary timing code, removed).
+- Audit: e2e that edit the whiteboard then reload behind a fixed sleep:
+  boards.e2e:107, fullpage.e2e:345 (+ each reload in its window loop),
+  whiteboard.e2e:300 and :311. Now `whiteboardSaved` (helpers.ts) waits
+  until IndexedDB holds every drawing record as the store has it and this
+  tab's session (key `window.TLDRAW_TAB_ID_v2`) is on the current page.
+  Already fine: backup.e2e:52 (polls IndexedDB). Not tldraw (localStorage,
+  written at once, or the saved record polled): canvas, auto-backup,
+  boards:443, parity, realdata (opens only).
+- Checked the wait is real: with no wait, a shape drawn just before a
+  reload was lost 5/5; after whiteboardSaved, kept 5/5.
+- New e2e (whiteboard.e2e.ts): a remembered page deleted in another tab,
+  or never there, opens page 1 with no page or console error, the first
+  page is remembered, drawing works, nothing stored changes.
+Results (real exit codes): lint 0, unit 81 exit 0; full local e2e 3 runs
+in a row exit 0 (gauntlet 74, Linkkit 20 each); live gauntlet exit 0 (69
+pass, 5 skipped: real data, local only).
+
+## Earlier (2026-10-19): flaky fullpage.e2e.ts:314 fixed (gauntlet `e3c07e9`)
 
 - CAUSE (a real app race, diagnosed first): tldraw saves the current page
   350 ms after a change, to IndexedDB; its flush on unload is an async
