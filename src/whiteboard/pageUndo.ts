@@ -1,10 +1,16 @@
 import { atom, type Editor, type RecordsDiff, type TLRecord } from "tldraw";
 
 import { onBoardHistory, redoBoard, undoBoard } from "../boards/boardkit";
+import { onMapHistory, redoMap, undoMap } from "../maps/linkkit";
+import { mapEditedBy } from "../maps/mapEditedBy";
 
-/** One undoable step on the page: the drawing's (tldraw's history) or a
-    board's (Boardkit's history of that board). */
-type Step = { readonly kind: "drawing" } | { readonly kind: "board"; readonly boardId: string };
+/** One undoable step on the page: the drawing's (tldraw's history), a
+    board's (Boardkit's history of that board) or a map's (Linkkit's
+    history of that map). */
+type Step =
+  | { readonly kind: "drawing" }
+  | { readonly kind: "board"; readonly boardId: string }
+  | { readonly kind: "map"; readonly mapId: string };
 
 interface PageHistory {
   readonly done: readonly Step[];
@@ -14,10 +20,11 @@ interface PageHistory {
 /**
  * One undo for the whole page (owner, 2026-10-20): Ctrl+Z, Ctrl+Y,
  * Ctrl+Shift+Z, the bottom-left buttons and the menu always undo or redo
- * the latest thing done on this page, a drawing change or a card edit, in
- * order. tldraw and Boardkit keep their own histories; this keeps the order
- * of which one acted. Edits made in /boardkit in another tab are not this
- * page's (Boardkit's history of the board still merges around them).
+ * the latest thing done on this page, a drawing change, a card edit or a
+ * map edit, in order (owner, 2026-10-21: maps too). tldraw, Boardkit and
+ * Linkkit keep their own histories; this keeps the order of which one
+ * acted. Edits made in /boardkit or /linkkit in another tab are not this
+ * page's (each app's history still merges around them).
  */
 export const pageHistory = atom<PageHistory>("page history", { done: [], undone: [] });
 
@@ -29,9 +36,9 @@ function push(step: Step) {
   pageHistory.set({ done: [...done, step].slice(-500), undone: [] });
 }
 
-const boardExists = (boardId: string) => {
+const stored = (key: string) => {
   try {
-    return localStorage.getItem(`boardkit:board:${boardId}`) !== null;
+    return localStorage.getItem(key) !== null;
   } catch {
     return false;
   }
@@ -47,7 +54,16 @@ function act(editor: Editor, step: Step, kind: "undo" | "redo"): boolean {
       else editor.redo();
       return true;
     }
-    if (!boardExists(step.boardId)) return false;
+    if (step.kind === "map") {
+      if (!stored(`linkkit:map:${step.mapId}`)) return false;
+      // Another map being edited stops being edited first: Linkkit opens
+      // one map at a time.
+      const editing = editor.getEditingShape();
+      const editedMap = editing ? mapEditedBy(editing) : null;
+      if (editedMap !== null && editedMap !== step.mapId) editor.setEditingShape(null);
+      return kind === "undo" ? undoMap(step.mapId) : redoMap(step.mapId);
+    }
+    if (!stored(`boardkit:board:${step.boardId}`)) return false;
     // Another board being edited stops being edited first: Boardkit opens
     // one board at a time.
     const editing = editor.getEditingShape();
@@ -141,6 +157,24 @@ export function keepPageHistory(editor: Editor): () => void {
     pageHistory.set(kind === "undo" ? { done: rest, undone: [...undone, moved] } : { done: [...done, moved], undone: rest });
   });
 
+  // Map steps, as Linkkit makes them, the same way.
+  const stopMaps = onMapHistory(({ mapId, kind }) => {
+    if (acting) return;
+    const { done, undone } = pageHistory.get();
+    if (kind === "step") {
+      push({ kind: "map", mapId });
+      editor.markHistoryStoppingPoint("map step");
+      lastUndos = history.stacks.get().undos;
+      return;
+    }
+    const from = kind === "undo" ? done : undone;
+    const i = from.findLastIndex((s) => s.kind === "map" && s.mapId === mapId);
+    if (i < 0) return;
+    const moved = from[i];
+    const rest = [...from.slice(0, i), ...from.slice(i + 1)];
+    pageHistory.set(kind === "undo" ? { done: rest, undone: [...undone, moved] } : { done: [...done, moved], undone: rest });
+  });
+
   // The keys, before tldraw and Boardkit see them. A text field keeps its
   // own undo (a card title being typed, a text shape).
   const onKey = (e: KeyboardEvent) => {
@@ -159,6 +193,7 @@ export function keepPageHistory(editor: Editor): () => void {
   return () => {
     stopIntercepting();
     stopBoards();
+    stopMaps();
     window.removeEventListener("keydown", onKey, true);
   };
 }

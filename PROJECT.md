@@ -399,6 +399,31 @@ Changes to the plan, newest last. Each says what and why.
 - 2026-10-21 — Phase 3 (owner). A map always fits its widget: no zoom or
   scrolling inside it; you make it bigger or smaller by scaling the widget.
   Linkkit's own zoom controls are hidden on the whiteboard.
+- 2026-10-21 — Phase 3, how a map widget is built (agent's decisions,
+  within the owner's above). A map is drawn by Linkkit's own components
+  (Linkkit's new `src/app/whiteboard/` entry, as Boardkit's), reading and
+  writing Linkkit's own records: an edit shows in /linkkit and back. Its
+  natural size is the part of Linkkit's page its boxes cover, 16 px round
+  them (a bracket from the page's corner, with room for its Champion box);
+  an empty map is 320 x 160 ("Empty map"). When the boxes reach further
+  left or up, the widget grows that way and the boxes stay where they are
+  on the whiteboard. While a map is edited, a band of dotted paper 120 px
+  wide shows round its boxes, outside the widget's box, to add boxes on
+  (double-click) and drag them onto; a click past it ends editing. In
+  Both, that band reaches only 24 px back towards the list. Placing or
+  showing a map writes nothing (the bracket pitfall: a map lays out to the
+  page it was last tidied on, never the window). "+ New map" makes the map
+  as Linkkit's own "New map" does ("Untitled map", numbered when taken);
+  Linkkit's own rule then names an untitled map after its first box.
+  React Flow's attribution link is hidden on the whiteboard (MIT licence;
+  many maps at once). Linkkit's own automatic backups don't run on the
+  whiteboard (gauntlet's own backups cover everything).
+- 2026-10-21 — Phase 3, the linked board widget (agent's decisions). The
+  switch's choice is an undo step. In Both, the half double-clicked is the
+  one edited (Enter: the list); while one half is edited, a press on the
+  other edits that one. Edits cross between list and map at once on the
+  page: each app tells the other of its own writes (the browser's storage
+  event only reaches other tabs).
 
 IDEAS
 

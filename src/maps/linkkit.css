@@ -1,0 +1,5 @@
+/* Linkkit's design tokens (its colours, sizes, the box look), so its boxes,
+   arrows and menus look exactly as in Linkkit. Not its global stylesheet:
+   that styles the whole page, which is the whiteboard's. Its names that it
+   shares with Boardkit have the same values (both copied Treekit's). */
+@import "linkkit/src/styles/tokens.css";

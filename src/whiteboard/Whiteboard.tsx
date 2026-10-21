@@ -28,6 +28,11 @@ import { BoardShapeUtil } from "../boards/BoardShape";
 import { takeBackEmptyNewBoards } from "../boards/emptyNewBoards";
 import { BoardkitParts } from "../boards/BoardkitParts";
 import { LassoOverlay } from "../lasso/LassoOverlay";
+import { MapPicker, mapToolItem } from "../maps/AddMap";
+import { appsTogether } from "../maps/appsTogether";
+import { takeBackEmptyNewMaps } from "../maps/emptyNewMaps";
+import { MapParts } from "../maps/linkkit";
+import { MapShapeUtil } from "../maps/MapShape";
 import { LassoTool } from "../lasso/LassoTool";
 import { edgeWall } from "../pages/edgeWall";
 import { zoomSteps } from "../pages/camera";
@@ -112,6 +117,7 @@ const overrides: TLUiOverrides = {
     delete tools.note;
     delete tools.frame;
     tools.board = boardToolItem();
+    tools.map = mapToolItem();
     return tools;
   },
   // Shift+0 and the menu's "Reset zoom": back to 100% (tldraw's own
@@ -132,7 +138,7 @@ const overrides: TLUiOverrides = {
     if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y", onSelect: () => pageRedo(editor) };
     return actions;
   },
-  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board" } },
+  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map" } },
 };
 
 function useWindowWidth() {
@@ -146,7 +152,7 @@ function useWindowWidth() {
 }
 
 /** The toolbar along the top, as in Excalidraw, in Excalidraw's order, then
-    the Board button (`src/boards/`). */
+    the Board and Map buttons (`src/boards/`, `src/maps/`). */
 function TopToolbar() {
   const width = useWindowWidth();
   return (
@@ -165,6 +171,7 @@ function TopToolbar() {
         <AssetToolbarItem />
         <EraserToolbarItem />
         <ToolbarItem tool="board" />
+        <ToolbarItem tool="map" />
         <HighlightToolbarItem />
       </DefaultToolbar>
     </div>
@@ -172,8 +179,8 @@ function TopToolbar() {
 }
 
 /** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards
-    as whiteboard objects (`src/boards/`). */
-const shapeUtils = [...styleShapeUtils, BoardShapeUtil];
+    and Linkkit maps as whiteboard objects (`src/boards/`, `src/maps/`). */
+const shapeUtils = [...styleShapeUtils, BoardShapeUtil, MapShapeUtil];
 
 /** Under the main menu (top left): the style panel, as in Excalidraw. */
 function UnderMenu() {
@@ -191,6 +198,7 @@ function InFront() {
       <LassoOverlay />
       <DragOutline />
       <BoardPicker />
+      <MapPicker />
     </>
   );
 }
@@ -241,7 +249,11 @@ function setUp(editor: Editor) {
   const stopUndo = undoSkipsSelection(editor);
   const stopPageHistory = keepPageHistory(editor);
   const stopTakeBack = takeBackEmptyNewBoards(editor);
+  const stopTakeBackMaps = takeBackEmptyNewMaps(editor);
+  const stopApps = appsTogether();
   return () => {
+    stopApps();
+    stopTakeBackMaps();
     stopTakeBack();
     stopPageHistory();
     stopUndo();
@@ -275,6 +287,7 @@ export function Whiteboard() {
         <PageArrows />
       </Tldraw>
       <BoardkitParts />
+      <MapParts />
     </div>
   );
 }

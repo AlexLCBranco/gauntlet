@@ -1,5 +1,8 @@
 /* Boardkit's own stylesheet (its tokens, Tailwind, shadcn's theme bridge),
    so its lists, cards and menus look exactly as in Boardkit. Tailwind scans
-   Boardkit's source for the classes its menus use. */
+   Boardkit's source for the classes its menus use. This is the site's one
+   Tailwind stylesheet, so Linkkit's source (its menus, `src/maps/`) is
+   scanned here too. */
 @import "boardkit/src/styles/global.css";
 @source "../../node_modules/boardkit/src";
+@source "../../node_modules/linkkit/src";

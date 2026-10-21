@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type DOMAttributes, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import {
   BaseBoxShapeUtil,
   HTMLContainer,
@@ -7,17 +7,22 @@ import {
   useEditor,
   useIsEditing,
   useValue,
-  type Editor,
   type RecordProps,
   type TLResizeInfo,
   type TLShape,
 } from "tldraw";
 
+import { useLinkedMap } from "../maps/linkedMap";
+import type { PageRect } from "../maps/linkkit";
+import { MapView } from "../maps/MapView";
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta } from "../pages/sheet";
+import { portalEventsHandled } from "../whiteboard/widgetEvents";
 import { BoardName } from "./BoardName";
 import { WhiteboardBoard, useSelectionStore } from "./boardkit";
 import { fitBoard } from "./fit";
+import { editingHalf, viewOf } from "./views";
+import { ViewSwitch } from "./ViewSwitch";
 import "./boards.css";
 
 export const BOARD_TYPE = "boardkit-board";
@@ -44,6 +49,11 @@ export type BoardShape = TLShape<typeof BOARD_TYPE>;
  * whole board with it) and shows the real board, kept current. Double-click
  * it (or Enter) to edit the cards in place; Escape or a click outside ends
  * that. The board's data stays in Boardkit's record (PROJECT.md, DECISIONS).
+ *
+ * A board with a linked Linkkit map is one widget with both: its list, its
+ * map, or the two side by side ("List | Map | Both", `meta.view`, views.ts),
+ * moved and scaled as one (owner, 2026-10-21). In Both, the half
+ * double-clicked is the one edited; a press on the other half edits that.
  */
 export class BoardShapeUtil extends BaseBoxShapeUtil<BoardShape> {
   static override type = BOARD_TYPE;
@@ -77,8 +87,85 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   const editor = useEditor();
   const editing = useIsEditing(shape.id);
   const selected = useValue("board selected", () => editor.getSelectedShapeIds().includes(shape.id), [editor, shape.id]);
+  const hovered = useValue("board hovered", () => editor.getHoveredShapeId() === shape.id, [editor, shape.id]);
   const content = useRef<HTMLDivElement>(null);
+  const mapHalf = useRef<HTMLDivElement>(null);
   const { boardId, scale } = shape.props;
+  const linkedMap = useLinkedMap(boardId);
+  const view = linkedMap ? viewOf(shape) : "list";
+  const half = useValue(
+    "half edited",
+    () => {
+      const h = editingHalf.get();
+      return h?.shapeId === shape.id ? h.half : "list";
+    },
+    [shape.id],
+  );
+  // What is being edited: the list (Boardkit's), or the map (Linkkit's).
+  const listEditing = editing && (view === "list" || (view === "both" && half === "list"));
+  const mapEditing = editing && linkedMap !== null && (view === "map" || (view === "both" && half === "map"));
+
+  // In Both, editing starts on the half last pressed (the double-click's;
+  // Enter: the list). Seen as the press happens: once editing starts, the
+  // halves are drawn anew and may move for a moment.
+  const pressedMap = useRef(false);
+  useEffect(() => {
+    if (editing || view !== "both") return;
+    const onDown = (e: PointerEvent) => {
+      const r = mapHalf.current?.getBoundingClientRect();
+      pressedMap.current = !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [editing, view]);
+  useLayoutEffect(() => {
+    if (!editing) {
+      if (editingHalf.get()?.shapeId === shape.id) editingHalf.set(null);
+      return;
+    }
+    if (view !== "both" || editingHalf.get()?.shapeId === shape.id) return;
+    editingHalf.set({ shapeId: shape.id, half: pressedMap.current ? "map" : "list" });
+  }, [editing, view, shape.id]);
+
+  // In Both, while one half is edited, a press on the other edits that one.
+  useEffect(() => {
+    if (!editing || view !== "both") return;
+    const el = content.current;
+    if (!el) return;
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      const onMap = !!mapHalf.current?.contains(e.target as Node);
+      const onList = !onMap && !!el.querySelector("[data-boardkit-board]")?.contains(e.target as Node);
+      if (!onMap && !onList) return;
+      const now = editingHalf.get();
+      const next = onMap ? "map" : "list";
+      if (now?.shapeId === shape.id && now.half === next) return;
+      editor.markEventAsHandled(e);
+      e.stopPropagation();
+      editingHalf.set({ shapeId: shape.id, half: next });
+    };
+    el.addEventListener("pointerdown", onDown, true);
+    return () => el.removeEventListener("pointerdown", onDown, true);
+  }, [editing, view, editor, shape.id]);
+
+  // The part of Linkkit's page the map shows moved its top-left corner (a
+  // box further left or up): the widget moves by as much, so the boxes stay
+  // where they are on the whiteboard (as a map widget does, maps/MapShape).
+  const onMapContent = useCallback(
+    (box: PageRect) => {
+      const current = editor.getShape<BoardShape>(shape.id);
+      if (!current) return;
+      const crop = current.meta?.crop as { x: number; y: number } | undefined;
+      if (crop?.x === box.left && crop?.y === box.top) return;
+      const s = current.props.scale || 1;
+      const move = crop && current.props.scale > 0 ? { x: current.x + (box.left - crop.x) * s, y: current.y + (box.top - crop.y) * s } : {};
+      editor.run(
+        () => editor.updateShape<BoardShape>({ id: shape.id, type: BOARD_TYPE, ...move, meta: { ...current.meta, crop: { x: box.left, y: box.top } } }),
+        { history: "ignore" },
+      );
+    },
+    [editor, shape.id],
+  );
 
   // Keep the box the size of the content (fit.ts). Not an undo step.
   useLayoutEffect(() => {
@@ -113,7 +200,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   // lists yet): open it. Found by Boardkit's fixed markers (`data-add`),
   // never by their text.
   useEffect(() => {
-    if (!editing) return;
+    if (!listEditing) return;
     // Where the press was: its own point for a slim "+" (tldraw's pointer
     // can lag a move behind on a busy page, and then hit a card instead).
     const p = editor.inputs.getCurrentScreenPoint();
@@ -122,7 +209,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     slimPress = null;
     let frame = requestAnimationFrame(function find(tries = 0) {
       const hit = document.elementFromPoint(at.x, at.y);
-      const root = content.current?.querySelector('[data-editing="true"]');
+      const root = content.current?.querySelector('[data-boardkit-board][data-editing="true"]');
       if (!root) {
         if (tries < 10) frame = requestAnimationFrame(() => find(tries + 1));
         return;
@@ -134,13 +221,13 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       (title ?? adds.find((b) => b.contains(hit)) ?? (empty ? adds.find((b) => b.dataset.add === "list") : null))?.click();
     });
     return () => cancelAnimationFrame(frame);
-  }, [editing, editor]);
+  }, [listEditing, editor]);
 
   // Not editing, the board ignores the pointer (it is moved as a whole), and
   // its slim "+" buttons sit just outside its box. A press on one that is
   // showing starts editing right there, and the effect above opens it.
   useEffect(() => {
-    if (editing) return;
+    if (listEditing || view === "map") return;
     const el = content.current;
     if (!el) return;
     const onDown = (e: PointerEvent) => {
@@ -153,12 +240,13 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       if (!hit) return;
       editor.markEventAsHandled(e);
       slimPress = { x: e.clientX, y: e.clientY };
+      editingHalf.set({ shapeId: shape.id, half: "list" });
       editor.select(shape.id);
       editor.setEditingShape(shape.id);
     };
     window.addEventListener("pointerdown", onDown, true);
     return () => window.removeEventListener("pointerdown", onDown, true);
-  }, [editing, editor, shape.id]);
+  }, [listEditing, view, editor, shape.id]);
 
   // While editing, what happens inside the board is Boardkit's, not the
   // whiteboard's. Keys: Delete must not delete the board, arrows must not
@@ -171,7 +259,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   // field, a drag to cancel, a menu or panel to close, a selection or
   // copied cards to let go of).
   useEffect(() => {
-    if (!editing) return;
+    if (!listEditing) return;
     const el = content.current;
     if (!el) return;
     const onKey = (e: KeyboardEvent) => {
@@ -204,47 +292,43 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       window.removeEventListener("keydown", onBoardkitEscape, true);
       window.removeEventListener("keydown", onEscape);
     };
-  }, [editing, editor]);
+  }, [listEditing, editor]);
 
   return (
     <HTMLContainer id={shape.id} style={{ pointerEvents: editing ? "all" : "none", overflow: "visible" }}>
       <div
         ref={content}
         className="gb-scaled"
-        data-active={selected || editing ? "" : undefined}
+        data-active={selected || editing || hovered ? "" : undefined}
+        data-view={view}
         style={{ transform: `scale(${scale || 1})`, visibility: scale ? "visible" : "hidden" }}
         {...portalEventsHandled(editor)}
         // A right-click inside the board being edited opens Boardkit's menu
         // (or its thots), not the whiteboard's.
         onContextMenu={(e) => {
-          if (editing || !e.currentTarget.contains(e.target as Node)) e.stopPropagation();
+          if (listEditing || !e.currentTarget.contains(e.target as Node)) e.stopPropagation();
         }}
       >
-        <BoardName shapeId={shape.id} boardId={boardId} shown={scale > 0} />
-        <WhiteboardBoard boardId={boardId} editing={editing} active={selected || editing} />
+        <div className="gb-head">
+          <BoardName shapeId={shape.id} boardId={boardId} shown={scale > 0} />
+          {linkedMap && <ViewSwitch shapeId={shape.id} view={view} />}
+        </div>
+        <div className="gb-views">
+          {view !== "map" && <WhiteboardBoard boardId={boardId} editing={listEditing} active={selected || editing} />}
+          {view !== "list" && linkedMap && (
+            <div ref={mapHalf} className="gb-map">
+              <MapView mapId={linkedMap} editing={mapEditing} onContent={onMapContent} room={view === "both" ? BOTH_ROOM : undefined} />
+            </div>
+          )}
+        </div>
       </div>
     </HTMLContainer>
   );
 }
 
-/**
- * Boardkit draws its menus, dialogs, customise panels and selection bar at
- * the page's top level (React portals). React still sends their events up
- * through the board, and from there into tldraw's canvas: a press in a menu
- * then made tldraw take the pointer (the item never got its click) and end
- * editing, as for a press outside the board. Those events are marked
- * handled here, so tldraw's canvas skips them. Not stopped: React's
- * stopPropagation also stops the page's own listeners (Escape no longer
- * closed Boardkit's customise panel, a dragged card's lifted copy, a
- * portal too, no longer dropped).
- */
-const PORTAL_EVENTS = ["onPointerDown", "onPointerUp", "onPointerCancel", "onClick", "onTouchStart", "onTouchEnd"] as const;
-function portalEventsHandled(editor: Editor): DOMAttributes<HTMLDivElement> {
-  const mark = (e: SyntheticEvent<HTMLElement>) => {
-    if (!e.currentTarget.contains(e.target as Node)) editor.markEventAsHandled(e);
-  };
-  return Object.fromEntries(PORTAL_EVENTS.map((name) => [name, mark]));
-}
+/** In Both, the map's paper while it is edited reaches only part of the
+    way back towards the list beside it (boards.css: .gb-views' gap). */
+const BOTH_ROOM = { left: 24, top: 120, right: 120, bottom: 120 };
 
 /** Where a press on a slim "+" was (window pixels), for the editing that
     press starts to open that "+". */

@@ -14,10 +14,14 @@ Finished work goes to docs/HISTORY.md.
   112 + 1 failed (a float-exact test, fixed; fullpage 13/13 after),
   Linkkit 18; live (`1a1e5c3`) gauntlet 108 passed, 5 skipped (real data:
   local only), Linkkit 18; CI green in gauntlet and Boardkit.
-- PHASE 3 in progress (docs/PHASE-3.md, ticked as done). Step 0 done: the
-  Ctrl+D + close-tab test is back (duplicates through the editor; the key
-  was dropped in the first fresh tab even with tldraw focused; 12/12 with
-  6 workers).
+- PHASE 3 in progress (docs/PHASE-3.md, ticked as done). Done: step 0
+  (Ctrl+D + close-tab test back: duplicates through the editor), steps 1-3
+  (map widgets, Map picker, List | Map | Both on linked boards). Linkkit
+  v0.0.108 (`732f7a6`) and Boardkit v0.0.103 (`a13cccc`) pushed, pinned.
+  e2e/maps.e2e.ts 10 tests pass locally. Linkkit e2e 18 pass.
+- Next: step 4 (one undo across map edits: code in pageUndo.ts done, needs
+  its e2e), step 5 (map save banner: Linkkit's MapParts banner, needs e2e),
+  6 (realdata + perf), 7, END.
 
 ## Waiting for the owner
 
@@ -62,7 +66,8 @@ Finished work goes to docs/HISTORY.md.
 - Previews: /boardkit and /linkkit on a preview are the LIVE apps; the
   real-data test (`e2e/realdata.e2e.ts`, owner's backup file read at run
   time from Downloads) runs only on localhost.
-- Dev tips: after `node scripts/sync-boardkit.mjs` restart the dev server
+- Dev tips: `node scripts/sync-linkkit.mjs` copies ~/linkkit/src into
+  node_modules/linkkit (as sync-boardkit does). After `node scripts/sync-boardkit.mjs` restart the dev server
   (and a browser that had the page open may keep the old Boardkit module
   cached: use a fresh profile). `local-e2e.mjs` joins its arguments into a
   shell line: use `file:line`. Never pipe test commands without pipefail;

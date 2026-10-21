@@ -50,9 +50,12 @@ export default defineConfig(({ mode }) => ({
   // Its stylesheet imports shadcn's: src/boards/vendor/shadcn, a local
   // css-only package.
   resolve: { alias: [{ find: /^@\//, replacement: BOARDKIT_SRC }] },
-  optimizeDeps: { exclude: ["boardkit"] },
-  // Watches Boardkit too, for `scripts/sync-boardkit.mjs`.
-  server: { port: 5180, watch: { ignored: ["!**/node_modules/boardkit/**"] } },
+  // Linkkit is not pre-bundled either, so what it uses is named here (React
+  // Flow ships CommonJS parts that must be pre-bundled).
+  optimizeDeps: { exclude: ["boardkit", "linkkit"], include: ["@xyflow/react", "html-to-image", "radix-ui", "lucide-react", "zustand"] },
+  // Watches Boardkit and Linkkit too, for `scripts/sync-boardkit.mjs` and
+  // `scripts/sync-linkkit.mjs`.
+  server: { port: 5180, watch: { ignored: ["!**/node_modules/boardkit/**", "!**/node_modules/linkkit/**"] } },
   // Two pages: the whiteboard at `/`, the backup page at `/backup/`.
   // tldraw alone is ~1.7 MB (515 kB gzipped), loaded only by the whiteboard.
   build: {

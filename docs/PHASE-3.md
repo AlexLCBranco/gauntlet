@@ -9,17 +9,17 @@ First: save this whole message as docs/PHASE-3.md and tick items off there as yo
 
 - [x] 0. First, small: unskip the Ctrl+D + close-tab test in unsaved.e2e.ts. Suspected cause (unconfirmed): in a freshly opened tab the key press arrives before the whiteboard has keyboard focus. Try clicking/focusing the whiteboard before Ctrl+D (or duplicating through the editor if the key press itself isn't what's being tested). Keep it only if it passes reliably; if not, leave it skipped and say so.
 
-- [ ] 1. Linkkit as a whiteboard widget, the same way Boardkit is:
-  - [ ] In the Linkkit repo (~/linkkit, its GitHub repo), add a whiteboard entry (like Boardkit's src/app/whiteboard/): the map drawn and edited by Linkkit's own components, with no app chrome (no header, map switcher, zoom pill, tips, export menu). Push Linkkit main; gauntlet imports it as a pinned git dependency like Boardkit, every import through one file (src/maps/linkkit.ts).
-  - [ ] gauntlet src/maps/: the tldraw shape ("linkkit-map"), reading and writing Linkkit's own stored map (same origin, as boards do with Boardkit's record), so an edit shows in /linkkit too and vice versa, live. Nothing copied.
-  - [ ] Natural size = the map's content; scaled as a whole, aspect kept; box follows the content but never past the page (same rules as boards: fit.ts). Edge wall, lasso and box select (whole map) work as for boards.
-  - [ ] Editing in place: everything Linkkit's map editing does (add, rename, move, delete boxes, arrows), deletes into Linkkit's own trash if it has one.
-  - [ ] IMPORTANT, known pitfall: opening or showing a map must never rewrite its stored data (see HISTORY: autosave on map switch, bracket maps re-laid out to the window). On the whiteboard, a bracket map lays out to its widget's natural size, not the window, and showing it writes nothing.
-- [ ] 2. Toolbar: a "Map" button next to "Board", same picker style: "+ New map" first (creates a real Linkkit map through Linkkit's own code, name typed in place, empty-map cleanup on undo/delete as boards do), then the existing maps. Placed in the middle of the view, inside the page, selected, one undo step.
-- [ ] 3. Linked board + map = one widget:
-  - [ ] A board widget whose board has a linked Linkkit map shows the "List | Map | Both" switch next to its name label (hover/selection only). A board without a linked map shows no switch. A map placed on its own (not via its board) has no switch.
-  - [ ] "Map" shows the linked map, "Both" shows list and map side by side, inside the same widget box, scaled as one. The choice is stored on the widget (per widget, survives reload).
-  - [ ] Edits in either view show in the other at once (they already sync between Boardkit and Linkkit).
+- [x] 1. Linkkit as a whiteboard widget, the same way Boardkit is:
+  - [x] In the Linkkit repo (~/linkkit, its GitHub repo), add a whiteboard entry (like Boardkit's src/app/whiteboard/): the map drawn and edited by Linkkit's own components, with no app chrome (no header, map switcher, zoom pill, tips, export menu). Push Linkkit main; gauntlet imports it as a pinned git dependency like Boardkit, every import through one file (src/maps/linkkit.ts).
+  - [x] gauntlet src/maps/: the tldraw shape ("linkkit-map"), reading and writing Linkkit's own stored map (same origin, as boards do with Boardkit's record), so an edit shows in /linkkit too and vice versa, live. Nothing copied.
+  - [x] Natural size = the map's content; scaled as a whole, aspect kept; box follows the content but never past the page (same rules as boards: fit.ts). Edge wall, lasso and box select (whole map) work as for boards.
+  - [x] Editing in place: everything Linkkit's map editing does (add, rename, move, delete boxes, arrows), deletes into Linkkit's own trash if it has one.
+  - [x] IMPORTANT, known pitfall: opening or showing a map must never rewrite its stored data (see HISTORY: autosave on map switch, bracket maps re-laid out to the window). On the whiteboard, a bracket map lays out to its widget's natural size, not the window, and showing it writes nothing.
+- [x] 2. Toolbar: a "Map" button next to "Board", same picker style: "+ New map" first (creates a real Linkkit map through Linkkit's own code, name typed in place, empty-map cleanup on undo/delete as boards do), then the existing maps. Placed in the middle of the view, inside the page, selected, one undo step.
+- [x] 3. Linked board + map = one widget:
+  - [x] A board widget whose board has a linked Linkkit map shows the "List | Map | Both" switch next to its name label (hover/selection only). A board without a linked map shows no switch. A map placed on its own (not via its board) has no switch.
+  - [x] "Map" shows the linked map, "Both" shows list and map side by side, inside the same widget box, scaled as one. The choice is stored on the widget (per widget, survives reload).
+  - [x] Edits in either view show in the other at once (they already sync between Boardkit and Linkkit).
 - [ ] 4. One undo covers map edits too: extend the page's undo order (phase 2.5 item 22) so Ctrl+Z / Ctrl+Y and the undo buttons undo the most recent action on the page, whether whiteboard, board or map.
 - [ ] 5. Failed saves: if Linkkit tracks failed writes like Boardkit's useSaveHealth, show the same whiteboard banner for map saves; if it doesn't, add that tracking to Linkkit (its standalone app shows its notice too) and wire it in.
 - [ ] 6. Tests:

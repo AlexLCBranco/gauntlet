@@ -75,3 +75,61 @@
   outline: none;
   pointer-events: all; /* the widget lets presses through to the whiteboard */
 }
+
+/* The name's row: the name, and for a board with a linked Linkkit map the
+   "List | Map | Both" switch beside it (ViewSwitch.tsx). Over the map's
+   paper while the map is edited (that paper reaches up past the row). */
+.gb-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.gb-head .gb-name {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Shown when the name is: on hover or while selected. */
+.gb-switch {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  margin-bottom: 6px;
+  padding: 2px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.06);
+  visibility: hidden;
+  pointer-events: all; /* the widget lets presses through to the whiteboard */
+}
+.gb-scaled[data-active] .gb-switch,
+.gb-scaled:has([data-boardkit-board][data-pointer-over]) .gb-switch {
+  visibility: visible;
+}
+.gb-switch button {
+  padding: 1px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: #a3abb9;
+  font: 600 12px/1.4 system-ui, sans-serif;
+  cursor: pointer;
+}
+.gb-switch button:hover {
+  color: #e3e3e8;
+}
+.gb-switch button[aria-pressed="true"] {
+  background: rgb(255 255 255 / 0.14);
+  color: #e3e3e8;
+}
+
+/* List and map side by side in Both, moved and scaled as one. */
+.gb-views {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+}
+.gb-map {
+  flex: none;
+}
