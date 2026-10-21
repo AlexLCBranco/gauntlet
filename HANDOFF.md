@@ -10,6 +10,10 @@ Finished work goes to docs/HISTORY.md.
   items done and committed. Summary in docs/HISTORY.md. "/" is the
   whiteboard now; the old iframe canvas is deleted.
 - Boardkit v0.0.100 (whiteboard mode changes) is pinned in package.json.
+- Last results: unit 63 + 5, Boardkit unit 211; full local e2e gauntlet
+  112 + 1 failed (a float-exact test, fixed; fullpage 13/13 after),
+  Linkkit 18; live (`1a1e5c3`) gauntlet 108 passed, 5 skipped (real data:
+  local only), Linkkit 18; CI green in gauntlet and Boardkit.
 - NEXT is phase 3, but only once the owner has (1) tried the feel items
   below and (2) answered about the old canvas's saved data.
 
