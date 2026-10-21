@@ -435,19 +435,20 @@ test("a new list confirmed with Enter opens its card field at once (Enter keeps 
   await expect(page.getByRole("textbox", { name: "Add a card" })).toHaveCount(0);
 });
 
-test("a new list confirmed with Enter opens its card field at once; renaming a list with Enter doesn't — in Boardkit itself; a click elsewhere adds no list and opens nothing", async ({ context }) => {
+test("a new list confirmed with Enter opens its card field at once; renaming a list with Enter doesn't — in Boardkit itself; a click elsewhere adds the list typed (owner, 2026-10-21) and opens no card field", async ({ context }) => {
   const id = await seedBoard(context);
   const bk = await context.newPage();
   await bk.goto("/boardkit/");
   await expect(bk.getByRole("button", { name: "Switch board" })).toBeVisible();
   const root = bk.locator("[data-board-canvas]");
   await newListThenCard(bk, root, () => bk.locator('[data-add="list"]').click(), id);
-  // Typed, then a click elsewhere: no list, no card field (as before).
+  // Typed, then a click elsewhere: the list is added, and no card field opens.
   const lists = (await record(bk, id)).board.listOrder.length;
   await bk.locator('[data-add="list"]').click();
-  await bk.keyboard.type("ZZ not kept");
+  await bk.keyboard.type("ZZ kept by a click away");
   await bk.mouse.click(5, 300);
+  const rec = await saved(bk, id, (r) => r.board.listOrder.length === lists + 1);
+  expect(rec.board.lists[rec.board.listOrder.at(-1)!].title).toBe("ZZ kept by a click away");
+  await bk.waitForTimeout(300);
   await expect(bk.getByRole("textbox", { name: "Add a card" })).toHaveCount(0);
-  await bk.waitForTimeout(600);
-  expect((await record(bk, id)).board.listOrder.length).toBe(lists);
 });

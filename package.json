@@ -12,8 +12,8 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/a13cccc814f867b470f818490750e3ee50a0039f",
-    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/732f7a6ec09040d31fc635bd871d2809f6efdbde",
+    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/e8f694ea4354433042f16e5991f0ac0dd1786b7f",
+    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/bd58f306f830f8392d6949508afd2668e6d0aa78",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "shadcn": "file:src/boards/vendor/shadcn",

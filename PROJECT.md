@@ -380,7 +380,7 @@ Changes to the plan, newest last. Each says what and why.
   outside the widget's box. The header's card count sits at its right end;
   the other controls appear just before it without the title or count
   moving. No "+" or control sits on a border (a list's or the box's).
-- 2026-10-21 — Owner: a new list confirmed with Enter opens its "Add a
+- (click-away part replaced by 2026-10-21, click away saves) 2026-10-21 — Owner: a new list confirmed with Enter opens its "Add a
   card" field at once, focused, for its first card; Enter keeps adding,
   Escape or an empty Enter closes it (opened this way only; a field opened
   by hand still adds a blank card on an empty Enter). The add-a-list field
@@ -424,10 +424,30 @@ Changes to the plan, newest last. Each says what and why.
   other edits that one. Edits cross between list and map at once on the
   page: each app tells the other of its own writes (the browser's storage
   event only reaches other tabs).
+- 2026-10-21 — Click away saves (owner, hand-test fixes; replaces "a
+  click elsewhere still adds no list and opens nothing" above). Wherever
+  text is typed in Boardkit or Linkkit (on the whiteboard and in /boardkit
+  and /linkkit): a new list or card, renaming a list, a card or a board, a
+  map box's name, an arrow's label, any other inline field, a click or
+  press anywhere outside the field saves what was typed, as Enter does,
+  and the press still does what it does. A new-item field left empty just
+  closes: no blank list, card or box. Escape still cancels. A new list
+  saved by a click away does not open its card field (only Enter does).
+- 2026-10-21 — One click, not two (owner, hand-test fixes). On the
+  whiteboard, a board's controls that show on hover (the card "+" row, the
+  list "+" column, the full "+ Add a list" / "+ Add a card" buttons, a list
+  header's buttons, "⋯" included) work on the first click even when the
+  board isn't being edited: that click starts editing and does the
+  control's part at once. Found by Boardkit's markers (`data-add`,
+  `data-control`). A click on plain board space still just selects the
+  board. Map widgets have no such controls of their own (a box's buttons
+  show only while the map is edited).
 
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.
 They wait here; the agent tells the owner instead of building them.
 
-- (none yet)
+- Text alignment per list (owner, 2026-10-21): left / center / right for
+  the list title and, separately, for its cards, in Boardkit's per-list
+  style menu; works the same on the whiteboard.

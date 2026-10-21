@@ -8,7 +8,11 @@ Finished work goes to docs/HISTORY.md.
 
 - PHASE 3 DONE (docs/PHASE-3.md, all ticked; summary in docs/HISTORY.md).
   STOPPED for the owner's report (PROJECT.md rule 3); phase 4 not started.
-- Pinned: Boardkit v0.0.103 (`a13cccc`), Linkkit v0.0.108 (`732f7a6`).
+- Hand-test fixes round (owner, 2026-10-21) done: click away saves in every
+  inline field (Boardkit, Linkkit, whiteboard and standalone); one click on
+  a board's hover controls; text alignment idea recorded in IDEAS.
+  e2e/clickaway.e2e.ts.
+- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.109 (`bd58f30`).
 - Last results: unit 63 + 5, Linkkit 972, Boardkit 211; full local e2e
   gauntlet 131, Linkkit 18; live (`8cd78c4`) gauntlet 125 passed, 6
   skipped (real data: local only), Linkkit 18; CI green in all three.

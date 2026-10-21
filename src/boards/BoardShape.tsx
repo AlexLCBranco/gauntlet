@@ -194,26 +194,30 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     return () => ro.disconnect();
   }, [editor, shape.id]);
 
-  // Editing began with a double-click on a card or list title: rename it,
-  // as a click on a title does in Boardkit. On an add button ("+ Add a
-  // card", "+ Add a list" or their slim "+"; anywhere, on a board with no
-  // lists yet): open it. Found by Boardkit's fixed markers (`data-add`),
-  // never by their text.
+  // Editing began with a press on one of the board's controls (below): that
+  // control does its part now, as if pressed while editing. Or with a
+  // double-click on a card or list title: rename it, as a click on a title
+  // does in Boardkit; on an add button (anywhere, on a board with no lists
+  // yet): open it. Found by Boardkit's fixed markers (`data-add`,
+  // `data-control`), never by their text.
   useEffect(() => {
     if (!listEditing) return;
-    // Where the press was: its own point for a slim "+" (tldraw's pointer
-    // can lag a move behind on a busy page, and then hit a card instead).
     const p = editor.inputs.getCurrentScreenPoint();
     const vp = editor.getViewportScreenBounds();
-    const at = slimPress ?? { x: p.x + vp.x, y: p.y + vp.y };
-    slimPress = null;
+    const at = { x: p.x + vp.x, y: p.y + vp.y };
+    const control = pressedControl;
+    pressedControl = null;
     const find = (tries: number) => {
-      const hit = document.elementFromPoint(at.x, at.y);
       const root = content.current?.querySelector('[data-boardkit-board][data-editing="true"]');
       if (!root) {
         if (tries < 10) frame = requestAnimationFrame(() => find(tries + 1));
         return;
       }
+      if (control) {
+        root.querySelector<HTMLElement>(controlSelector(control))?.click();
+        return;
+      }
+      const hit = document.elementFromPoint(at.x, at.y);
       if (!hit || !content.current?.contains(hit)) return;
       const adds = [...root.querySelectorAll<HTMLElement>("[data-add]")];
       const empty = !root.querySelector("section[data-list-id]");
@@ -225,22 +229,32 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   }, [listEditing, editor]);
 
   // Not editing, the board ignores the pointer (it is moved as a whole), and
-  // its slim "+" buttons sit just outside its box. A press on one that is
-  // showing starts editing right there, and the effect above opens it.
+  // some of its controls sit just outside its box. One press on a control
+  // that is showing (a "+" to add a card or a list, a list header's
+  // buttons, "⋯" included) starts editing and does that control's part at
+  // once (owner, 2026-10-21: one click, not two). Which control is noted
+  // here by its markers: once editing starts the board is drawn anew, and
+  // its hover-only controls hide again until the pointer moves. A press
+  // anywhere else on the board just selects it, as before.
   useEffect(() => {
     if (listEditing || view === "map") return;
     const el = content.current;
     if (!el) return;
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0 || editor.getCurrentToolId() !== "select") return;
-      const hit = [...el.querySelectorAll<HTMLElement>("[data-add][data-slim]")].find((b) => {
-        if (Number(getComputedStyle(b).opacity) < 0.5) return false;
+      const hit = [...el.querySelectorAll<HTMLElement>("[data-boardkit-board] [data-add], [data-boardkit-board] [data-list-header] [data-control]")].find((b) => {
+        const style = getComputedStyle(b);
+        if (Number(style.opacity) < 0.05 || style.visibility === "hidden") return false;
         const r = b.getBoundingClientRect();
-        return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        return r.width > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
       });
       if (!hit) return;
       editor.markEventAsHandled(e);
-      slimPress = { x: e.clientX, y: e.clientY };
+      pressedControl = {
+        add: hit.dataset.add ?? null,
+        control: hit.dataset.control ?? null,
+        listId: hit.closest<HTMLElement>("section[data-list-id]")?.dataset.listId ?? null,
+      };
       editingHalf.set({ shapeId: shape.id, half: "list" });
       editor.select(shape.id);
       editor.setEditingShape(shape.id);
@@ -331,9 +345,15 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     way back towards the list beside it (boards.css: .gb-views' gap). */
 const BOTH_ROOM = { left: 24, top: 120, right: 120, bottom: 120 };
 
-/** Where a press on a slim "+" was (window pixels), for the editing that
-    press starts to open that "+". */
-let slimPress: { x: number; y: number } | null = null;
+/** The control a press started editing on (see above), by its markers. */
+type PressedControl = { readonly add: string | null; readonly control: string | null; readonly listId: string | null };
+let pressedControl: PressedControl | null = null;
+
+/** The same control on the board being edited. */
+function controlSelector({ add, control, listId }: PressedControl): string {
+  const inList = listId ? `section[data-list-id="${CSS.escape(listId)}"] ` : "";
+  return add ? `${inList}[data-add="${add}"]` : `${inList}[data-list-header] [data-control="${control}"]`;
+}
 
 /** A card or list of a board is being dragged: Boardkit's lifted copy is up. */
 const boardkitDragging = () => document.querySelector("[data-boardkit-lifted]") !== null;
