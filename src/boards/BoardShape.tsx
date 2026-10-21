@@ -7,6 +7,7 @@ import {
   useEditor,
   useIsEditing,
   useValue,
+  type Editor,
   type RecordProps,
   type TLResizeInfo,
   type TLShape,
@@ -215,6 +216,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       }
       if (control) {
         root.querySelector<HTMLElement>(controlSelector(control))?.click();
+        if (control.add) frame = requestAnimationFrame(() => typeHeldKeys(root, 0));
         return;
       }
       const hit = document.elementFromPoint(at.x, at.y);
@@ -223,6 +225,13 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       const empty = !root.querySelector("section[data-list-id]");
       const title = root.contains(hit) ? hit.closest("[data-card-title], h2")?.querySelector<HTMLElement>("button") : null;
       (title ?? adds.find((b) => b.contains(hit)) ?? (empty ? adds.find((b) => b.dataset.add === "list") : null))?.click();
+    };
+    // Its field opened: what was typed meanwhile goes into it.
+    const typeHeldKeys = (root: Element, tries: number) => {
+      const field = root.querySelector<HTMLTextAreaElement>("textarea");
+      if (field && document.activeElement === field) releaseHeldKeys(field);
+      else if (tries < 30) frame = requestAnimationFrame(() => typeHeldKeys(root, tries + 1));
+      else heldKeys?.stop();
     };
     let frame = requestAnimationFrame(() => find(0));
     return () => cancelAnimationFrame(frame);
@@ -255,6 +264,9 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         control: hit.dataset.control ?? null,
         listId: hit.closest<HTMLElement>("section[data-list-id]")?.dataset.listId ?? null,
       };
+      // A "+": its field opens a moment from now; typing that starts at once
+      // is kept for it.
+      if (hit.dataset.add) holdKeys(editor);
       editingHalf.set({ shapeId: shape.id, half: "list" });
       editor.select(shape.id);
       editor.setEditingShape(shape.id);
@@ -348,6 +360,65 @@ const BOTH_ROOM = { left: 24, top: 120, right: 120, bottom: 120 };
 /** The control a press started editing on (see above), by its markers. */
 type PressedControl = { readonly add: string | null; readonly control: string | null; readonly listId: string | null };
 let pressedControl: PressedControl | null = null;
+
+/**
+ * Keys typed after a press on a "+" and before its field has the focus
+ * (the board is drawn anew for editing first, a frame or two): held here,
+ * not taken as whiteboard shortcuts, and typed into the field once it
+ * opens (owner, 2026-10-21: typing at once keeps every character).
+ * Characters, Backspace and Enter; given up after two seconds.
+ */
+let heldKeys: { readonly keys: string[]; readonly stop: () => void } | null = null;
+
+function holdKeys(editor: Editor) {
+  heldKeys?.stop();
+  const keys: string[] = [];
+  const onKey = (e: KeyboardEvent) => {
+    const el = e.target as HTMLElement | null;
+    // The field has the focus already: what was held goes in first, then
+    // this key as typed.
+    if (el instanceof HTMLTextAreaElement) {
+      releaseHeldKeys(el);
+      return;
+    }
+    if (el && el.tagName === "INPUT") return;
+    if (e.ctrlKey || e.metaKey || e.altKey || !(e.key.length === 1 || e.key === "Enter" || e.key === "Backspace")) return;
+    keys.push(e.key);
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    editor.markEventAsHandled(e);
+  };
+  const stop = () => {
+    window.removeEventListener("keydown", onKey, true);
+    clearTimeout(timer);
+    if (heldKeys?.keys === keys) heldKeys = null;
+  };
+  const timer = setTimeout(stop, 2000);
+  window.addEventListener("keydown", onKey, true);
+  heldKeys = { keys, stop };
+}
+
+/** Types the held keys into `field` (focused), as typed there. */
+function releaseHeldKeys(field: HTMLTextAreaElement) {
+  const held = heldKeys;
+  if (!held) return;
+  held.stop();
+  let text = "";
+  const flush = () => {
+    if (text) document.execCommand("insertText", false, text);
+    text = "";
+  };
+  for (const key of held.keys) {
+    if (key.length === 1) {
+      text += key;
+      continue;
+    }
+    flush();
+    if (key === "Backspace") document.execCommand("delete");
+    else field.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+  }
+  flush();
+}
 
 /** The same control on the board being edited. */
 function controlSelector({ add, control, listId }: PressedControl): string {

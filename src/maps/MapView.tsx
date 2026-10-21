@@ -54,6 +54,13 @@ function useEditingEvents(editor: Editor, box: React.RefObject<HTMLDivElement | 
       if (e.key !== "Escape" || mapTakesEscape(e.target)) editor.markEventAsHandled(e);
     };
     const onPointer = (e: Event) => editor.markEventAsHandled(e);
+    // Also seen first (window, capture) for a press inside the map: one
+    // marked only as it bubbled past the map was taken by tldraw's canvas
+    // anyway (an arrow's "+ label", drawn in React Flow's label layer,
+    // never got its click).
+    const onPointerFirst = (e: Event) => {
+      if (el.contains(e.target as Node)) editor.markEventAsHandled(e);
+    };
     // Focus is often still the whiteboard's (a press on the map's paper
     // takes none): Escape is seen first here, before tldraw ends editing.
     const onLinkkitEscape = (e: KeyboardEvent) => {
@@ -71,12 +78,14 @@ function useEditingEvents(editor: Editor, box: React.RefObject<HTMLDivElement | 
     el.addEventListener("keyup", onKey);
     for (const type of pointerEvents) el.addEventListener(type, onPointer);
     window.addEventListener("keydown", onLinkkitEscape, true);
+    for (const type of pointerEvents) window.addEventListener(type, onPointerFirst, true);
     window.addEventListener("keydown", onEscape);
     return () => {
       el.removeEventListener("keydown", onKey);
       el.removeEventListener("keyup", onKey);
       for (const type of pointerEvents) el.removeEventListener(type, onPointer);
       window.removeEventListener("keydown", onLinkkitEscape, true);
+      for (const type of pointerEvents) window.removeEventListener(type, onPointerFirst, true);
       window.removeEventListener("keydown", onEscape);
     };
   }, [editing, editor, box]);

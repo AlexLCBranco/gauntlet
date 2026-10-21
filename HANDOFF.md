@@ -12,7 +12,13 @@ Finished work goes to docs/HISTORY.md.
   inline field (Boardkit, Linkkit, whiteboard and standalone); one click on
   a board's hover controls; text alignment idea recorded in IDEAS.
   e2e/clickaway.e2e.ts.
-- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.109 (`bd58f30`).
+- Hand-test fixes finished (owner, 2026-10-21): typing at once after a
+  one-click "+" keeps every character (held keys, BoardShape.tsx); click
+  away covered for every field kind; a map's "+ label" works on the
+  whiteboard (presses marked at the window first); a map never scrolls in
+  its widget (Linkkit v0.0.110). Board double-click retry: e2e on a big
+  board fails on the old code.
+- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.110 (`88503b5`).
 - Last results: unit 63 + 5, Linkkit 972, Boardkit 211; full local e2e
   gauntlet 131, Linkkit 18; live (`8cd78c4`) gauntlet 125 passed, 6
   skipped (real data: local only), Linkkit 18; CI green in all three.
