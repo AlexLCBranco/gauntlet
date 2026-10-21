@@ -29,7 +29,8 @@ Finished work goes to docs/HISTORY.md.
 ## Broken / known wrong
 
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
-  resize).
+  resize); unsaved.e2e.ts:142 (Delete right after a click not taken, once
+  in a live full run 2026-10-21; 5/5 alone, 12/12 with 6 workers).
 - SKIPPED (2026-10-21): unsaved.e2e.ts "a shape drawn right before the tab
   is closed" — Ctrl+D sometimes not taken in a fresh tab under load; 4/4
   alone on old and new code, no app cause found.

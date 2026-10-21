@@ -366,3 +366,88 @@ test("21: a board edit on the whiteboard that can't be saved (storage full) show
   await expect(banner).toHaveCount(0);
   await saved(page, id, (r) => r.board.cards[cardId].title === long);
 });
+
+/** In \`root\` (a board): "Add a list", name, Enter, first card, Enter; then
+    renaming an existing list with Enter opens no card field. Returns the
+    new list's id. */
+async function newListThenCard(page: Page, root: Locator, openListField: () => Promise<void>, id: string) {
+  const before = (await record(page, id)).board.listOrder.length;
+  await openListField();
+  await expect(page.getByRole("textbox", { name: "Add a list" })).toBeFocused();
+  await page.keyboard.type("ZZ fresh list");
+  await page.keyboard.press("Enter");
+  // The new list's card field is open at once, focused; the list field is closed.
+  const cardField = page.getByRole("textbox", { name: "Add a card" });
+  await expect(cardField).toBeFocused();
+  await expect(page.getByRole("textbox", { name: "Add a list" })).toHaveCount(0);
+  const rec = await saved(page, id, (r) => r.board.listOrder.length === before + 1);
+  const listId = rec.board.listOrder.at(-1)!;
+  await expect(root.locator(`section[data-list-id="${listId}"]`).getByRole("textbox", { name: "Add a card" })).toBeFocused();
+  await page.keyboard.type("ZZ first card");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("ZZ second card");
+  await page.keyboard.press("Enter"); // keeps adding
+  await expect(cardField).toBeFocused();
+  await page.keyboard.press("Enter"); // empty: closes
+  await expect(cardField).toHaveCount(0);
+  const after = await saved(page, id, (r) => (r.board.cardOrder[listId] ?? []).length === 2);
+  expect(after.board.cardOrder[listId].map((c) => after.board.cards[c].title)).toEqual(["ZZ first card", "ZZ second card"]);
+  expect(after.board.lists[listId].title).toBe("ZZ fresh list");
+
+  // Renaming an existing list with Enter: only the name.
+  const other = root.locator("section[data-list-id]").first();
+  const otherId = (await other.getAttribute("data-list-id"))!;
+  await other.locator("[data-list-header] h2").getByRole("button", { name: "List title", exact: true }).click();
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("ZZ renamed");
+  await page.keyboard.press("Enter");
+  await saved(page, id, (r) => r.board.lists[otherId].title === "ZZ renamed");
+  await page.waitForTimeout(300);
+  await expect(page.getByRole("textbox", { name: "Add a card" })).toHaveCount(0);
+  return listId;
+}
+
+test("a new list confirmed with Enter opens its card field at once (Enter keeps adding, an empty Enter closes); renaming a list with Enter doesn't — on the whiteboard", async ({ page, context }) => {
+  const id = await setUp(page, context);
+  const ghost = boardEl(page).locator('[data-add="list"]');
+  await newListThenCard(page, boardEl(page), async () => {
+    const g = await box(ghost);
+    await page.mouse.move(g.x + g.width / 2, g.y + 20, { steps: 3 });
+    await page.mouse.down();
+    await page.mouse.up();
+  }, id);
+  // Escape (not Enter) also closes it: a second new list. (Scaled down
+  // first: with its new list the board is wider than the window.)
+  await page.evaluate(() => {
+    const e = (window as any).editor;
+    const sh = e.getCurrentPageShapes().find((x: any) => x.type === "boardkit-board");
+    e.updateShape({ id: sh.id, type: sh.type, x: 20, props: { scale: sh.props.scale * 0.6 } });
+  });
+  await page.waitForTimeout(300);
+  const g = await box(ghost);
+  await page.mouse.move(g.x + g.width / 2, g.y + 20, { steps: 3 });
+  await page.mouse.down();
+  await page.mouse.up();
+  await page.keyboard.type("ZZ another");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("textbox", { name: "Add a card" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("textbox", { name: "Add a card" })).toHaveCount(0);
+});
+
+test("a new list confirmed with Enter opens its card field at once; renaming a list with Enter doesn't — in Boardkit itself; a click elsewhere adds no list and opens nothing", async ({ context }) => {
+  const id = await seedBoard(context);
+  const bk = await context.newPage();
+  await bk.goto("/boardkit/");
+  await expect(bk.getByRole("button", { name: "Switch board" })).toBeVisible();
+  const root = bk.locator("[data-board-canvas]");
+  await newListThenCard(bk, root, () => bk.locator('[data-add="list"]').click(), id);
+  // Typed, then a click elsewhere: no list, no card field (as before).
+  const lists = (await record(bk, id)).board.listOrder.length;
+  await bk.locator('[data-add="list"]').click();
+  await bk.keyboard.type("ZZ not kept");
+  await bk.mouse.click(5, 300);
+  await expect(bk.getByRole("textbox", { name: "Add a card" })).toHaveCount(0);
+  await bk.waitForTimeout(600);
+  expect((await record(bk, id)).board.listOrder.length).toBe(lists);
+});

@@ -380,6 +380,13 @@ Changes to the plan, newest last. Each says what and why.
   outside the widget's box. The header's card count sits at its right end;
   the other controls appear just before it without the title or count
   moving. No "+" or control sits on a border (a list's or the box's).
+- 2026-10-21 — Owner: a new list confirmed with Enter opens its "Add a
+  card" field at once, focused, for its first card; Enter keeps adding,
+  Escape or an empty Enter closes it (opened this way only; a field opened
+  by hand still adds a blank card on an empty Enter). The add-a-list field
+  closes after adding. A click elsewhere still adds no list and opens
+  nothing; renaming a list with Enter only saves the name. In Boardkit
+  itself and on the whiteboard (same list code).
 
 IDEAS
 
