@@ -475,6 +475,9 @@ test("clicking N / M opens the page list above the controls, and everything the 
   // Rename: double-click, type, Enter.
   await openPageList(page);
   await pageItem(page, "B").locator(".tlui-page-menu__item__button").dblclick();
+  // Typed only once the name field has the focus (on a busy machine it
+  // comes a moment after the click: the first letter was lost once).
+  await expect(page.locator("input:focus")).toHaveCount(1);
   await page.keyboard.press("Control+a");
   await page.keyboard.type("Bee");
   await page.keyboard.press("Enter");
@@ -489,6 +492,7 @@ test("clicking N / M opens the page list above the controls, and everything the 
     await page.getByRole("menuitem", { name: entry, exact: true }).click();
   };
   await itemMenu("A", "Rename");
+  await expect(page.locator("input:focus")).toHaveCount(1);
   await page.keyboard.press("Control+a");
   await page.keyboard.type("Ay");
   await page.keyboard.press("Enter");

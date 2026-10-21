@@ -48,8 +48,17 @@ function NameField({ shapeId, mapId, name, shown }: { shapeId: TLShapeId; mapId:
       e.stopPropagation();
       editor.markEventAsHandled(e);
       if (e.type !== "keydown" || e.isComposing) return;
-      if (e.key === "Enter") finish(true);
-      else if (e.key === "Escape") finish(false);
+      if (e.key === "Enter") {
+        finish(true);
+        // Its key-up comes after the field has gone, on the whiteboard,
+        // where Enter on the selected widget starts editing it: not this one.
+        const upOnce = (k: KeyboardEvent) => {
+          if (k.key !== "Enter") return;
+          editor.markEventAsHandled(k);
+          window.removeEventListener("keyup", upOnce, true);
+        };
+        window.addEventListener("keyup", upOnce, true);
+      } else if (e.key === "Escape") finish(false);
       // Nothing typed yet: Ctrl+Z is the whiteboard's, so one Ctrl+Z still
       // takes the new map off the page. Once typed, it undoes the typing.
       else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z" && el.value === name) {

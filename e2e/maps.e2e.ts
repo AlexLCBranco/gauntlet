@@ -44,6 +44,9 @@ async function newMap(page: Page): Promise<MapShape> {
   await expect(page.getByTestId("map-picker")).toHaveCount(0);
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.press("Enter");
+  // Enter keeps the name; it starts nothing else (the widget is not edited).
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (window as any).editor.getEditingShapeId())).toBeNull();
   let made: MapShape | undefined;
   await expect
     .poll(async () => {
@@ -683,4 +686,45 @@ test("a map edit on the whiteboard that can't be saved (storage full) shows the 
   await banner.getByRole("button", { name: "Try again" }).click();
   await expect(banner).toHaveCount(0);
   await expect.poll(() => names(page, mapId)).toEqual([long]);
+});
+
+// ---- Empty new maps leave with their widget (step 2) ----------------------
+
+const listed = (page: Page) =>
+  page.evaluate(() => (JSON.parse(localStorage.getItem("linkkit:registry") ?? '{"maps":[]}') as { maps: { id: string }[] }).maps.map((m) => m.id));
+
+test("+ New map left empty: undoing it, or deleting its widget, deletes the map from Linkkit too; redo brings the same map back; a map with a box stays", async ({ page, context }) => {
+  // Linkkit never deletes its last map: one there first.
+  await seedMap(context, "Kept anyway");
+  await openWhiteboard(page);
+  const empty = await newMap(page);
+  expect(await listed(page)).toContain(empty.mapId);
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => mapShapes(page)).toHaveLength(0);
+  await expect.poll(() => stored(page, empty.mapId)).toBeNull();
+  expect(await listed(page)).not.toContain(empty.mapId);
+  // Redo: the same map, same id, back in Linkkit and on the whiteboard.
+  await page.keyboard.press("Control+y");
+  await expect.poll(async () => (await mapShapes(page)).map((s) => s.mapId)).toEqual([empty.mapId]);
+  await expect.poll(() => stored(page, empty.mapId)).not.toBeNull();
+  expect(await listed(page)).toContain(empty.mapId);
+  // Its widget deleted (still empty): gone from Linkkit again.
+  await page.evaluate((id) => void (window as any).editor.select(id), empty.id);
+  await page.keyboard.press("Delete");
+  await expect.poll(() => stored(page, empty.mapId)).toBeNull();
+
+  // A new map with a box in it stays in Linkkit when its widget goes.
+  const full = await newMap(page);
+  await startEditing(page, full.id);
+  const area = await box(widget(page, full.id));
+  await addBox(page, area.x + 80, area.y + 60, "Keep me");
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await expect.poll(() => page.evaluate(() => (window as any).editor.getEditingShapeId())).toBeNull();
+  await page.evaluate((id) => void (window as any).editor.select(id), full.id);
+  await page.keyboard.press("Delete");
+  await expect.poll(() => mapShapes(page)).toHaveLength(0);
+  await page.waitForTimeout(500);
+  expect(await names(page, full.mapId)).toEqual(["Keep me"]);
+  expect(await listed(page)).toContain(full.mapId);
 });

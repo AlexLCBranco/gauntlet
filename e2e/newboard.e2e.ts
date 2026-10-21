@@ -131,6 +131,10 @@ test("typing names it, on the whiteboard and in /boardkit; Escape or nothing typ
   expect((await shapes(page)).map((s) => s.id)).toEqual([a.id]); // nothing drawn, nothing deleted
   expect(await page.evaluate(() => (window as any).editor.getCurrentToolId())).toBe("select");
   expect(await selected(page)).toEqual([a.id]);
+  // Enter kept the name and started nothing else: the board is not edited
+  // (its key-up used to reach the whiteboard, where Enter edits the selected widget).
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (window as any).editor.getEditingShapeId())).toBeNull();
 
   // Escape after typing: stays Untitled.
   const b = await newBoard(page);
