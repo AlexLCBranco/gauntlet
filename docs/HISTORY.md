@@ -1162,3 +1162,25 @@ Test-only fixes: Ctrl+D + close-tab duplicates through the editor; the
 page-list rename waits for its field (lost first letter under load).
 Results: local gauntlet 131, Linkkit 18; live gauntlet 125 + 6 skipped,
 Linkkit 18.
+
+## Excalidraw parity (owner, 2026-10-21)
+
+What still kept the owner on Excalidraw (decisions in PROJECT.md).
+- 0, no leftover windows: Playwright already ran headless (a stopped run
+  left no Edge behind in checks); the one headed launcher was
+  scripts/drag-feel.mjs (`headless: false`, no close on failure). Now
+  headless unless `--headed`/`HEADED=1`, browsers closed in `finally`,
+  local-e2e stops dev servers, tests and their browsers on Ctrl+C and
+  sweeps leftover test browsers after each run (scripts/leftovers.mjs).
+  Rule added to CLAUDE.md here, in Linkkit and in Boardkit.
+- 1, dark and custom colours: fixed dark colours, a custom picker and the
+  last 5 custom colours in Stroke / Background / Text colour, exact in
+  dark and light mode (meta hex, src/style/colors.ts). e2e/colors.e2e.ts.
+- 2, Excalidraw paste and import: src/import/excalidraw/ (converter,
+  editor side, notice); paste, drop and "Import Excalidraw file…".
+  Pictures were lost because tldraw's converter creates each picture's
+  asset empty and fills it in later, and the picture on the page never
+  picks the data up (dotted "loading" box until a reload); ours stores
+  pictures before drawing. e2e/excalidraw.e2e.ts (made-up fixture),
+  e2e/realexcalidraw.e2e.ts (the owner's file, local only).
+- 3, Crop in the style panel's Actions. e2e/crop.e2e.ts.

@@ -8,16 +8,11 @@ Finished work goes to docs/HISTORY.md.
 
 - PHASE 3 DONE (docs/PHASE-3.md, all ticked; summary in docs/HISTORY.md).
   STOPPED for the owner's report (PROJECT.md rule 3); phase 4 not started.
-- Hand-test fixes round (owner, 2026-10-21) done: click away saves in every
-  inline field (Boardkit, Linkkit, whiteboard and standalone); one click on
-  a board's hover controls; text alignment idea recorded in IDEAS.
-  e2e/clickaway.e2e.ts.
-- Hand-test fixes finished (owner, 2026-10-21): typing at once after a
-  one-click "+" keeps every character (held keys, BoardShape.tsx); click
-  away covered for every field kind; a map's "+ label" works on the
-  whiteboard (presses marked at the window first); a map never scrolls in
-  its widget (Linkkit v0.0.110). Board double-click retry: e2e on a big
-  board fails on the old code.
+- Hand-test fixes (owner, 2026-10-21) done; see docs/HISTORY.md.
+- EXCALIDRAW PARITY (owner, 2026-10-21) done, items 0-3 (summary in
+  docs/HISTORY.md, decisions in PROJECT.md): no leftover test windows
+  (scripts/leftovers.mjs), dark fixed + custom colours, our own Excalidraw
+  paste/drop/import (src/import/excalidraw/), Crop in the panel.
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.110 (`88503b5`).
 - Last results: unit 63 + 5, Linkkit 972, Boardkit 211; full local e2e
   gauntlet 131, Linkkit 18; live (`8cd78c4`) gauntlet 125 passed, 6
@@ -66,7 +61,10 @@ Finished work goes to docs/HISTORY.md.
 - tldraw internals this code relies on (why tldraw is pinned): the edge
   wall (select tool states), the unsaved journal, undo skipping selection,
   the page undo (`editor.history` stacks, `store.addHistoryInterceptor`),
-  the page list moved to "N / M" (pages.css pins Radix's popover).
+  the page list moved to "N / M" (pages.css pins Radix's popover), the
+  Excalidraw import's hand-back of other files to tldraw's own files
+  handler (`externalContentHandlers.files`), crop mode `select.crop.idle`,
+  display values for exact colours and sizes (src/style/shapeUtils.ts).
 - Previews: /boardkit and /linkkit on a preview are the LIVE apps; the
   real-data test (`e2e/realdata.e2e.ts`, owner's backup file read at run
   time from Downloads) runs only on localhost.
