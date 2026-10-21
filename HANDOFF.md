@@ -39,6 +39,12 @@ The failures, each once, none in board code:
 - fullpage.e2e.ts:192: zoom 1.4641 (4 wheel ticks) where 1.331 (3) was
   expected after a resize. Not investigated.
 - unsaved.e2e.ts:176 (Ctrl+D x10 then close): the known one below.
+Live (`657a540`): exit 1 only because of e2e/folder-backup.e2e.ts (6/6
+fail): that file and changes to src/backup/ (BackupPage, auto, main,
+storage, folder, folderNames) appeared UNCOMMITTED in the working tree at
+22:32 during this task, from another agent or session, and are not on the
+live site. Not touched, not committed. Every other test: 87 pass
+(placeboard 4/4), 5 skipped (real data: local only); zoom p95 49.9 ms.
 
 ## Earlier (2026-10-20): "+ New board" in the whiteboard's Board picker
 
