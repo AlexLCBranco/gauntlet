@@ -33,6 +33,32 @@ async function placeBoard(page: Page, id: string) {
   await expect.poll(async () => (await shapeOf(page))?.scale ?? 0).toBeGreaterThan(0);
 }
 
+/** Frame times while `act` runs: median and 95th percentile of the frame
+    gaps, and the longest stall (long task). */
+async function measureFrames(page: Page, act: () => Promise<void>) {
+  await page.evaluate(() => {
+    const w = window as any;
+    w.__frames = [];
+    w.__long = [];
+    new PerformanceObserver((l) => l.getEntries().forEach((e) => w.__long.push(e.duration))).observe({ type: "longtask" });
+    let last = performance.now();
+    w.__on = true;
+    const loop = (t: number) => {
+      w.__frames.push(t - last);
+      last = t;
+      if (w.__on) requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  });
+  await act();
+  return page.evaluate(() => {
+    const w = window as any;
+    w.__on = false;
+    const f = (w.__frames as number[]).slice(2).sort((a, b) => a - b);
+    return { median: f[Math.floor(f.length / 2)], p95: f[Math.floor(f.length * 0.95)], longest: Math.max(0, ...(w.__long as number[])) };
+  });
+}
+
 test("a big board (8 lists, 240 cards) stays smooth: dragging it and zooming keep frames short, no long stalls", async ({ page, context }) => {
   const id = await seedBoard(context);
   await openWhiteboard(page);
@@ -61,40 +87,16 @@ test("a big board (8 lists, 240 cards) stays smooth: dragging it and zooming kee
   await placeBoard(page, id);
   await expect(page.locator("[data-boardkit-board] article[data-card-id]")).toHaveCount(240);
 
-  const measure = async (act: () => Promise<void>) => {
-    await page.evaluate(() => {
-      const w = window as any;
-      w.__frames = [];
-      w.__long = [];
-      new PerformanceObserver((l) => l.getEntries().forEach((e) => w.__long.push(e.duration))).observe({ type: "longtask" });
-      let last = performance.now();
-      w.__on = true;
-      const loop = (t: number) => {
-        w.__frames.push(t - last);
-        last = t;
-        if (w.__on) requestAnimationFrame(loop);
-      };
-      requestAnimationFrame(loop);
-    });
-    await act();
-    return page.evaluate(() => {
-      const w = window as any;
-      w.__on = false;
-      const f = (w.__frames as number[]).slice(2).sort((a, b) => a - b);
-      return { median: f[Math.floor(f.length / 2)], p95: f[Math.floor(f.length * 0.95)], longest: Math.max(0, ...(w.__long as number[])) };
-    });
-  };
-
   // Drag the board around for about 2 s.
   const b = await box(boardEl(page));
-  const drag = await measure(async () => {
+  const drag = await measureFrames(page, async () => {
     await page.mouse.move(b.x + 20, b.y + 10);
     await page.mouse.down();
     for (let i = 1; i <= 120; i++) await page.mouse.move(b.x + 20 + Math.sin(i / 15) * 200, b.y + 10 + i);
     await page.mouse.up();
   });
   // Zoom in and out with the wheel.
-  const zoom = await measure(async () => {
+  const zoom = await measureFrames(page, async () => {
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
     await page.keyboard.down("Control");
     for (let i = 0; i < 20; i++) await page.mouse.wheel(0, i < 10 ? -120 : 120);
@@ -114,6 +116,72 @@ test("a big board (8 lists, 240 cards) stays smooth: dragging it and zooming kee
   // 100 ms: that is exactly 6 refreshes, so a 6-refresh run would pass or
   // fail on rounding. A real regression shows as a large jump, well past
   // 6 refreshes.
+  const REFRESH = 1000 / 60;
+  for (const [m, p95] of [[drag, 4.5 * REFRESH], [zoom, 6.5 * REFRESH]] as const) {
+    expect(m.median).toBeLessThan(2.5 * REFRESH);
+    expect(m.p95).toBeLessThan(p95);
+    expect(m.longest).toBeLessThan(250);
+  }
+});
+
+test("a big map (150 boxes, 100 arrows) stays smooth on the whiteboard: dragging it and zooming keep the big board's limits", async ({ page, context }) => {
+  // A plain Linkkit map, made in Linkkit; then (setting up what a person
+  // can't make by hand quickly) 150 boxes in a grid and 100 arrows.
+  const lk = await context.newPage();
+  await lk.goto("/linkkit/");
+  await expect(lk.locator("[data-ready]")).toBeVisible({ timeout: 30_000 });
+  await lk.getByRole("button", { name: /^Switch map/ }).click();
+  await lk.getByRole("menuitem", { name: "+ New", exact: true }).click();
+  await lk.getByRole("menuitem", { name: /^Map(?! with)/ }).click();
+  await lk.keyboard.press("Escape");
+  await lk.waitForTimeout(800);
+  const mapId = await lk.evaluate(() => localStorage.getItem("linkkit:active")!);
+  await lk.close();
+  await openWhiteboard(page);
+  await page.evaluate((id) => {
+    const key = `linkkit:map:${id}`;
+    const rec = JSON.parse(localStorage.getItem(key)!);
+    const m = rec.map;
+    m.nodes = {};
+    m.links = {};
+    const ids: string[] = [];
+    for (let r = 0; r < 10; r++)
+      for (let c = 0; c < 15; c++) {
+        const nid = `pn${r}x${c}`;
+        ids.push(nid);
+        m.nodes[nid] = { id: nid, name: `Game ${r * 15 + c + 1}`, x: 90 + c * 160, y: 60 + r * 80, color: ["red", "blue", "green", null][(r + c) % 4], status: null };
+      }
+    for (let i = 0; i < 100; i++) {
+      const lid = `pl${i}`;
+      const from = ids[i];
+      const to = ids[i % 15 === 14 ? i + 15 : i + 1];
+      m.links[lid] = { id: lid, from, to, label: "" };
+    }
+    m.page = { width: 2500, height: 900 };
+    rec.rev += 1;
+    localStorage.setItem(key, JSON.stringify(rec));
+  }, mapId);
+  await page.getByTestId("tools.map").click();
+  await page.getByTestId("map-picker").locator(`[data-map="${mapId}"]`).click();
+  const mapEl = page.locator(".tl-html-container [data-linkkit-map]").first();
+  await expect(mapEl.locator("[data-map-view][data-ready]")).toBeVisible({ timeout: 15_000 });
+  await expect(mapEl.locator("[data-box-id]")).toHaveCount(150);
+
+  const b = await box(mapEl);
+  const drag = await measureFrames(page, async () => {
+    await page.mouse.move(b.x + 20, b.y + 10);
+    await page.mouse.down();
+    for (let i = 1; i <= 120; i++) await page.mouse.move(b.x + 20 + Math.sin(i / 15) * 200, b.y + 10 + i);
+    await page.mouse.up();
+  });
+  const zoom = await measureFrames(page, async () => {
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 20; i++) await page.mouse.wheel(0, i < 10 ? -120 : 120);
+    await page.keyboard.up("Control");
+  });
+  console.log(`big map: drag ${JSON.stringify(drag)}, zoom ${JSON.stringify(zoom)} (ms)`);
+  // The big board's limits (see above).
   const REFRESH = 1000 / 60;
   for (const [m, p95] of [[drag, 4.5 * REFRESH], [zoom, 6.5 * REFRESH]] as const) {
     expect(m.median).toBeLessThan(2.5 * REFRESH);

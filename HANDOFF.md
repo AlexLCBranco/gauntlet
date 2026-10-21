@@ -21,8 +21,10 @@ Finished work goes to docs/HISTORY.md.
   Linkkit e2e 18 pass.
 - Steps 4-5 done: map steps in the page's one undo (pageUndo.ts), the map
   save banner (Linkkit's MapParts). e2e/maps.e2e.ts 12 tests pass.
-- Next: step 6 (realdata: 19 maps + linked boards in Map/Both; perf: a
-  150-box map), 7 (docs), END.
+- Steps 6-7 done: realdata (the backup file has 18 listed maps, not 19;
+  every one placed, both linked boards as Map and Both: no byte changed),
+  perf (150-box map: drag p95 17 ms, zoom p95 83 ms, longest 129 ms).
+- Next: END (full local suite once, push, deploy, live once, report).
 
 ## Waiting for the owner
 

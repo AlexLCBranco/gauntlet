@@ -22,10 +22,10 @@ First: save this whole message as docs/PHASE-3.md and tick items off there as yo
   - [x] Edits in either view show in the other at once (they already sync between Boardkit and Linkkit).
 - [x] 4. One undo covers map edits too: extend the page's undo order (phase 2.5 item 22) so Ctrl+Z / Ctrl+Y and the undo buttons undo the most recent action on the page, whether whiteboard, board or map.
 - [x] 5. Failed saves: if Linkkit tracks failed writes like Boardkit's useSaveHealth, show the same whiteboard banner for map saves; if it doesn't, add that tracking to Linkkit (its standalone app shows its notice too) and wire it in.
-- [ ] 6. Tests:
-  - [ ] e2e (new e2e/maps.e2e.ts): place an existing map; new map; corner scale + undo; edit in place (add/rename/move/delete box and arrow) and see it in /linkkit; an edit in /linkkit shows on the whiteboard live; box select + lasso; edge wall; the switch (List/Map/Both, stored per widget, survives reload); one undo across a whiteboard move, a card edit and a map edit, in exact order; failed-save banner; a bracket map shown at several window sizes changes no stored byte.
-  - [ ] realdata.e2e.ts: place each of the owner's 19 maps as a widget (and flip each linked board to Map and Both): no byte of linkkit:* or boardkit:* changes.
-  - [ ] perf.e2e.ts: a big map (about 150 boxes) on the whiteboard: same drag and zoom limits as the big board.
-- [ ] 7. src/README.md: add the maps/ row. Update the Board/Map picker docs.
+- [x] 6. Tests:
+  - [x] e2e (new e2e/maps.e2e.ts): place an existing map; new map; corner scale + undo; edit in place (add/rename/move/delete box and arrow) and see it in /linkkit; an edit in /linkkit shows on the whiteboard live; box select + lasso; edge wall; the switch (List/Map/Both, stored per widget, survives reload); one undo across a whiteboard move, a card edit and a map edit, in exact order; failed-save banner; a bracket map shown at several window sizes changes no stored byte.
+  - [x] realdata.e2e.ts: place each of the owner's 19 maps as a widget (and flip each linked board to Map and Both): no byte of linkkit:* or boardkit:* changes.
+  - [x] perf.e2e.ts: a big map (about 150 boxes) on the whiteboard: same drag and zoom limits as the big board.
+- [x] 7. src/README.md: add the maps/ row. Update the Board/Map picker docs.
 
 - [ ] END: full local suite once, push both repos, deploy, live once. Report in a few lines: what's done, anything not done and why, decisions you had to make, and what I should try by hand (feel only: placing and scaling a map, editing it in place, the List | Map | Both switch, one undo).

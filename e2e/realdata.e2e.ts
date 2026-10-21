@@ -321,3 +321,60 @@ test(`real data: opening each Linkkit map at ${size.width}x${size.height} change
     }
   }
 });
+
+// Phase 3: every Linkkit map as a whiteboard widget, and every board that
+// has a linked map shown as Map and as Both. Showing a map writes nothing:
+// after all of it, every linkkit:* and boardkit:* key is byte for byte what
+// it was.
+test("real data: each Linkkit map placed as a widget, and each linked board in Map and Both, changes no byte of linkkit:* or boardkit:*", async ({ page }) => {
+  const b = backup();
+  await restore(page, b);
+  await page.setViewportSize(SIZES[0]);
+  await openWhiteboard(page);
+  const appKeys = () =>
+    page.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith("linkkit:") || k.startsWith("boardkit:")).map((k) => [k, localStorage.getItem(k)!])));
+  const before = await appKeys();
+  const registry = JSON.parse(b.localStorage["linkkit:registry"]) as { maps: { id: string; name: string }[] };
+  expect(registry.maps.length).toBeGreaterThan(0);
+  const mapOf = (id: string) => (JSON.parse(b.localStorage[`linkkit:map:${id}`]) as MapRec).map as MapRec["map"] & { kind?: string; linkedBoard?: string };
+
+  for (const { id, name } of registry.maps) {
+    await ed(page, (e, mapId: string) => {
+      const pageId = `page:map-${mapId}`;
+      e.createPage({ id: pageId, name: `map ${mapId}` });
+      e.setCurrentPage(pageId);
+      e.createShapes([{ id: `shape:map-${mapId}`, type: "linkkit-map", x: 40, y: 40, props: { mapId } }]);
+    }, id);
+    const widget = page.locator(`[id="shape:map-${id}"]`);
+    await expect(widget.locator("[data-map-view][data-ready]"), `map ${name} (${id})`).toBeVisible({ timeout: 15_000 });
+    const m = mapOf(id);
+    const nodes = Object.keys(m.nodes).length;
+    if (nodes > 0 && !m.hideCut && !(m.collapsed?.length ?? 0) && m.kind !== "bracket")
+      await expect.poll(() => widget.locator("[data-box-id]").count(), { message: `map ${name} (${id})` }).toBe(nodes);
+    await expect(() => expectPageRules(page)).toPass({ timeout: 5_000 });
+  }
+
+  const linked = registry.maps.map(({ id }) => ({ mapId: id, boardId: mapOf(id).linkedBoard })).filter((l): l is { mapId: string; boardId: string } => !!l.boardId);
+  expect(linked.length).toBeGreaterThan(0);
+  for (const { boardId, mapId } of linked) {
+    for (const view of ["map", "both"] as const) {
+      await ed(page, (e, a: { boardId: string; view: string }) => {
+        const pageId = `page:linked-${a.boardId}-${a.view}`;
+        e.createPage({ id: pageId, name: `linked ${a.boardId} ${a.view}` });
+        e.setCurrentPage(pageId);
+        e.createShapes([{ id: `shape:linked-${a.boardId}-${a.view}`, type: "boardkit-board", x: 40, y: 40, props: { boardId: a.boardId }, meta: { view: a.view } }]);
+      }, { boardId, view });
+      const widget = page.locator(`[id="shape:linked-${boardId}-${view}"]`);
+      await expect(widget.locator("[data-linkkit-map] [data-map-view][data-ready]"), `board ${boardId} as ${view}`).toBeVisible({ timeout: 15_000 });
+      await expect(widget.locator("[data-boardkit-board]")).toHaveCount(view === "both" ? 1 : 0);
+      await expect.poll(() => widget.locator("[data-linkkit-map] [data-box-id]").count(), { message: `map ${mapId}` }).toBeGreaterThan(0);
+      await expect(() => expectPageRules(page)).toPass({ timeout: 5_000 });
+    }
+  }
+
+  // Longer than both apps' save delays.
+  await page.waitForTimeout(1_500);
+  const after = await appKeys();
+  const changed = Object.keys({ ...before, ...after }).filter((k) => before[k] !== after[k]);
+  expect(changed, "keys changed by showing maps").toEqual([]);
+});
