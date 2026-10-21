@@ -22,12 +22,12 @@ Work in the order of the groups below. Commit after each group (small commits in
    - Reports: results in one line (e.g. "unit 88 ✓, e2e 94 ✓, live ✓"); details only for failures.
 
 ## GROUP B — Quick code fixes
-- [ ] 7. Pin tldraw to exactly "5.5.2" in package.json (no ^). Our edge wall, unsaved journal and undo-skips-selection depend on tldraw internals; upgrading tldraw becomes its own task with a full test run.
-- [ ] 8. Fix the known crash when the window is 0 x 0 ("camera.x: Expected a number, got NaN"): skip sizing while the window has no size. Test it.
-- [ ] 9. Build size warning: stop raising chunkSizeWarningLimit to just above the bundle. Set it with an honest comment (tldraw is most of it, loaded only by the whiteboard) and leave it. No code splitting now.
-- [ ] 10. Main menu "Backups" opens /backup/ in a NEW tab instead of replacing the whiteboard.
-- [ ] 11. Zoom buttons (+/-) and Ctrl+/Ctrl-: steps of 10% (as in Excalidraw), from the lowest allowed zoom up to 800%. Fix camera.ts zoomSteps, its wrong "Excalidraw-like" comment, camera.test.ts, and any e2e expecting 150%. Ctrl+wheel stays smooth as it is. At 100% on a window-sized page, "-" still does nothing (by design: no bars).
-- [ ] 12. Toolbar: remove Laser, Note (sticky note) and Frame. Keep Highlighter. Remove them from the overflow menu and their shortcuts too. Existing shapes of those kinds (if any) stay as they are.
+- [x] 7. Pin tldraw to exactly "5.5.2" in package.json (no ^). Our edge wall, unsaved journal and undo-skips-selection depend on tldraw internals; upgrading tldraw becomes its own task with a full test run.
+- [x] 8. Fix the known crash when the window is 0 x 0 ("camera.x: Expected a number, got NaN"): skip sizing while the window has no size. Test it.
+- [x] 9. Build size warning: stop raising chunkSizeWarningLimit to just above the bundle. Set it with an honest comment (tldraw is most of it, loaded only by the whiteboard) and leave it. No code splitting now.
+- [x] 10. Main menu "Backups" opens /backup/ in a NEW tab instead of replacing the whiteboard.
+- [x] 11. Zoom buttons (+/-) and Ctrl+/Ctrl-: steps of 10% (as in Excalidraw), from the lowest allowed zoom up to 800%. Fix camera.ts zoomSteps, its wrong "Excalidraw-like" comment, camera.test.ts, and any e2e expecting 150%. Ctrl+wheel stays smooth as it is. At 100% on a window-sized page, "-" still does nothing (by design: no bars).
+- [x] 12. Toolbar: remove Laser, Note (sticky note) and Frame. Keep Highlighter. Remove them from the overflow menu and their shortcuts too. Existing shapes of those kinds (if any) stay as they are.
 - [ ] 13. Pages:
    - Top left: remove tldraw's page menu (the "Page 2 ⌄" dropdown next to the ☰). Only the ☰ main menu stays there, as in Excalidraw.
    - Bottom right: remove the Present (▶) button and present mode entirely. Show only "‹ 2 / 4 ›": the arrows and the position. No page name ("Page 2" goes), even for renamed pages.

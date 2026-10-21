@@ -76,7 +76,8 @@ export function MainMenu() {
           label={"Backups" as never}
           icon="external-link"
           onSelect={() => {
-            window.location.href = "/backup/";
+            // A new tab: the whiteboard stays open.
+            window.open("/backup/", "_blank", "noopener");
           }}
         />
       </TldrawUiMenuGroup>

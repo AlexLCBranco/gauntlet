@@ -8,12 +8,9 @@ import {
   DrawToolbarItem,
   EllipseToolbarItem,
   EraserToolbarItem,
-  FrameToolbarItem,
   HandToolbarItem,
   HighlightToolbarItem,
-  LaserToolbarItem,
   LineToolbarItem,
-  NoteToolbarItem,
   RectangleToolbarItem,
   SelectToolbarItem,
   TextToolbarItem,
@@ -32,6 +29,7 @@ import { BoardkitParts } from "../boards/BoardkitParts";
 import { LassoOverlay } from "../lasso/LassoOverlay";
 import { LassoTool } from "../lasso/LassoTool";
 import { edgeWall } from "../pages/edgeWall";
+import { zoomSteps } from "../pages/camera";
 import { keepFilled, showPageStart, zoomTo100 } from "../pages/keepFilled";
 import { keepInsideSheet } from "../pages/keepInside";
 import { PageArrows } from "../pages/PageArrows";
@@ -61,7 +59,7 @@ const camera: Partial<TLCameraOptions> = {
   // its bounds and the zoom steps are set by sizePage, SHEET is only the
   // start). You pan only within the page, and zoom out only while it still
   // covers the window, so there are never bars.
-  zoomSteps: [1, 1.5, 2, 3, 4, 6, 8],
+  zoomSteps: zoomSteps(1),
   constraints: {
     bounds: SHEET,
     padding: { x: 0, y: 0 },
@@ -105,6 +103,12 @@ const overrides: TLUiOverrides = {
       eraser: "e,0",
     };
     for (const [id, kbd] of Object.entries(keys)) if (tools[id]) tools[id] = { ...tools[id], kbd };
+    // Not on this whiteboard (owner, 2026-10-20): laser, sticky note and
+    // frame. Gone from the toolbar, its overflow menu and the keys (K, N,
+    // F); shapes of those kinds already on a page stay as they are.
+    delete tools.laser;
+    delete tools.note;
+    delete tools.frame;
     tools.board = boardToolItem();
     return tools;
   },
@@ -112,6 +116,14 @@ const overrides: TLUiOverrides = {
   // toggles to its fit when already there).
   actions(editor, actions) {
     if (actions["reset-zoom"]) actions["reset-zoom"] = { ...actions["reset-zoom"], onSelect: () => zoomTo100(editor) };
+    // Ctrl+ / Ctrl- step 10% at once, as the buttons do: tldraw animates
+    // them, and a key pressed again mid-animation stepped from the old
+    // zoom, so quick presses got stuck one step up.
+    const at = (cursor: boolean) => (cursor ? editor.inputs.getCurrentScreenPoint() : undefined);
+    for (const [id, cursor] of [["zoom-in", false], ["zoom-in-on-cursor", true]] as const)
+      if (actions[id]) actions[id] = { ...actions[id], onSelect: () => editor.zoomIn(at(cursor)) };
+    for (const [id, cursor] of [["zoom-out", false], ["zoom-out-on-cursor", true]] as const)
+      if (actions[id]) actions[id] = { ...actions[id], onSelect: () => editor.zoomOut(at(cursor)) };
     // Ctrl+Y redoes too, as in Excalidraw on Windows.
     if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y" };
     return actions;
@@ -148,11 +160,8 @@ function TopToolbar() {
         <TextToolbarItem />
         <AssetToolbarItem />
         <EraserToolbarItem />
-        <NoteToolbarItem />
-        <FrameToolbarItem />
         <ToolbarItem tool="board" />
         <HighlightToolbarItem />
-        <LaserToolbarItem />
       </DefaultToolbar>
     </div>
   );

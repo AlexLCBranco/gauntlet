@@ -237,10 +237,12 @@ test("lasso: a loop selects what is wholly inside, Shift adds, Escape cancels", 
 
 test("lasso reaches inside a frame: a loop around one shape in a frame picks just that shape", async ({ page }) => {
   await open(page);
-  await page.keyboard.press("f");
-  await drag(page, { x: 100, y: 100 }, { x: 800, y: 600 });
-  await page.keyboard.press("Escape");
-  const frame = await ed(page, (e) => e.getCurrentPageShapes().find((s: any) => s.type === "frame").id as string);
+  // The Frame tool is gone (owner, 2026-10-20), but frames already on a page
+  // stay: make one in code, where the tool used to draw it.
+  const frame = await ed(page, (e) => {
+    e.createShape({ type: "frame", x: 100, y: 100, props: { w: 700, h: 500 } });
+    return e.getCurrentPageShapes().find((s: any) => s.type === "frame").id as string;
+  });
   const inner = await rect(page, 200, 200);
   await rect(page, 500, 200);
   expect(await ed(page, (e, id: string) => e.getShape(id).parentId as string, inner)).toBe(frame);
@@ -661,4 +663,103 @@ test("one Ctrl+Z undoes a shape just drawn, even after Escape, as in Excalidraw;
   await expect.poll(() => selected(page)).toEqual([]);
   await page.keyboard.press("Control+z");
   await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 2.5 (docs/PHASE-2.5.md)
+
+test("zoom buttons and Ctrl+/Ctrl- go in steps of 10% up to 800%; at 100% on a window-sized page, - does nothing", async ({ page }) => {
+  await open(page);
+  const pct = page.getByTestId("zoom-percent");
+  await expect(pct).toHaveText("100%");
+  await page.getByRole("button", { name: "Zoom out" }).click();
+  await expect(pct).toHaveText("100%");
+  await page.keyboard.press("Control+Minus");
+  await expect(pct).toHaveText("100%");
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect(pct).toHaveText("110%");
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect(pct).toHaveText("120%");
+  await page.keyboard.press("Control+Equal");
+  await expect(pct).toHaveText("130%");
+  await page.keyboard.press("Control+Minus");
+  await expect(pct).toHaveText("120%");
+  await page.getByRole("button", { name: "Zoom out" }).click();
+  await page.getByRole("button", { name: "Zoom out" }).click();
+  await expect(pct).toHaveText("100%");
+  for (let i = 0; i < 75; i++) await page.keyboard.press("Control+Equal");
+  await expect(pct).toHaveText("800%");
+  await page.getByRole("button", { name: "Zoom out" }).click();
+  await expect(pct).toHaveText("790%");
+});
+
+test("no Laser, Note or Frame: not on the toolbar, not in its overflow menu, and K/N/F do nothing; Highlighter stays", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 900 }); // narrow, so the overflow menu is there
+  await open(page);
+  for (const id of ["laser", "note", "frame"]) {
+    await expect(page.getByTestId(`tools.${id}`)).toHaveCount(0);
+  }
+  await page.getByTestId("tools.more-button").click();
+  for (const id of ["laser", "note", "frame"]) await expect(page.getByTestId(`tools.more.${id}`)).toHaveCount(0);
+  await expect(page.locator("[data-testid=\"tools.more.highlight\"]:visible, [data-testid=\"tools.highlight\"]:visible")).not.toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  for (const key of ["k", "n", "f"]) {
+    await page.keyboard.press(key);
+    expect(await tool(page)).toBe("select");
+  }
+  // A wide window has every tool on the row: no more removed ones there.
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await expect(page.locator("[data-testid=\"tools.highlight\"]:visible")).toHaveCount(1);
+  for (const id of ["laser", "note", "frame"]) await expect(page.getByTestId(`tools.${id}`)).toHaveCount(0);
+});
+
+test("main menu Backups opens /backup/ in a new tab; the whiteboard stays", async ({ page, context }) => {
+  await open(page);
+  const url = page.url();
+  await page.getByTestId("main-menu.button").click();
+  const [tab] = await Promise.all([context.waitForEvent("page"), page.getByRole("menuitem", { name: "Backups" }).click()]);
+  await tab.waitForLoadState();
+  expect(new URL(tab.url()).pathname).toBe("/backup/");
+  expect(page.url()).toBe(url);
+  await expect(page.getByTestId("sheet")).toBeVisible();
+});
+
+test("a window with no size (0 x 0, as in an embedded pane mid-layout) doesn't crash the whiteboard; it works once it has a size", async ({ page }) => {
+  // Records errors in every frame, from the first script on.
+  await page.addInitScript(() => {
+    const errs: string[] = ((window as any).__errs = []);
+    addEventListener("error", (e) => errs.push(e.message));
+    addEventListener("unhandledrejection", (e) => errs.push(String(e.reason)));
+    const ce = console.error;
+    console.error = (...a: unknown[]) => (errs.push(a.map(String).join(" ")), ce(...a));
+  });
+  await page.goto("/backup/");
+  await page.evaluate(() => {
+    const f = document.createElement("iframe");
+    f.id = "wb";
+    f.style.cssText = "width:0;height:0;border:0";
+    f.src = "/whiteboard/";
+    document.body.append(f);
+  });
+  await expect.poll(() => page.frames().some((f) => /whiteboard/.test(f.url()))).toBe(true);
+  const fr = page.frames().find((f) => /whiteboard/.test(f.url()))!;
+  await fr.waitForFunction(() => "editor" in window, null, { timeout: 30_000 });
+  expect(await fr.evaluate(() => [innerWidth, innerHeight])).toEqual([0, 0]);
+  // Everything that sizes the page, while there is no size.
+  await fr.evaluate(() => {
+    const e = (window as any).editor;
+    e.zoomIn();
+    e.zoomOut();
+    for (const label of ["Next page", "Previous page", "Zoom in", "Zoom out"]) document.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)?.click();
+    document.querySelector<HTMLButtonElement>('[data-testid="zoom-percent"]')?.click();
+    window.dispatchEvent(new Event("resize"));
+  });
+  await page.waitForTimeout(500);
+  await page.evaluate(() => (document.getElementById("wb")!.style.cssText = "width:800px;height:600px;border:0"));
+  await expect.poll(() => fr.evaluate(() => (window as any).editor.getViewportScreenBounds().w)).toBe(800);
+  const cam = await fr.evaluate(() => (window as any).editor.getCamera());
+  for (const k of ["x", "y", "z"]) expect(Number.isFinite(cam[k])).toBe(true);
+  await expect(fr.getByTestId("sheet")).toBeVisible();
+  expect(await fr.evaluate(() => (window as any).__errs)).toEqual([]);
 });

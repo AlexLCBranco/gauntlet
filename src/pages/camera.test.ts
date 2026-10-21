@@ -41,9 +41,17 @@ describe("coverZoom", () => {
 });
 
 describe("zoomSteps", () => {
-  it("starts at the furthest zoom out, then Excalidraw-like steps", () => {
-    expect(zoomSteps(1)).toEqual([1, 1.5, 2, 3, 4, 6, 8]);
-    expect(zoomSteps(0.6)).toEqual([0.6, 0.75, 1, 1.5, 2, 3, 4, 6, 8]);
+  it("starts at the furthest zoom out, then every 10% up to 800%", () => {
+    const at100 = zoomSteps(1);
+    expect(at100.slice(0, 4)).toEqual([1, 1.1, 1.2, 1.3]);
+    expect(at100.at(-1)).toBe(8);
+    expect(at100).toHaveLength(71);
+    expect(zoomSteps(0.63).slice(0, 4)).toEqual([0.63, 0.7, 0.8, 0.9]);
+    expect(zoomSteps(0.1).slice(0, 2)).toEqual([0.1, 0.2]);
+  });
+  it("each step is exactly 10% (no float drift)", () => {
+    const s = zoomSteps(0.5);
+    for (let i = 0; i < s.length - 1; i++) expect(Math.round((s[i + 1] - s[i]) * 1000)).toBe(100);
   });
 });
 

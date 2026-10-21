@@ -6,5 +6,5 @@
 export function toolbarItems(windowWidth: number): number {
   const TOOL = 44; // a tool's width
   const room = windowWidth - 2 * 140 - TOOL - 16; // the menu's width on each side, the overflow button, padding
-  return Math.max(5, Math.min(17, Math.floor(room / TOOL)));
+  return Math.max(5, Math.min(14, Math.floor(room / TOOL)));
 }

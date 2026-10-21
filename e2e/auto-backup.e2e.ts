@@ -161,11 +161,12 @@ test("the whiteboard keeps backups by itself too, its Backups menu item opens /b
   await expect.poll(async () => (await kept(page)).length, { timeout: 15_000 }).toBe(2);
   expect((await kept(page)).map((b) => b.json)).toContain(earlier.json);
 
-  // Main menu → Backups → the backup page, both backups listed.
+  // Main menu → Backups → the backup page in a new tab, both backups listed.
   await page.getByTestId("main-menu.button").click();
-  await page.getByRole("menuitem", { name: "Backups" }).click();
-  await expect(page).toHaveURL(/\/backup\/$/);
-  await expect(page.getByRole("list", { name: "Automatic backups" }).getByRole("listitem")).toHaveCount(2);
+  const [tab] = await Promise.all([context.waitForEvent("page"), page.getByRole("menuitem", { name: "Backups" }).click()]);
+  await expect(tab).toHaveURL(/\/backup\/$/);
+  await expect(tab.getByRole("list", { name: "Automatic backups" }).getByRole("listitem")).toHaveCount(2);
+  await tab.close();
   // The home page links here too.
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Backup" })).toHaveAttribute("href", "/backup/");

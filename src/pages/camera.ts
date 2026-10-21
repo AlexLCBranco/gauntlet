@@ -24,10 +24,11 @@ export function coverZoom(viewport: Size, page: Box): number {
   return Math.min(1, Math.max(viewport.w / page.w, viewport.h / page.h));
 }
 
-/** Steps for zoom in / zoom out: Excalidraw-like percentages, starting at
-    `min` (coverZoom) when the page lets you zoom out at all. */
+/** Steps for zoom in / zoom out (buttons, Ctrl+ / Ctrl-): every 10%, as
+    in Excalidraw, from `min` (coverZoom, the furthest zoom out) up to
+    800%. Ctrl+wheel zooms smoothly, not by these steps. */
 export function zoomSteps(min: number): number[] {
-  const steps = [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+  const steps = Array.from({ length: 80 }, (_, i) => (i + 1) / 10);
   return [min, ...steps.filter((s) => s > min + 1e-6)];
 }
 

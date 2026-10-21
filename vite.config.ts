@@ -51,7 +51,12 @@ export default defineConfig(({ mode }) => ({
   // tldraw alone is ~1.7 MB (515 kB gzipped), loaded only by the whiteboard.
   build: {
     rolldownOptions: { input: { main: "index.html", whiteboard: "whiteboard/index.html", backup: "backup/index.html" } },
-    chunkSizeWarningLimit: 2000,
+    // The whiteboard chunk is ~2 MB, most of it tldraw (~1.7 MB, 515 kB
+    // gzipped), and only the whiteboard loads it. That size is known and
+    // accepted (no code splitting for now), so the limit sits well above
+    // it: set once, not raised to just above the bundle on every build. A
+    // warning means the bundle grew a lot: find out why.
+    chunkSizeWarningLimit: 3000,
   },
   test: { include: ["src/**/*.test.ts"] },
 }));
