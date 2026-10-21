@@ -16,7 +16,8 @@ file after every step.
   Alone without it: fails; with it: 3/3 pass.
 Results: lint 0, unit 88 + 5 exit 0, build 0 (old chunk warning). Full
 local e2e once: exit 0 (gauntlet 98/98, Linkkit 20/20); no existing test
-affected by the banner. Live folder-backup: see below.
+affected by the banner. Live (`5c40be3`): folder-backup.e2e.ts 6/6 pass,
+exit 0.
 Still flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off
 after a resize) and unsaved.e2e.ts:176 (Ctrl+D x10 then close).
 
