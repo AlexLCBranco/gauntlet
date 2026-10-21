@@ -14,9 +14,11 @@ Finished work goes to docs/HISTORY.md.
   (scripts/leftovers.mjs), dark fixed + custom colours, our own Excalidraw
   paste/drop/import (src/import/excalidraw/), Crop in the panel.
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.110 (`88503b5`).
-- Last results: unit 63 + 5, Linkkit 972, Boardkit 211; full local e2e
-  gauntlet 131, Linkkit 18; live (`8cd78c4`) gauntlet 125 passed, 6
-  skipped (real data: local only), Linkkit 18; CI green in all three.
+- Last results (2026-10-21, `224f69e`): unit 88 + 6; full local e2e
+  gauntlet 162, Linkkit 18, no test browser left; live gauntlet 128 + 7
+  skipped + 27 failed, all on /boardkit not loading in time (Switch
+  board missing); those 6 files re-run live: 76 passed. Not chased
+  further (no app cause found). CI green.
 
 ## Waiting for the owner
 
