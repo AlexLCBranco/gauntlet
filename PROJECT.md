@@ -43,8 +43,9 @@ screenshots. That's the problem this solves.
 
 2. Pages
    - Not infinite. In Excalidraw you get a default page and can scroll up
-     and down forever. In the gauntlet, that default page is FIXED in size:
-     you can't scroll past its edges.
+     and down forever. In the gauntlet a page is BOUNDED: at 100% it is at
+     least the window's size and it grows only with what is on it; you
+     can't scroll or drag anything past its edges (DECISIONS 2026-10-19).
    - If I want more space, I go to a new page. Two arrow buttons in the
      bottom-right corner: previous page and next page.
    - Pressing "next" on the last page creates a new empty page.
@@ -88,8 +89,20 @@ screenshots. That's the problem this solves.
              in place. My existing boards move over from gauntlet-home.
    Phase 3 — Linkkit as a live object, plus the synced board/map object
              that flips and splits.
+   Phase 2.5 — Polish round: docs/PHASE-2.5.md, a fixed list. When it's
+             done, phase 3 starts.
+   Speed session — after phase 3, a dedicated session with boards and maps
+             together on a realistic page. Zoom's worst frames are 50-67 ms
+             today; measure where the time goes before changing anything.
+             No speed work before then.
    Phase 4 — Things connect: cards go anywhere, notes stick to cards,
              arrows attach to single cards and boxes (5a, 5b).
+             Owner's decision (2026-10-20): cards become real whiteboard
+             objects: directly clickable, draggable, selectable by box and
+             lasso, with no double-click to enter a board first. A board
+             works like a frame: a named container, moved and resized as a
+             whole by its title bar or by selecting it. No interim "two
+             clicks" mode is to be built.
    Phase 5 — Speed: templates and snap/align (5c, 5d).
    Phase 6 — Outside world: live data and the screenshot agent (5e, 5f).
              Each is its own project; don't start before phases 1–5 are solid.
@@ -109,8 +122,19 @@ screenshots. That's the problem this solves.
    - Work in small steps. Save each step with a clear description as soon
      as it works, so a cut-off never loses more than the current step and
      a bad change can be undone alone.
+   - HANDOFF.md never exceeds 100 lines. When a task is done, move its
+     entry to docs/HISTORY.md. Open items, broken things, deadlines and the
+     next step never leave HANDOFF while still true. If 100 lines is truly
+     too tight, say so in the report instead of going over.
    - Keep a DECISIONS section in PROJECT.md. Any change to the plan gets
      written there; never change the plan silently.
+   - Any decision the owner makes goes into DECISIONS in the same commit as
+     the code, never only into HANDOFF.
+   - Phase 2.5 = docs/PHASE-2.5.md, a fixed list. When it's done, phase 3
+     starts. During a phase, a new ask from the owner is done right away
+     only if it blocks daily use (data loss, something broken or
+     unusable); anything else goes to the IDEAS section at the end of
+     PROJECT.md, and the agent tells the owner so instead of building it.
    - Before saving a step, run the automatic tests. If something is left
      broken, say so at the top of HANDOFF.md.
    - Code must be organized so each part (whiteboard, pages, boards, maps,
@@ -136,7 +160,7 @@ Changes to the plan, newest last. Each says what and why.
   key. Without one, tldraw hides the editor on the live site after 5 s (it
   works on localhost without a key). The key goes into the build as
   VITE_TLDRAW_LICENSE_KEY.
-- 2026-10-18 — tldraw 5.5.2. Page size: one 1920 x 1080 sheet per page
+- (replaced by 2026-10-19, page size) 2026-10-18 — tldraw 5.5.2. Page size: one 1920 x 1080 sheet per page
   (16:9, so a page is also a slide). You can zoom in, not out past the
   whole sheet, and can't pan past its edges.
 - 2026-10-18 — tldraw has no lasso, so phase 1 adds one (key W, toolbar
@@ -158,7 +182,8 @@ Changes to the plan, newest last. Each says what and why.
 - 2026-10-18 — Phase 2: lasso and box select pick a whole board. Picking
   single cards inside a board comes with phase 4, when cards become
   things that move anywhere (section 1 asks for it; it needs the same work).
-- 2026-10-18 — Phase 2, how a board behaves. It is drawn at its natural
+- (backgrounds part replaced by 2026-10-19, no board background)
+  2026-10-18 — Phase 2, how a board behaves. It is drawn at its natural
   size (Boardkit's list widths, every card shown, no scrollbar) and scaled
   as a whole: dragging a corner sets the scale, aspect kept. Its box follows
   the content (more cards, taller board) but never past the sheet: a board
@@ -177,7 +202,7 @@ Changes to the plan, newest last. Each says what and why.
   swapping is one change: edit that value, then redeploy (Vite bakes it
   into the build). Steps are in HANDOFF.md. The evaluation key shows no
   "made with tldraw" watermark; the hobby key will.
-- 2026-10-18 — Owner's phase 1 fix list (HANDOFF.md). "100%" is the page
+- (replaced by 2026-10-19, page size) 2026-10-18 — Owner's phase 1 fix list (HANDOFF.md). "100%" is the page
   filling the window edge to edge, and nothing outside the page ever
   shows. A window that isn't 16:9 can't show the whole page at once
   without showing outside it, so the page fills the window and its other
@@ -189,7 +214,7 @@ Changes to the plan, newest last. Each says what and why.
   is on). Styles tldraw lacks are kept in each shape's `meta`: font size
   apart from stroke width (two sizes smaller than tldraw's smallest) and a
   background colour apart from the outline.
-- 2026-10-18 — Replaces the "100%" part of the fix-list entry above
+- (replaced by 2026-10-19, page size) 2026-10-18 — Replaces the "100%" part of the fix-list entry above
   (owner's decision after the re-test): "100%" shows the WHOLE page,
   centred; a window that isn't 16:9 gets dark bars at the sides (or top
   and bottom). At 100% nothing scrolls, on any screen. Zoomed in, you pan
@@ -204,6 +229,29 @@ Changes to the plan, newest last. Each says what and why.
   is set up before anything goes live.
 - 2026-10-19 — Owner: the old home page (/) stays for now; revisit
   replacing it with the whiteboard after phase 3.
+- 2026-10-19 — Page size (owner, phase 2 go-live round, after the
+  `fullscreen-page` hand test; was only in HANDOFF). The page is at least
+  the window's size at 100% and grows with its content; no bars. A smaller
+  window (e.g. snapped to half the screen) keeps the zoom and the content's
+  size and place, shows part of the page, and you pan to the rest, up to
+  its edges. Zoom out only while the page still covers the window. 100% =
+  one page unit per screen pixel. Why: Excalidraw-like fullscreen; the
+  dark bars wasted the screen and a resize must never move or rescale
+  content.
+- 2026-10-19 — Edge wall (was only in HANDOFF). While dragging or
+  resizing, the item stops at the page's edge and slides along it (a
+  resize handle stops there; a line end or pen stroke too, while drawing).
+  Anything else past an edge (paste, nudge) is pulled back after. Why:
+  the page is bounded, and pulling things back only after the drop made
+  them jump.
+- 2026-10-19 — Naming (owner; was only in HANDOFF): things placed on the
+  whiteboard (boards, maps, ...) are "widgets", not "stones", in
+  comments, docs and reports. Why: "stones" was the old iframe canvas's
+  word.
+- 2026-10-19 — Boards on the whiteboard show no board background (owner;
+  was only in HANDOFF): no panel, colour or picture behind the lists; a
+  background set in Boardkit shows only in /boardkit. Why: a board should
+  sit on the whiteboard like part of the drawing.
 - 2026-10-19 — Vercel previews open without a Vercel login (owner's
   request, so the owner can test without the terminal): project
   `gauntlet-home` → Deployment Protection → Vercel Authentication is off
@@ -258,3 +306,10 @@ Changes to the plan, newest last. Each says what and why.
   deleted. A banner on / and /whiteboard/ shows when no folder is picked
   or the browser needs permission again (Reconnect button). Why:
   in-browser backups die with the browser's data.
+
+IDEAS
+
+Asks from the owner made during a phase that do not block daily use.
+They wait here; the agent tells the owner instead of building them.
+
+- (none yet)
