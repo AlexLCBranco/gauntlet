@@ -121,9 +121,9 @@ const overrides: TLUiOverrides = {
     // zoom, so quick presses got stuck one step up.
     const at = (cursor: boolean) => (cursor ? editor.inputs.getCurrentScreenPoint() : undefined);
     for (const [id, cursor] of [["zoom-in", false], ["zoom-in-on-cursor", true]] as const)
-      if (actions[id]) actions[id] = { ...actions[id], onSelect: () => editor.zoomIn(at(cursor)) };
+      if (actions[id]) actions[id] = { ...actions[id], onSelect: () => void editor.zoomIn(at(cursor)) };
     for (const [id, cursor] of [["zoom-out", false], ["zoom-out-on-cursor", true]] as const)
-      if (actions[id]) actions[id] = { ...actions[id], onSelect: () => editor.zoomOut(at(cursor)) };
+      if (actions[id]) actions[id] = { ...actions[id], onSelect: () => void editor.zoomOut(at(cursor)) };
     // Ctrl+Y redoes too, as in Excalidraw on Windows.
     if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y" };
     return actions;
@@ -196,6 +196,8 @@ function InFront() {
     right (PageArrows). */
 const components: TLComponents = {
   MainMenu,
+  // The page list opens from "2 / 4" at the bottom right (PageArrows).
+  PageMenu: null,
   QuickActions: null,
   ActionsMenu: null,
   StylePanel: null,
@@ -245,7 +247,6 @@ function setUp(editor: Editor) {
 }
 
 export function Whiteboard() {
-  const [editor, setEditor] = useState<Editor | null>(null);
   return (
     <div className="gauntlet-whiteboard">
       <Tldraw
@@ -260,12 +261,11 @@ export function Whiteboard() {
         // the Excalidraw number keys above.
         options={{ enableToolbarKeyboardShortcuts: false }}
         onMount={(e) => {
-          const stop = setUp(e);
-          setEditor(e);
-          return stop;
+          return setUp(e);
         }}
-      />
-      {editor && <PageArrows editor={editor} />}
+      >
+        <PageArrows />
+      </Tldraw>
       <BoardkitParts />
     </div>
   );

@@ -28,7 +28,7 @@ Work in the order of the groups below. Commit after each group (small commits in
 - [x] 10. Main menu "Backups" opens /backup/ in a NEW tab instead of replacing the whiteboard.
 - [x] 11. Zoom buttons (+/-) and Ctrl+/Ctrl-: steps of 10% (as in Excalidraw), from the lowest allowed zoom up to 800%. Fix camera.ts zoomSteps, its wrong "Excalidraw-like" comment, camera.test.ts, and any e2e expecting 150%. Ctrl+wheel stays smooth as it is. At 100% on a window-sized page, "-" still does nothing (by design: no bars).
 - [x] 12. Toolbar: remove Laser, Note (sticky note) and Frame. Keep Highlighter. Remove them from the overflow menu and their shortcuts too. Existing shapes of those kinds (if any) stay as they are.
-- [ ] 13. Pages:
+- [x] 13. Pages:
    - Top left: remove tldraw's page menu (the "Page 2 ⌄" dropdown next to the ☰). Only the ☰ main menu stays there, as in Excalidraw.
    - Bottom right: remove the Present (▶) button and present mode entirely. Show only "‹ 2 / 4 ›": the arrows and the position. No page name ("Page 2" goes), even for renamed pages.
    - Clicking "2 / 4" opens the page list that the removed top-left menu had: jump to a page, rename, reorder, delete, add. Nothing that menu could do may be lost (test each one).

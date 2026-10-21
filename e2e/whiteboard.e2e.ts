@@ -78,6 +78,9 @@ const boundsOf = (page: Page, id: string) =>
     return { x: b.x, y: b.y, w: b.w, h: b.h } as Bounds;
   }, id);
 const position = (page: Page) => page.getByTestId("page-position");
+/** What "‹ 2 / 4 ›" shows, as seen (tldraw's page-menu button laid over
+    "2 / 4" carries the page's name, hidden). */
+const shown = (page: Page) => position(page).evaluate((el) => (el as HTMLElement).innerText.trim());
 
 /** What the camera shows, in sheet units, and the zoom. */
 const view = (page: Page) =>
@@ -275,12 +278,12 @@ test("nothing sits past the sheet's edge, and undo puts a move back in one step"
 
 test("pages: next makes a new page on the last one, previous/next and PageUp/PageDown move between them, all saved", async ({ page }) => {
   await open(page);
-  await expect(position(page)).toHaveText(/Page 1\s+1 \/ 1/);
+  await expect.poll(() => shown(page)).toBe("1 / 1");
   await expect(page.getByRole("button", { name: "Previous page" })).toBeDisabled();
   await rect(page, 100, 100);
 
   await page.getByRole("button", { name: "Next page" }).click();
-  await expect(position(page)).toHaveText(/Page 2\s+2 \/ 2/);
+  await expect.poll(() => shown(page)).toBe("2 / 2");
   expect(await shapeIds(page)).toHaveLength(0); // a new, empty page
   // The new page fits the sheet too.
   expect(await ed(page, (e) => e.getViewportPageBounds().w >= 1920)).toBe(true);
@@ -296,7 +299,7 @@ test("pages: next makes a new page on the last one, previous/next and PageUp/Pag
   await expect(position(page)).toHaveText(/2 \/ 2/);
   expect(await shapeIds(page)).toHaveLength(2);
   await page.keyboard.press("PageDown"); // on the last page: a new one
-  await expect(position(page)).toHaveText(/Page 3\s+3 \/ 3/);
+  await expect.poll(() => shown(page)).toBe("3 / 3");
   await page.keyboard.press("PageUp");
   await expect(position(page)).toHaveText(/2 \/ 3/);
 
@@ -359,7 +362,7 @@ test("a remembered page that is gone (deleted in another tab, or never there) op
     await page.reload();
     await page.waitForFunction(() => "editor" in window);
     await expect(page.getByTestId("sheet")).toBeVisible();
-    await expect(position(page)).toHaveText(/Page 1\s+1 \/ 1/);
+    await expect.poll(() => shown(page)).toBe("1 / 1");
     expect(await shapeIds(page)).toHaveLength(1);
     await expect(page.getByTestId("zoom-percent")).toHaveText("100%");
     // The first page is remembered now; the whiteboard still works.
@@ -375,42 +378,197 @@ test("a remembered page that is gone (deleted in another tab, or never there) op
   expect(errors).toEqual([]);
 });
 
-test("present: the page as a slide, arrow keys go page to page, Escape stops", async ({ page }) => {
+test("no Present and no page menu at the top left; bottom right shows only ‹ N / M ›, never the page's name", async ({ page }) => {
   await open(page);
-  await rect(page, 100, 100);
+  await expect(page.getByRole("button", { name: /present/i })).toHaveCount(0);
+  await expect(page.locator(".tlui-layout [data-testid='page-menu.button']")).toHaveCount(0);
+  await expect(page.getByTestId("main-menu.button")).toBeVisible();
+  const group = page.getByRole("group", { name: "Pages" });
+  const seen = () => group.evaluate((el) => (el as HTMLElement).innerText.replace(/\s+/g, " ").trim());
+  await expect.poll(seen).toBe("‹ 1 / 1 ›");
+  // Renamed pages: still only the position.
+  await ed(page, (e) => e.renamePage(e.getCurrentPageId(), "My long page name"));
   await page.getByRole("button", { name: "Next page" }).click();
+  await expect.poll(seen).toBe("‹ 2 / 2 ›");
   await page.getByRole("button", { name: "Previous page" }).click();
-
-  await page.getByRole("button", { name: "Present" }).click();
-  const state = () => ed(page, (e) => ({ focus: e.getInstanceState().isFocusMode, readonly: e.getIsReadonly() }));
-  await expect.poll(state).toEqual({ focus: true, readonly: true });
-  await expect(page.locator(".tlui-toolbar")).toHaveCount(0); // no tools while presenting
-  await page.keyboard.press("ArrowRight");
-  await expect(position(page)).toHaveText(/2 \/ 2/);
-  await page.keyboard.press("ArrowRight"); // last slide: no new page
-  await expect(position(page)).toHaveText(/2 \/ 2/);
-  await page.keyboard.press("ArrowLeft");
-  await expect(position(page)).toHaveText(/1 \/ 2/);
-  await page.keyboard.press("Escape");
-  await expect.poll(state).toEqual({ focus: false, readonly: false });
-  await expect(page.locator(".tlui-toolbar").first()).toBeVisible();
+  await expect.poll(seen).toBe("‹ 1 / 2 ›");
+  expect(await ed(page, (e) => ({ focus: e.getInstanceState().isFocusMode, readonly: e.getIsReadonly() }))).toEqual({ focus: false, readonly: false });
 });
 
-test("the page arrows sit bottom-right and leave tldraw's watermark uncovered", async ({ page }) => {
+/** The page controls' and the watermark's boxes (null: no watermark shown). */
+async function controlsAndMark(page: Page) {
+  const group = (await page.getByRole("group", { name: "Pages" }).boundingBox())!;
+  const mark = await page.evaluate(() => {
+    const el = document.querySelector(".tl-watermark_SEE-LICENSE");
+    const r = el?.getBoundingClientRect();
+    return r && r.width > 0 && r.height > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
+  });
+  return { group, mark };
+}
+
+test("the page controls sit on the watermark's row, directly to its left, bottom-aligned, never over it; with no watermark, in the corner", async ({ page }) => {
   await open(page);
-  const arrows = (await page.getByRole("group", { name: "Pages" }).boundingBox())!;
-  const view = page.viewportSize()!;
-  expect(arrows.x + arrows.width).toBeGreaterThan(view.width - 40);
-  expect(arrows.y + arrows.height).toBeGreaterThan(view.height - 120);
-  // The hobby key and localhost show tldraw's watermark; the temporary
-  // evaluation key (until 2026-11-01) doesn't, so there's nothing to cover.
-  const mark = page.locator(".tl-watermark_SEE-LICENSE");
-  await page.waitForTimeout(1000);
-  if ((await mark.count()) === 0) return;
-  await expect(mark).toBeVisible();
-  const m = (await mark.boundingBox())!;
-  const overlap = arrows.x < m.x + m.width && m.x < arrows.x + arrows.width && arrows.y < m.y + m.height && m.y < arrows.y + arrows.height;
-  expect(overlap).toBe(false);
+  const vp = page.viewportSize()!;
+  // With a watermark (localhost without a key; the live hobby key).
+  await expect(page.locator(".tl-watermark_SEE-LICENSE")).toBeVisible({ timeout: 10_000 });
+  for (const size of [vp, { width: 1100, height: 700 }, { width: 700, height: 500 }]) {
+    await page.setViewportSize(size);
+    await expect
+      .poll(async () => {
+        const { group, mark } = await controlsAndMark(page);
+        if (!mark) return "no watermark";
+        const overlap = group.x < mark.x + mark.width && mark.x < group.x + group.width && group.y < mark.y + mark.height && mark.y < group.y + group.height;
+        if (overlap) return "overlaps";
+        if (Math.abs(group.y + group.height - (mark.y + mark.height)) > 1) return `bottoms differ ${group.y + group.height} / ${mark.y + mark.height}`;
+        const gap = mark.x - (group.x + group.width);
+        if (gap < 0 || gap > 16) return `not directly left (gap ${gap})`;
+        return "beside";
+      })
+      .toBe("beside");
+  }
+  await page.setViewportSize(vp);
+  // With no watermark (the evaluation key on previews shows none): the corner.
+  await page.addStyleTag({ content: ".tl-watermark_SEE-LICENSE { display: none !important; }" });
+  await expect
+    .poll(async () => {
+      const { group } = await controlsAndMark(page);
+      return [Math.round(vp.width - (group.x + group.width)), Math.round(vp.height - (group.y + group.height))];
+    })
+    .toEqual([12, 12]);
+});
+
+/** Opens the page list from "N / M". */
+async function openPageList(page: Page) {
+  if (await page.getByTestId("page-menu.list").isVisible()) return;
+  await position(page).click();
+  await expect(page.getByTestId("page-menu.list")).toBeVisible();
+}
+const listed = (page: Page) =>
+  page.getByTestId("page-menu.item").evaluateAll((els) =>
+    els
+      .map((el) => ({ y: el.getBoundingClientRect().y, name: (el as HTMLElement).innerText.trim() }))
+      .sort((a, b) => a.y - b.y)
+      .map((x) => x.name),
+  );
+const pageNames = (page: Page) => ed(page, (e) => e.getPages().map((p: any) => p.name) as string[]);
+const pageItem = (page: Page, name: string) => page.getByTestId("page-menu.item").filter({ hasText: new RegExp(`^${name}$`) });
+
+test("clicking N / M opens the page list above the controls, and everything the old top-left menu did works: jump, rename, reorder, duplicate, delete, add", async ({ page }) => {
+  await open(page);
+  await ed(page, (e) => {
+    e.renamePage(e.getCurrentPageId(), "A");
+    for (const n of ["B", "C"]) e.createPage({ name: n });
+  });
+  await openPageList(page);
+  // Opens above "‹ N / M ›", fully on screen.
+  const list = (await page.locator(".tlui-popover__content").filter({ has: page.getByTestId("page-menu.list") }).boundingBox())!;
+  const group = (await page.getByRole("group", { name: "Pages" }).boundingBox())!;
+  expect(list.y + list.height).toBeLessThanOrEqual(group.y + 1);
+  expect(list.y).toBeGreaterThanOrEqual(0);
+  expect(list.x + list.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(await listed(page)).toEqual(["A", "B", "C"]);
+
+  // Jump.
+  await pageItem(page, "C").locator(".tlui-page-menu__item__button").click();
+  await expect.poll(() => shown(page)).toBe("3 / 3");
+
+  // Rename: double-click, type, Enter.
+  await openPageList(page);
+  await pageItem(page, "B").locator(".tlui-page-menu__item__button").dblclick();
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("Bee");
+  await page.keyboard.press("Enter");
+  await expect.poll(() => pageNames(page)).toEqual(["A", "Bee", "C"]);
+
+  // The item's own menu: Rename, Move up/down, Duplicate, Delete.
+  const itemMenu = async (name: string, entry: string) => {
+    await openPageList(page);
+    const item = pageItem(page, name);
+    await item.hover();
+    await item.getByTestId("page-menu.item-submenu").click();
+    await page.getByRole("menuitem", { name: entry, exact: true }).click();
+  };
+  await itemMenu("A", "Rename");
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("Ay");
+  await page.keyboard.press("Enter");
+  await expect.poll(() => pageNames(page)).toEqual(["Ay", "Bee", "C"]);
+  await itemMenu("Ay", "Move down");
+  await expect.poll(() => pageNames(page)).toEqual(["Bee", "Ay", "C"]);
+  await itemMenu("C", "Move up");
+  await expect.poll(() => pageNames(page)).toEqual(["Bee", "C", "Ay"]);
+
+  // Reorder by dragging a row: "Ay" to the top.
+  await openPageList(page);
+  const from = (await pageItem(page, "Ay").boundingBox())!;
+  const to = (await pageItem(page, "Bee").boundingBox())!;
+  await page.mouse.move(from.x + 40, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 40, to.y + 4, { steps: 12 });
+  await page.mouse.move(from.x + 40, to.y + 2, { steps: 2 });
+  await page.mouse.up();
+  await expect.poll(() => pageNames(page)).toEqual(["Ay", "Bee", "C"]);
+
+  await itemMenu("C", "Duplicate");
+  await expect.poll(async () => (await pageNames(page)).length).toBe(4);
+  await itemMenu("Bee", "Delete");
+  await expect.poll(() => pageNames(page)).not.toContain("Bee");
+  expect(await pageNames(page)).toHaveLength(3);
+
+  // Add.
+  await openPageList(page);
+  await page.getByTestId("page-menu.create").click();
+  await expect.poll(async () => (await pageNames(page)).length).toBe(4);
+  await page.keyboard.press("Enter");
+  await expect.poll(() => shown(page)).toBe("4 / 4");
+
+  // Escape closes the list; the whiteboard has the keys again.
+  await openPageList(page);
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("page-menu.list")).toBeHidden();
+  await page.keyboard.press("2");
+  expect(await tool(page)).toBe("geo");
+});
+
+test("keys: ← and → go to the previous/next page when nothing is selected and nothing is edited; → on the last page does nothing; with a selection the arrows nudge it", async ({ page }) => {
+  await open(page);
+  // The on-screen › on the last page still makes a page.
+  await page.getByRole("button", { name: "Next page" }).click();
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect.poll(() => shown(page)).toBe("3 / 3");
+  await page.keyboard.press("ArrowRight"); // last page: nothing, never a new page
+  await page.waitForTimeout(200);
+  expect(await ed(page, (e) => e.getPages().length)).toBe(3);
+  await expect.poll(() => shown(page)).toBe("3 / 3");
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(() => shown(page)).toBe("2 / 3");
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(() => shown(page)).toBe("1 / 3");
+  await page.keyboard.press("ArrowLeft"); // first page: nothing
+  await expect.poll(() => shown(page)).toBe("1 / 3");
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => shown(page)).toBe("2 / 3");
+
+  // Something selected: the arrows nudge it, the page stays.
+  const id = await rect(page, 300, 300);
+  await ed(page, (e, id: string) => void e.select(id), id);
+  const before = await boundsOf(page, id);
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await boundsOf(page, id)).x).toBeLessThan(before.x);
+  await expect.poll(() => shown(page)).toBe("2 / 3");
+
+  // Text being edited: the arrows move the caret, not the page.
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("8");
+  const p = await screen(page, { x: 800, y: 500 });
+  await page.mouse.click(p.x, p.y);
+  await page.keyboard.type("abc");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => shown(page)).toBe("2 / 3");
+  await page.keyboard.press("Escape");
 });
 
 test("the tldraw license is accepted: the editor stays up past 5 s with no license warning", async ({ page }) => {

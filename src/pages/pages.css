@@ -7,8 +7,9 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--tl-color-text) 14%, transparent), 0 6px 24px rgb(0 0 0 / 0.25);
 }
 
-/* Bottom-right, as in Excalidraw; above tldraw's watermark when there is
-   one (it must stay visible). */
+/* Bottom-right, as in Excalidraw. When tldraw's watermark is there, on its
+   row, directly to its left (PageArrows places it; the watermark must stay
+   visible). */
 .gauntlet-pages {
   position: absolute;
   right: 12px;
@@ -25,10 +26,9 @@
   font: 13px/1 system-ui, sans-serif;
   user-select: none;
 }
-.gauntlet-whiteboard:has(.tl-watermark_SEE-LICENSE) .gauntlet-pages { bottom: 52px; }
-.gauntlet-pages button {
-  width: 34px;
-  height: 34px;
+.gauntlet-pages > button {
+  width: 30px;
+  height: 30px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -37,10 +37,32 @@
   line-height: 1;
   cursor: pointer;
 }
-.gauntlet-pages button:hover:not(:disabled) { background: #33333b; }
-.gauntlet-pages button:disabled { opacity: 0.3; cursor: default; }
-.gauntlet-pages .gauntlet-pages__present { font-size: 13px; }
-.gauntlet-pages__where { padding: 0 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.gauntlet-pages__name { display: inline-block; max-width: 140px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; opacity: 0.7; }
-.gauntlet-pages[data-presenting] { opacity: 0.25; transition: opacity 0.2s; }
-.gauntlet-pages[data-presenting]:hover { opacity: 1; }
+.gauntlet-pages > button:hover:not(:disabled) { background: #33333b; }
+.gauntlet-pages > button:disabled { opacity: 0.3; cursor: default; }
+.gauntlet-pages__where { position: relative; padding: 0 6px; white-space: nowrap; font-variant-numeric: tabular-nums; cursor: pointer; }
+.gauntlet-pages__where:hover { color: #fff; }
+/* tldraw's page-menu button, invisible over "2 / 4": a click there opens
+   the page list. */
+.gauntlet-pages__where .tlui-page-menu__trigger {
+  position: absolute;
+  inset: -8px 0;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+  opacity: 0;
+}
+/* Its label is the page's name: not shown (owner: no page name here). */
+.gauntlet-pages__where .tlui-page-menu__trigger > * { visibility: hidden; }
+/* The page list opens just above "‹ 2 / 4 ›", right-aligned with it, with
+   most of the window's height for the list. (tldraw's page menu opens
+   downward from where it used to be, top left; Radix places it inline,
+   hence !important.) */
+[data-radix-popper-content-wrapper]:has(.tlui-page-menu__wrapper) {
+  transform: none !important;
+  top: auto !important;
+  left: auto !important;
+  right: var(--gauntlet-pages-right, 12px) !important;
+  bottom: var(--gauntlet-pages-bottom, 56px) !important;
+}
+.tlui-popover__content:has(.tlui-page-menu__wrapper) { --radix-popover-content-available-height: calc(100vh - var(--gauntlet-pages-bottom, 56px) - 80px) !important; }

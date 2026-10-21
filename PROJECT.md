@@ -50,8 +50,9 @@ screenshots. That's the problem this solves.
      bottom-right corner: previous page and next page.
    - Pressing "next" on the last page creates a new empty page.
    - Each page is its own sheet. Nothing sits across two pages.
-   - Each page is a unit: I can name it, jump to it, reorder it, and
-     present it as a slide.
+   - Each page is a unit: I can name it, jump to it and reorder it (from
+     the page list that "2 / 4" opens). No present mode (DECISIONS
+     2026-10-20).
 
 3. Boards and maps on the whiteboard
    - Think "LIVE SCREENSHOT": a board or map sits on the page like a pasted
@@ -168,7 +169,7 @@ Changes to the plan, newest last. Each says what and why.
   select was also set to "wholly inside", as in Excalidraw. Excalidraw's
   number keys 1-0 pick the tools in Excalidraw's order; D is the diamond
   and P the pen (tldraw uses D for the pen).
-- 2026-10-18 — "Present as a slide" (section 2) is done in phase 1, since
+- (replaced by 2026-10-20, page controls) 2026-10-18 — "Present as a slide" (section 2) is done in phase 1, since
   it belongs to pages: full screen, read-only, arrow keys go page to page.
   Naming, jumping to and reordering pages use tldraw's own page menu (top
   left).
@@ -306,6 +307,19 @@ Changes to the plan, newest last. Each says what and why.
   deleted. A banner on / and /whiteboard/ shows when no folder is picked
   or the browser needs permission again (Reconnect button). Why:
   in-browser backups die with the browser's data.
+- 2026-10-20 — Page controls (owner, phase 2.5 item 13). Top left only the
+  main menu (tldraw’s page menu is gone from there). Bottom right only
+  "‹ 2 / 4 ›": the arrows and the position, never a page name.
+  Clicking "2 / 4" opens tldraw’s own page list (jump, rename, reorder,
+  duplicate, delete, add), just above it. The control sits on the
+  watermark’s row, directly to its left (never over it: the hobby
+  license needs it visible); with no watermark, in the corner. Present mode
+  is removed entirely. Keys: ←/→ go to the previous/next page when
+  nothing is selected and no text is edited (→ never makes a page); with
+  a selection they nudge it. The on-screen › and PageDown on the last
+  page still make a new page. Laser, sticky note and frame tools are gone
+  too (toolbar, overflow menu, keys); such shapes already drawn stay.
+  Zoom buttons and Ctrl+/Ctrl- go in 10% steps up to 800%.
 
 IDEAS
 
