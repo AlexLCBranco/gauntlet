@@ -14,8 +14,10 @@ Finished work goes to docs/HISTORY.md.
   112 + 1 failed (a float-exact test, fixed; fullpage 13/13 after),
   Linkkit 18; live (`1a1e5c3`) gauntlet 108 passed, 5 skipped (real data:
   local only), Linkkit 18; CI green in gauntlet and Boardkit.
-- NEXT is phase 3, once the owner has tried the feel items below. The old
-  canvas's saved data is removed on opening the whiteboard (owner's OK).
+- PHASE 3 in progress (docs/PHASE-3.md, ticked as done). Step 0 done: the
+  Ctrl+D + close-tab test is back (duplicates through the editor; the key
+  was dropped in the first fresh tab even with tldraw focused; 12/12 with
+  6 workers).
 
 ## Waiting for the owner
 
@@ -31,9 +33,6 @@ Finished work goes to docs/HISTORY.md.
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
   resize); unsaved.e2e.ts:142 (Delete right after a click not taken, once
   in a live full run 2026-10-21; 5/5 alone, 12/12 with 6 workers).
-- SKIPPED (2026-10-21): unsaved.e2e.ts "a shape drawn right before the tab
-  is closed" — Ctrl+D sometimes not taken in a fresh tab under load; 4/4
-  alone on old and new code, no app cause found.
 - Linkkit's embed mode (`?embed=1`) has no e2e of its own any more (its
   embed.e2e.ts only tested it inside the deleted canvas); realdata.e2e.ts
   and Linkkit's readonly.e2e.ts still open maps that way.

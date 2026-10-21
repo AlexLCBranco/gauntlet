@@ -173,10 +173,7 @@ test("a move, a style change and a delete right before a reload are kept", async
   expect((await shapeIds(page)).sort()).toEqual([a, b].sort());
 });
 
-// Skipped (2026-10-21, testing rule: flaky, no app cause found): Ctrl+D is
-// sometimes not taken in a fresh tab under load; passes 4/4 alone on the
-// same code. See HANDOFF.md.
-test.skip("a shape drawn right before the tab is closed is there in a new tab", async ({ page, context }) => {
+test("a shape drawn right before the tab is closed is there in a new tab", async ({ page, context }) => {
   await open(page);
   const a = await rect(page, 300, 200);
   await page.keyboard.press("Escape");
@@ -188,8 +185,11 @@ test.skip("a shape drawn right before the tab is closed is there in a new tab", 
   for (let i = 0; i < 10; i++) {
     // A new tab isn't always the front one, and tldraw ignores keys then.
     await tab.bringToFront();
-    await pick(tab, a);
-    await tab.keyboard.press("Control+d");
+    // Duplicated through the editor, as Ctrl+D does: in the first fresh tab
+    // under load the key press was sometimes dropped even with tldraw
+    // focused (7 of 12 in parallel, 2026-10-21). The key isn't what this
+    // tests; the journal is. (A click would pick the copy on top.)
+    await ed(tab, (e, id: string) => void e.duplicateShapes([id]), a);
     await expect.poll(() => shapeIds(tab)).toHaveLength(i + 2);
     const drawn = await doc(tab);
     await tab.close();

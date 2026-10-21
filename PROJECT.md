@@ -387,6 +387,18 @@ Changes to the plan, newest last. Each says what and why.
   closes after adding. A click elsewhere still adds no list and opens
   nothing; renaming a list with Enter only saves the name. In Boardkit
   itself and on the whiteboard (same list code).
+- 2026-10-21 — Phase 3 (owner, docs/PHASE-3.md). A map on the whiteboard
+  behaves like a board does now ("live screenshot"): scaled from the
+  corners as a whole, double-click (or Enter) to edit in place, Escape or a
+  click outside ends editing. In phase 4, boards and maps both become
+  frames with real objects together.
+- 2026-10-21 — Phase 3 (owner). A board that has a linked Linkkit map is
+  ONE widget with a small "List | Map | Both" switch next to its name
+  label, shown on hover or selection (like the label). "Both" shows list
+  and map side by side inside the same widget, moved and scaled as one.
+- 2026-10-21 — Phase 3 (owner). A map always fits its widget: no zoom or
+  scrolling inside it; you make it bigger or smaller by scaling the widget.
+  Linkkit's own zoom controls are hidden on the whiteboard.
 
 IDEAS
 
