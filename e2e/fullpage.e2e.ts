@@ -25,7 +25,7 @@ const ed = <T, A = undefined>(page: Page, fn: (editor: any, arg: A) => T, arg?: 
   page.evaluate(([src, a]) => new Function("e", "a", `return (${src})(e, a)`)((window as any).editor, a), [fn.toString(), arg] as const) as Promise<T>;
 
 async function open(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }

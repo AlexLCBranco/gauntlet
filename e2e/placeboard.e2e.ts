@@ -35,7 +35,7 @@ const selected = (page: Page) => page.evaluate(() => (window as any).editor.getS
 async function smallBoard(context: BrowserContext): Promise<string> {
   const id = await seedBoard(context);
   const bk = await context.newPage();
-  await bk.goto("/whiteboard/");
+  await bk.goto("/");
   await bk.evaluate((id) => {
     const key = `boardkit:board:${id}`;
     const rec = JSON.parse(localStorage.getItem(key)!);
@@ -58,7 +58,7 @@ async function smallBoard(context: BrowserContext): Promise<string> {
 }
 
 async function openWhiteboard(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }

@@ -71,7 +71,7 @@ const shapesNow = (page: Page) =>
 const comparable = (s: Pick<Shape, "id" | "parentId" | "x" | "y" | "rotation" | "props">) => ({ id: s.id, parentId: s.parentId, x: s.x, y: s.y, rotation: s.rotation, props: s.props });
 
 async function openWhiteboard(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }

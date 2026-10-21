@@ -1,5 +1,8 @@
 # Gauntlet canvas plan (v0)
 
+> **The canvas this describes was deleted on 2026-10-20** (PROJECT.md,
+> DECISIONS): the whiteboard is the home page now. Kept as history only.
+
 > **Superseded (2026-10-18).** PROJECT.md is now the single source of truth
 > (the tldraw whiteboard plan), with HANDOFF.md. This file only documents
 > the older iframe canvas still on the home page. Its "How the canvas

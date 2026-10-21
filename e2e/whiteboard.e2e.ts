@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { whiteboardSaved } from "./helpers";
 
 /**
- * The whiteboard (whiteboard phase 1: the floor) at /whiteboard/. Fresh,
+ * The whiteboard (whiteboard phase 1: the floor), the home page `/`. Fresh,
  * empty browser profile per test, so every shape here is made by the test.
  * The page's `window.editor` (tldraw's editor) is read to check results and
  * to turn sheet coordinates into screen points; every action itself goes
@@ -20,7 +20,7 @@ type Pt = { x: number; y: number };
 type Bounds = { x: number; y: number; w: number; h: number };
 
 async function open(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }
@@ -897,11 +897,11 @@ test("a window with no size (0 x 0, as in an embedded pane mid-layout) doesn't c
     const f = document.createElement("iframe");
     f.id = "wb";
     f.style.cssText = "width:0;height:0;border:0";
-    f.src = "/whiteboard/";
+    f.src = "/";
     document.body.append(f);
   });
-  await expect.poll(() => page.frames().some((f) => /whiteboard/.test(f.url()))).toBe(true);
-  const fr = page.frames().find((f) => /whiteboard/.test(f.url()))!;
+  await expect.poll(() => page.frames().length).toBe(2);
+  const fr = page.frames().find((f) => f !== page.mainFrame())!;
   await fr.waitForFunction(() => "editor" in window, null, { timeout: 30_000 });
   expect(await fr.evaluate(() => [innerWidth, innerHeight])).toEqual([0, 0]);
   // Everything that sizes the page, while there is no size.

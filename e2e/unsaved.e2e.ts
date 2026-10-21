@@ -19,7 +19,7 @@ const JOURNAL = "gauntlet:whiteboard:unsaved";
 type Pt = { x: number; y: number };
 
 async function open(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }

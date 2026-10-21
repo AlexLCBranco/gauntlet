@@ -1,8 +1,8 @@
-import { expect, type BrowserContext, type Frame, type Locator, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 /**
- * Shared by the canvas e2e. Each test runs in a fresh, empty browser
- * profile, so the only boards and maps are the ones it makes here.
+ * Shared by the e2e. Each test runs in a fresh, empty browser profile, so
+ * the only boards and maps are the ones it makes here.
  */
 
 /**
@@ -87,53 +87,4 @@ export async function seedMap(context: BrowserContext, name: string): Promise<st
   return id;
 }
 
-export const canvasEl = (page: Page) => page.getByTestId("canvas");
-export const stones = (page: Page) => page.locator("[data-stone-id]");
-export const pageEl = (page: Page, index: number) => page.locator(`section[data-page-index="${index}"]`);
-
-/** Adds the board or map named `name` to the current page; the new widget. */
-export async function addStone(page: Page, name: string): Promise<Locator> {
-  const before = await stones(page).count();
-  await page.getByRole("button", { name: "+ Add stone" }).click();
-  await page.getByRole("dialog", { name: "Add a stone" }).getByRole("button", { name: new RegExp(`^${name}`) }).click();
-  await expect(stones(page)).toHaveCount(before + 1);
-  return stones(page).nth(before);
-}
-
-/** The app inside a widget's frame. */
-export async function frameOf(stone: Locator): Promise<Frame> {
-  await expect(stone.locator("iframe")).toHaveCount(1);
-  return (await (await stone.locator("iframe").elementHandle())!.contentFrame())!;
-}
-
 export const box = async (l: Locator) => (await l.boundingBox())!;
-
-/** The layout as saved. */
-export const savedLayout = (page: Page) =>
-  page.evaluate(() => JSON.parse(localStorage.getItem("gauntlet:canvas")!) as { pages: { id: string; stones: { id: string; x: number; y: number; w: number; h: number }[] }[] });
-
-/** Drags from the middle of `from` by (dx, dy), in steps like a hand would. */
-export async function dragBy(page: Page, from: Locator, dx: number, dy: number, at?: { x: number; y: number }) {
-  const b = await box(from);
-  const x = at ? b.x + at.x : b.x + b.width / 2;
-  const y = at ? b.y + at.y : b.y + b.height / 2;
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + dx / 2, y + dy / 2, { steps: 5 });
-  await page.mouse.move(x + dx, y + dy, { steps: 5 });
-  await page.mouse.up();
-}
-
-/** The scroll position of the canvas, and where each page starts. */
-export const canvasScroll = (page: Page) => canvasEl(page).evaluate((el) => el.scrollTop);
-
-/** Index of the page aligned at the top of the canvas (its top one margin
-    below the canvas's top), or null when none is. */
-export const alignedPage = (page: Page) =>
-  page.evaluate(() => {
-    const canvas = document.querySelector<HTMLElement>("[data-testid=canvas]")!.getBoundingClientRect();
-    for (const section of document.querySelectorAll<HTMLElement>("section[data-page-index]")) {
-      if (Math.abs(section.getBoundingClientRect().top - canvas.top - 24) <= 1) return Number(section.dataset.pageIndex);
-    }
-    return null;
-  });

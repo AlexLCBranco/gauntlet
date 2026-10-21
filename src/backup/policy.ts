@@ -8,6 +8,8 @@
 // of the quota), and none is saved when that would leave the site with
 // less than a safe margin. Then the owner is warned instead.
 
+import type { BackupFile } from "./format";
+
 export interface Kept {
   readonly id: string;
   /** When it was made (ms). */
@@ -99,3 +101,19 @@ export const WARNING_TEXT: Record<Warning | "failed", string> = {
     "Automatic backup skipped: this browser's storage for the site is nearly full, and your boards and maps need that room. Save a backup file instead.",
   failed: "Automatic backup failed: the browser refused to store it (its storage may be full). Save a backup file instead.",
 };
+
+/** The data, for telling "changed" from "the same": without the time it
+    was taken, with localStorage's keys in order (the browser lists them in
+    a different order after a reload), and without tldraw's per-tab session
+    records (its `session_state` store: which page each tab was on, its
+    camera, stamped with the time on every open). Those change on every
+    visit to the whiteboard while nothing of the owner's does, so every
+    visit kept a new backup and pushed older ones out. The backup itself
+    still holds them. */
+export function sameDataText(file: BackupFile): string {
+  const local = Object.fromEntries(Object.entries(file.localStorage).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+  const indexedDB = file.indexedDB.map((db) =>
+    db.name.startsWith("TLDRAW_DOCUMENT_") ? { ...db, stores: db.stores.filter((s) => s.name !== "session_state") } : db,
+  );
+  return JSON.stringify({ ...file, createdAt: "", localStorage: local, indexedDB });
+}

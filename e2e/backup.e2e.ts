@@ -41,7 +41,7 @@ async function seed(context: BrowserContext, mapName: string): Promise<{ boardId
     await put("linkkit", "backupFolder", await navigator.storage.getDirectory());
   }, PICTURE);
 
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   const shapeId = await page.evaluate(() => {
     const editor = (window as any).editor;
@@ -156,7 +156,7 @@ test("a backup restored into an empty browser brings back boards, pictures, maps
   await fresh.goto("/linkkit/");
   await fresh.getByRole("button", { name: /^Switch map/ }).click();
   await expect(fresh.getByRole("menuitem", { name: /Backup e2e map/ })).toBeVisible();
-  await fresh.goto("/whiteboard/");
+  await fresh.goto("/");
   await fresh.waitForFunction(() => "editor" in window);
   await expect.poll(() => fresh.evaluate(() => (window as any).editor.getCurrentPageShapes().map((s: { id: string }) => s.id))).toEqual([shapeId]);
   await empty.close();

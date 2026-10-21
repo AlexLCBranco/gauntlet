@@ -79,7 +79,7 @@ test.describe("backup folder", () => {
     // The backup page shows it in its section, not as a banner.
     await expect(page.locator("[data-folder-warning]")).toHaveCount(0);
 
-    await page.goto("/whiteboard/");
+    await page.goto("/");
     const banner = page.locator('[data-folder-warning="none"]');
     await expect(banner).toBeVisible({ timeout: 10_000 });
     await expect(banner.getByRole("link", { name: "Choose a folder" })).toHaveAttribute("href", "/backup/");
@@ -159,7 +159,7 @@ test.describe("backup folder", () => {
       proto.queryPermission = async () => (allowed ? "granted" : "prompt");
       proto.requestPermission = async () => ((allowed = true), "granted");
     });
-    await page.goto("/whiteboard/");
+    await page.goto("/");
     await useTestFolder(page);
     await page.reload();
 

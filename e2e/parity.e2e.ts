@@ -43,7 +43,7 @@ async function saved(page: Page, id: string, check: (r: Rec) => boolean, message
 }
 
 async function openWhiteboard(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }

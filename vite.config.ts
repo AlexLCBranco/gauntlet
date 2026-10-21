@@ -5,12 +5,12 @@ import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
-import { forward, localTargets, readRewrites, rewrite, toLocal } from "./scripts/dev-proxy.mjs";
+import { forward, localTargets, readRedirects, readRewrites, redirect, rewrite, toLocal } from "./scripts/dev-proxy.mjs";
 
 /**
- * Dev server: the canvas at `/`, and `/boardkit` and `/linkkit` forwarded by
- * `vercel.json`'s own rewrites, so everything shares one origin as on the
- * live site.
+ * Dev server: the whiteboard at `/`, and `/boardkit` and `/linkkit`
+ * forwarded by `vercel.json`'s own rewrites (its redirects too), so
+ * everything shares one origin as on the live site.
  *
  *   npm run dev          # apps from their live deployments (everyday dev)
  *   npm run dev:local    # apps from their local dev servers (5181, 5173)
@@ -23,9 +23,16 @@ function apps(mode: string): Plugin {
     name: "gauntlet-apps",
     configureServer(server) {
       const rewrites = readRewrites();
+      const redirects = readRedirects();
       const targets = mode === "local" ? localTargets() : null;
       server.middlewares.use((req, res, next) => {
         const { pathname, search } = new URL(req.url ?? "/", "http://dev");
+        const to = redirect(redirects, pathname, search);
+        if (to) {
+          res.writeHead(307, { location: to });
+          res.end();
+          return;
+        }
         const dest = rewrite(rewrites, pathname, search);
         if (!dest) return next();
         forward(req, res, targets ? toLocal(dest, targets) : dest);
@@ -46,11 +53,10 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: { exclude: ["boardkit"] },
   // Watches Boardkit too, for `scripts/sync-boardkit.mjs`.
   server: { port: 5180, watch: { ignored: ["!**/node_modules/boardkit/**"] } },
-  // Three pages: the older canvas at `/`, the whiteboard at `/whiteboard/`,
-  // the backup page at `/backup/`.
+  // Two pages: the whiteboard at `/`, the backup page at `/backup/`.
   // tldraw alone is ~1.7 MB (515 kB gzipped), loaded only by the whiteboard.
   build: {
-    rolldownOptions: { input: { main: "index.html", whiteboard: "whiteboard/index.html", backup: "backup/index.html" } },
+    rolldownOptions: { input: { main: "index.html", backup: "backup/index.html" } },
     // The whiteboard chunk is ~2 MB, most of it tldraw (~1.7 MB, 515 kB
     // gzipped), and only the whiteboard loads it. That size is known and
     // accepted (no code splitting for now), so the limit sits well above

@@ -1,6 +1,6 @@
 // The backup file: everything this site keeps in one browser (the owner's
-// Boardkit boards and their pictures, Linkkit maps, the whiteboard, the
-// home page's layout), as one JSON file the owner keeps and can restore.
+// Boardkit boards and their pictures, Linkkit maps, the whiteboard, and
+// whatever else is stored, e.g. the old home page's layout), as one JSON file the owner keeps and can restore.
 //
 // It is a copy of the browser's storage itself, not of each app's own
 // export: every localStorage key, and every IndexedDB database with its

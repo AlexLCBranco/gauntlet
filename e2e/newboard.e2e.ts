@@ -29,7 +29,7 @@ const nameOf = async (page: Page, id: string) => (await registry(page))?.boards.
 const field = (page: Page) => page.getByTestId("board-name-field");
 
 async function openWhiteboard(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }

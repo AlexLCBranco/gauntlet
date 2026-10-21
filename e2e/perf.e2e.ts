@@ -20,7 +20,7 @@ const shapeOf = (page: Page) =>
 const boardEl = (page: Page) => page.locator(".tl-html-container [data-boardkit-board]").first();
 
 async function openWhiteboard(page: Page) {
-  await page.goto("/whiteboard/");
+  await page.goto("/");
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }

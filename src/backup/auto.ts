@@ -1,5 +1,5 @@
-// Automatic backups: on opening the home page, the whiteboard or the backup
-// page, and every 10 minutes while one stays open, the same backup the
+// Automatic backups: on opening the whiteboard (the home page) or the
+// backup page, and every 10 minutes while one stays open, the same backup the
 // "Save a backup" button downloads is kept in this browser, if anything
 // changed since the newest. Kept in an IndexedDB database of their own
 // (`AUTO_DB`), within a storage budget (`policy.ts`). When one can't be
@@ -11,7 +11,7 @@
 
 import { folderState, lastFolderNote, showFolderBanner, writeToFolder } from "./folder";
 import { describe, readBackup, summarize, type BackupFile } from "./format";
-import { fingerprint, plan, WARNING_TEXT, type Kept, type Warning } from "./policy";
+import { fingerprint, plan, sameDataText, WARNING_TEXT, type Kept, type Warning } from "./policy";
 import { AUTO_DB, AUTO_NOTE, makeBackup } from "./storage";
 
 const STORE = "backups";
@@ -74,14 +74,6 @@ export function fileOf(backup: AutoBackup): BackupFile | null {
   }
 }
 
-/** The data, for telling "changed" from "the same": without the time it
-    was taken, and with localStorage's keys in order (the browser lists
-    them in a different order after a reload). */
-const sameData = (file: BackupFile) => {
-  const local = Object.fromEntries(Object.entries(file.localStorage).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
-  return JSON.stringify({ ...file, createdAt: "", localStorage: local });
-};
-
 async function estimate(): Promise<{ usage?: number; quota?: number }> {
   try {
     return (await navigator.storage?.estimate?.()) ?? {};
@@ -102,7 +94,7 @@ export async function keepBackup(reason: Reason = "auto"): Promise<Outcome> {
     const now = new Date();
     const file = await makeBackup(now);
     const json = JSON.stringify(file);
-    const print = fingerprint(sameData(file));
+    const print = fingerprint(sameDataText(file));
     // Outside the browser first, and whatever happens in it: a browser too
     // full to keep a copy is exactly when the folder's copy matters.
     await writeToFolder(json, print, now, reason === "before-restore");

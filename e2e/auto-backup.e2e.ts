@@ -144,20 +144,25 @@ test("when the browser refuses to store a backup, the page warns and Boardkit st
   await renameInBoardkit(context, id, "ZZ saved while backups fail");
 });
 
-test("the whiteboard keeps backups by itself too, its Backups menu item opens /backup/, and backups kept before are still listed there", async ({ page, context }) => {
+test("the home page is the whiteboard and keeps backups by itself; the old /whiteboard address leads there; Backups lists every backup", async ({ page, context }) => {
   const id = await seedBoard(context);
-  // A backup kept before (here by the home page, as on the live site).
+  // "/" is the whiteboard, and it keeps a backup.
   await page.goto("/");
+  await page.waitForFunction(() => "editor" in window);
+  await expect(page.getByTestId("sheet")).toBeVisible();
   await expect.poll(async () => (await kept(page)).length, { timeout: 15_000 }).toBe(1);
   const earlier = (await kept(page))[0];
-  // Something changes; opening the whiteboard keeps a new backup.
+  // Something changes; opening it from the old address keeps a new backup.
   await page.evaluate((id) => {
     const rec = JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!);
     rec.rev = (rec.rev ?? 0) + 1;
     localStorage.setItem(`boardkit:board:${id}`, JSON.stringify(rec));
   }, id);
-  await page.goto("/whiteboard/");
-  await page.waitForFunction(() => "editor" in window);
+  for (const old of ["/whiteboard", "/whiteboard/"]) {
+    await page.goto(old);
+    expect(new URL(page.url()).pathname).toBe("/");
+    await page.waitForFunction(() => "editor" in window);
+  }
   await expect.poll(async () => (await kept(page)).length, { timeout: 15_000 }).toBe(2);
   expect((await kept(page)).map((b) => b.json)).toContain(earlier.json);
 
@@ -167,7 +172,4 @@ test("the whiteboard keeps backups by itself too, its Backups menu item opens /b
   await expect(tab).toHaveURL(/\/backup\/$/);
   await expect(tab.getByRole("list", { name: "Automatic backups" }).getByRole("listitem")).toHaveCount(2);
   await tab.close();
-  // The home page links here too.
-  await page.goto("/");
-  await expect(page.getByRole("link", { name: "Backup" })).toHaveAttribute("href", "/backup/");
 });

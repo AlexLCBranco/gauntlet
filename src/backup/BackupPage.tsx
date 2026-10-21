@@ -133,7 +133,7 @@ export function BackupPage() {
       <h1>Backup</h1>
       <p className="lead">
         One file with everything this site keeps in this browser: your Boardkit boards (with their background pictures and trash),
-        your Linkkit maps, the whiteboard and the home page.
+        your Linkkit maps and the whiteboard.
       </p>
       <p className="here" data-testid="here">
         In this browser now: {here ?? "…"}
@@ -172,8 +172,8 @@ export function BackupPage() {
               What was here before is in “{status.safety}” in your Downloads folder, in case you want it back.
             </p>
             <p className="links">
-              Open <a href="/boardkit/">Boardkit</a>, <a href="/linkkit/">Linkkit</a>,{" "}
-              <a href="/whiteboard/">the whiteboard</a> or <a href="/">the home page</a>.
+              Open <a href="/boardkit/">Boardkit</a>, <a href="/linkkit/">Linkkit</a>{" "}
+              or <a href="/">the whiteboard</a>.
             </p>
           </>
         )}
@@ -184,7 +184,7 @@ export function BackupPage() {
       <section className="autos" aria-labelledby="autos-title">
         <h2 id="autos-title">Automatic backups</h2>
         <p className="lead">
-          Made by themselves when you open the home page or the whiteboard, and every 10 minutes while one is open, if
+          Made by themselves when you open the whiteboard (the home page) or this page, and every 10 minutes while one is open, if
           anything changed. The newest 30 and one a day for 90 days are kept, as room allows.
         </p>
         <p className="warn">
@@ -250,7 +250,7 @@ export function BackupPage() {
               Backup of {when(status.file.createdAt)}: {describe(summarize(status.file))}.
             </p>
             <p>Everything in this browser now ({here ?? "…"}) is replaced by it.</p>
-            <p className="warn">First close every other tab of this site (Boardkit, Linkkit, whiteboard, home page).</p>
+            <p className="warn">First close every other tab of this site (Boardkit, Linkkit, the whiteboard).</p>
             <p>A copy of what's here now is downloaded first, so this can be undone.</p>
             <div className="actions">
               <button type="button" onClick={() => setStatus({ kind: "idle" })}>

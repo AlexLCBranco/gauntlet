@@ -1,6 +1,6 @@
 // The gauntlet site on one local port, for running e2e tests before a push.
 //
-// Production: Vercel serves this repo's build (`dist/`, the canvas) and forwards each app's
+// Production: Vercel serves this repo's build (`dist/`, the whiteboard) and forwards each app's
 // path to its own deployment with the rewrites in `vercel.json`, so the
 // browser only ever sees one origin. This script does the same on
 // localhost: it reads the very same rewrites from `vercel.json` and sends
@@ -12,8 +12,8 @@
 //   PORT=3100 LINKKIT_DEV=http://localhost:5181 node scripts/dev-proxy.mjs
 //
 // Needs both apps' dev servers running (Linkkit on 5181, Boardkit on 5173 by
-// default) and the canvas built (`npm run build`). `scripts/local-e2e.mjs`
-// does all of that and runs the e2e. The canvas's own Vite dev server
+// default) and this repo built (`npm run build`). `scripts/local-e2e.mjs`
+// does all of that and runs the e2e. This repo's own Vite dev server
 // (`vite.config.ts`) uses the same rules through `forward`.
 
 import { createReadStream, readFileSync, statSync } from "node:fs";
@@ -26,6 +26,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** `vercel.json`'s rewrites. */
 export const readRewrites = () => JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf-8")).rewrites;
+
+/** `vercel.json`'s redirects. */
+export const readRedirects = () => JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf-8")).redirects ?? [];
 
 /** Each deployment named in `vercel.json`, and the local dev server that
     stands in for it. */
@@ -80,6 +83,18 @@ export function rewrite(rewrites, pathname, search = "") {
   return null;
 }
 
+/** Where the first redirect matching `pathname` sends the browser (a path,
+    with the query string kept, as on Vercel), or null. Vercel applies
+    redirects before anything else. */
+export function redirect(redirects, pathname, search = "") {
+  for (const { source, destination } of redirects) {
+    const params = compileSource(source)(pathname);
+    if (!params) continue;
+    return destination.replace(/:(\w+)[+*]?/g, (whole, name) => (name in params ? params[name] : whole)) + search;
+  }
+  return null;
+}
+
 /** The destination with its deployment's origin swapped for the local dev
     server's. Throws for a deployment with no local target. */
 export function toLocal(url, targets) {
@@ -123,9 +138,10 @@ export function forward(req, res, target) {
   req.pipe(upstream);
 }
 
-/** `root`: the folder served at `/` (the canvas build). */
+/** `root`: the folder served at `/` (this repo's build). */
 export function start({ port = Number(process.env.PORT ?? 3000), targets = localTargets(), root = path.join(ROOT, "dist") } = {}) {
   const rewrites = readRewrites();
+  const redirects = readRedirects();
   // Every deployment must have a local stand-in before anything is served.
   for (const { destination } of rewrites) toLocal(new URL(destination.replace(/:\w+[+*]?/g, "x")), targets);
 
@@ -136,7 +152,13 @@ export function start({ port = Number(process.env.PORT ?? 3000), targets = local
   };
 
   const server = http.createServer((req, res) => {
-    const { pathname } = new URL(req.url, "http://proxy");
+    const { pathname, search } = new URL(req.url, "http://proxy");
+    const to = redirect(redirects, pathname, search);
+    if (to) {
+      res.writeHead(307, { location: to });
+      res.end();
+      return;
+    }
     const file = staticFile(root, pathname);
     if (file) {
       res.writeHead(200, { "content-type": TYPES[path.extname(file)] ?? "application/octet-stream" });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { BUDGET_SHARE, FALLBACK_BUDGET, KEEP_DAILY_DAYS, KEEP_RECENT, MAX_USE_SHARE, byAge, fingerprint, plan } from "./policy";
+import type { BackupFile } from "./format";
+import { BUDGET_SHARE, FALLBACK_BUDGET, KEEP_DAILY_DAYS, KEEP_RECENT, MAX_USE_SHARE, byAge, fingerprint, plan, sameDataText } from "./policy";
 
 const HOUR = 60 * 60 * 1000;
 const MB = 1024 * 1024;
@@ -56,5 +57,35 @@ describe("fingerprint", () => {
   it("tells the same data from changed data", () => {
     expect(fingerprint("abc")).toBe(fingerprint("abc"));
     expect(fingerprint("abc")).not.toBe(fingerprint("abd"));
+  });
+});
+
+describe("sameDataText: what counts as a change", () => {
+  const store = (name: string, records: { key: unknown; value: unknown }[]) => ({ name, keyPath: null, autoIncrement: false, indexes: [], records, skipped: [] });
+  const file = (o: { at?: string; local?: Record<string, string>; session?: number; shape?: string; other?: number } = {}): BackupFile => ({
+    format: "gauntlet-backup" as BackupFile["format"],
+    version: 1 as BackupFile["version"],
+    createdAt: o.at ?? "2026-10-20T10:00:00Z",
+    site: "http://localhost",
+    localStorage: o.local ?? { a: "1", b: "2" },
+    indexedDB: [
+      {
+        name: "TLDRAW_DOCUMENT_v2gauntlet-whiteboard",
+        version: 1,
+        stores: [
+          store("records", [{ key: "shape:1", value: { id: "shape:1", x: o.shape ?? "10" } }]),
+          store("session_state", [{ key: "tab-1", value: { updatedAt: o.session ?? 1, snapshot: { currentPageId: "page:1" } } }]),
+        ],
+      },
+      { name: "boardkit", version: 1, stores: [store("session_state", [{ key: "k", value: o.other ?? 1 }])] },
+    ],
+  });
+  it("ignores the time taken, localStorage's key order and tldraw's per-tab session (every visit stamps it)", () => {
+    expect(sameDataText(file({ at: "2026-10-21T00:00:00Z", local: { b: "2", a: "1" }, session: 999 }))).toBe(sameDataText(file()));
+  });
+  it("sees a change to a drawing, a localStorage value, or another database's store of the same name", () => {
+    expect(sameDataText(file({ shape: "11" }))).not.toBe(sameDataText(file()));
+    expect(sameDataText(file({ local: { a: "1", b: "3" } }))).not.toBe(sameDataText(file()));
+    expect(sameDataText(file({ other: 2 }))).not.toBe(sameDataText(file()));
   });
 });

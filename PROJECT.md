@@ -150,7 +150,7 @@ DECISIONS
 
 Changes to the plan, newest last. Each says what and why.
 
-- 2026-10-18 — During phase 1 the whiteboard lives at /whiteboard, not the
+- (replaced by 2026-10-20, the whiteboard IS the gauntlet) 2026-10-18 — During phase 1 the whiteboard lives at /whiteboard, not the
   home page. The home page (/) still shows the older iframe canvas
   ("stones"): it holds the owner's current layout and Linkkit's e2e tests
   use it. The whiteboard takes over / when it can replace it (to decide
@@ -228,7 +228,7 @@ Changes to the plan, newest last. Each says what and why.
   tested it by hand AND (2) the owner's real Boardkit and Linkkit data on
   gauntlet-home.vercel.app has a backup the owner can restore. The backup
   is set up before anything goes live.
-- 2026-10-19 — Owner: the old home page (/) stays for now; revisit
+- (replaced by 2026-10-20, the whiteboard IS the gauntlet) 2026-10-19 — Owner: the old home page (/) stays for now; revisit
   replacing it with the whiteboard after phase 3.
 - 2026-10-19 — Page size (owner, phase 2 go-live round, after the
   `fullscreen-page` hand test; was only in HANDOFF). The page is at least
@@ -320,6 +320,16 @@ Changes to the plan, newest last. Each says what and why.
   page still make a new page. Laser, sticky note and frame tools are gone
   too (toolbar, overflow menu, keys); such shapes already drawn stay.
   Zoom buttons and Ctrl+/Ctrl- go in 10% steps up to 800%.
+- 2026-10-20 — The whiteboard IS the gauntlet: '/' is the whiteboard. The
+  stones canvas was a failed attempt and is deleted; nothing is built on
+  it. "/whiteboard" and "/whiteboard/" redirect to "/" (old links keep
+  working); automatic backups start on "/". Deleted: src/canvas/,
+  src/domain/, its e2e (canvas.e2e.ts), and in Linkkit the e2e that only
+  tested Linkkit inside the canvas's frames (embed.e2e.ts, the "Add a
+  stone" step of boardname.e2e.ts). Linkkit's embed mode itself
+  (`?embed=1`) stays: the real-data and read-only tests still open maps
+  that way. The old canvas's saved data (localStorage `gauntlet:canvas`,
+  `gauntlet:scroll`) is left in place until the owner says to delete it.
 
 IDEAS
 

@@ -53,9 +53,9 @@ test("serves the home page and forwards each app to its own server", async (t) =
   const lk = await fake("linkkit");
   const bk = await fake("boardkit");
   const root = mkdtempSync(path.join(os.tmpdir(), "gauntlet-dist-"));
-  writeFileSync(path.join(root, "index.html"), "<!doctype html><html><body>canvas</body></html>");
-  mkdirSync(path.join(root, "whiteboard"));
-  writeFileSync(path.join(root, "whiteboard", "index.html"), "<!doctype html><html><body>whiteboard</body></html>");
+  writeFileSync(path.join(root, "index.html"), "<!doctype html><html><body>whiteboard</body></html>");
+  mkdirSync(path.join(root, "backup"));
+  writeFileSync(path.join(root, "backup", "index.html"), "<!doctype html><html><body>backup</body></html>");
   const proxy = await start({
     port: 0,
     root,
@@ -75,7 +75,18 @@ test("serves the home page and forwards each app to its own server", async (t) =
   assert.equal(homeStatus, 200);
   assert.match(home, /<html/i);
   // A folder with an index.html is served as a page, as on Vercel.
-  assert.deepEqual(await get("/whiteboard/"), [200, "<!doctype html><html><body>whiteboard</body></html>"]);
+  assert.deepEqual(await get("/backup/"), [200, "<!doctype html><html><body>backup</body></html>"]);
+  // vercel.json's redirects, before anything else, query kept: the old
+  // whiteboard address goes to the home page (the whiteboard now).
+  const where = async (p) => {
+    const r = await fetch(base + p, { redirect: "manual" });
+    return [r.status, r.headers.get("location")];
+  };
+  assert.deepEqual(await where("/whiteboard"), [307, "/"]);
+  assert.deepEqual(await where("/whiteboard/"), [307, "/"]);
+  assert.deepEqual(await where("/whiteboard/?x=1"), [307, "/?x=1"]);
+  assert.deepEqual(await where("/backup"), [307, "/backup/"]);
+  assert.deepEqual(await get("/whiteboard"), [200, "<!doctype html><html><body>whiteboard</body></html>"]);
   assert.deepEqual(await get("/linkkit?embed=1&id=m1"), [200, "linkkit /linkkit/?embed=1&id=m1"]);
   assert.deepEqual(await get("/boardkit/assets/x.js"), [200, "boardkit /boardkit/assets/x.js"]);
   assert.equal((await get("/nowhere"))[0], 404);
