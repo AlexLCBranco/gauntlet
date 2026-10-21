@@ -56,3 +56,6 @@ Card numbering: no change (already a menu option, with "Hidden").
 
 ## END
 - [x] Run the full local suite once, push, deploy, run live once. Report in a few lines: what's done, anything not done and why, the old canvas's localStorage keys for my OK, and what I should try by hand (only feel: the slim "+" buttons, hover headers, page controls and page list, one undo).
+
+After the list (owner's hand test, 2026-10-21): the look of items 16-17
+changed (DECISIONS 2026-10-21, board widget look). Done.

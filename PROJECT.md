@@ -370,6 +370,16 @@ Changes to the plan, newest last. Each says what and why.
   whiteboard removes localStorage `gauntlet:canvas` and `gauntlet:scroll`
   if present (`src/whiteboard/oldCanvasKeys.ts`). Backups made before
   still hold them.
+- 2026-10-21 — Board widget look after the owner's hand test (replaces
+  the look of items 16-17 in the 2026-10-20 board widget entry; when
+  things show stays the same). "+ Add a card": a faint full-width row
+  inside the list at its bottom, in room the list always keeps (so showing
+  it never makes the list taller), only on the list under the pointer,
+  stronger when pointed at. "+ Add a list": a faint ghost column right of
+  the last list, as tall as it, its "+" in line with the list titles,
+  outside the widget's box. The header's card count sits at its right end;
+  the other controls appear just before it without the title or count
+  moving. No "+" or control sits on a border (a list's or the box's).
 
 IDEAS
 

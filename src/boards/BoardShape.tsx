@@ -114,9 +114,12 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   // never by their text.
   useEffect(() => {
     if (!editing) return;
+    // Where the press was: its own point for a slim "+" (tldraw's pointer
+    // can lag a move behind on a busy page, and then hit a card instead).
     const p = editor.inputs.getCurrentScreenPoint();
     const vp = editor.getViewportScreenBounds();
-    const at = { x: p.x + vp.x, y: p.y + vp.y };
+    const at = slimPress ?? { x: p.x + vp.x, y: p.y + vp.y };
+    slimPress = null;
     let frame = requestAnimationFrame(function find(tries = 0) {
       const hit = document.elementFromPoint(at.x, at.y);
       const root = content.current?.querySelector('[data-editing="true"]');
@@ -149,6 +152,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       });
       if (!hit) return;
       editor.markEventAsHandled(e);
+      slimPress = { x: e.clientX, y: e.clientY };
       editor.select(shape.id);
       editor.setEditingShape(shape.id);
     };
@@ -241,6 +245,10 @@ function portalEventsHandled(editor: Editor): DOMAttributes<HTMLDivElement> {
   };
   return Object.fromEntries(PORTAL_EVENTS.map((name) => [name, mark]));
 }
+
+/** Where a press on a slim "+" was (window pixels), for the editing that
+    press starts to open that "+". */
+let slimPress: { x: number; y: number } | null = null;
 
 /** A card or list of a board is being dragged: Boardkit's lifted copy is up. */
 const boardkitDragging = () => document.querySelector("[data-boardkit-lifted]") !== null;

@@ -94,17 +94,29 @@ test("15: Boardkit's add buttons carry fixed markers, and standalone /boardkit l
   await bk.close();
 });
 
-test("16: a slim + on the last list's right edge adds a list; the box hugs the lists; it shows on hover or selection only", async ({ page, context }) => {
+test("16: '+ Add a list' is a faint ghost column beside the last list, as tall as it, outside the widget's box; shown on hover or selection; a press adds a list", async ({ page, context }) => {
   const id = await setUp(page, context);
   const plus = boardEl(page).locator('[data-add="list"]');
   await expect(plus).toHaveAttribute("data-slim", "");
   await expect(plus).toHaveText("+");
-  // The box takes no room for it: it ends at the last list, the + sits outside.
+  // The box takes no room for it: it ends at the last list. The ghost is
+  // clearly outside it (a gap, not on the border), as tall as the last
+  // list, its top in line with the list.
   const last = await box(lists(page).last());
   const s = await shapeOnScreen(page);
   expect(Math.abs(s.right - (last.x + last.width))).toBeLessThan(2);
   const p = await box(plus);
-  expect(p.x).toBeGreaterThanOrEqual(s.right - 1);
+  expect(p.x).toBeGreaterThan(s.right + 2);
+  expect(Math.abs(p.y - last.y)).toBeLessThan(2);
+  expect(Math.abs(p.height - last.height)).toBeLessThan(2);
+  // Its "+" at the top, in line with the list titles.
+  const plusTop = await plus.evaluate((el) => {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    return r.getBoundingClientRect().top;
+  });
+  const titleTop = (await box(lists(page).last().locator("[data-list-header] h2"))).y;
+  expect(Math.abs(plusTop - titleTop)).toBeLessThan(10);
   // Selected: shown. Not selected, pointer away: hidden. Pointer over: shown.
   await expect.poll(() => opacity(plus)).toBe(1);
   await leaveBoard(page);
@@ -115,7 +127,7 @@ test("16: a slim + on the last list's right edge adds a list; the box hugs the l
   // A press on it (the board not being edited) opens the field; Enter adds.
   const before = (await record(page, id)).board.listOrder.length;
   const at = await box(plus);
-  await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2, { steps: 3 });
+  await page.mouse.move(at.x + at.width / 2, at.y + 20, { steps: 3 });
   await page.mouse.down();
   await page.mouse.up();
   await expect(editingEl(page)).toHaveCount(1);
@@ -127,12 +139,14 @@ test("16: a slim + on the last list's right edge adds a list; the box hugs the l
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(editingEl(page)).toHaveCount(0);
-  // Still hugging the lists, with the new one.
+  // Still hugging the lists, with the new one; the ghost follows the new
+  // last list's height.
   const newLast = await box(lists(page).last());
   expect(Math.abs((await shapeOnScreen(page)).right - (newLast.x + newLast.width))).toBeLessThan(2);
+  await expect.poll(async () => Math.round((await box(plus)).height)).toBe(Math.round(newLast.height));
 });
 
-test("16: a slim + on a list's bottom edge adds a card, shown only on the list the pointer is over, taking no room", async ({ page, context }) => {
+test("16: '+ Add a card' is a faint full-width row inside the list at its bottom, only on the list under the pointer, stronger when pointed at; the list never grows for it", async ({ page, context }) => {
   const id = await setUp(page, context);
   await leaveBoard(page);
   const [a, b] = [lists(page).nth(0), lists(page).nth(1)];
@@ -144,18 +158,26 @@ test("16: a slim + on a list's bottom edge adds a card, shown only on the list t
   await page.mouse.move(ra.x + ra.width / 2, ra.y + 20, { steps: 3 });
   await expect.poll(() => opacity(plusA)).toBe(1);
   expect(await opacity(plusB)).toBe(0);
-  // On the list's bottom edge, no room kept for it: the list ends at its last card.
+  // Showing it changes nothing about the list's size.
+  expect(await box(a)).toEqual(ra);
+  // Clearly inside the list (not on its border), full width, below the last card.
   const pa = await box(plusA);
-  expect(Math.abs(pa.y + pa.height / 2 - (ra.y + ra.height))).toBeLessThan(4);
+  expect(pa.x).toBeGreaterThan(ra.x + 2);
+  expect(pa.x + pa.width).toBeLessThan(ra.x + ra.width - 2);
+  expect(pa.y + pa.height).toBeLessThan(ra.y + ra.height - 2);
+  expect(pa.width).toBeGreaterThan(ra.width - 30);
   const lastCard = await box(a.locator("article[data-card-id]").last());
-  expect(ra.y + ra.height - (lastCard.y + lastCard.height)).toBeLessThan(16);
+  expect(pa.y).toBeGreaterThanOrEqual(lastCard.y + lastCard.height);
   // The tallest list's bottom is the box's bottom.
   const bottoms = await lists(page).evaluateAll((els) => els.map((el) => el.getBoundingClientRect().bottom));
   expect(Math.abs((await shapeOnScreen(page)).bottom - Math.max(...bottoms))).toBeLessThan(2);
+  // Pointed at, a bit stronger.
+  const faint = await plusA.evaluate((el) => getComputedStyle(el).backgroundColor);
+  await page.mouse.move(pa.x + pa.width / 2, pa.y + pa.height / 2, { steps: 3 });
+  // (Hover styles apply once the board is edited; not edited, the row only shows.)
   // Pressed: the field opens in that list; Enter adds the card there.
   const listId = (await a.getAttribute("data-list-id"))!;
   const before = (await record(page, id)).board.cardOrder[listId].length;
-  await page.mouse.move(pa.x + pa.width / 2, pa.y + pa.height / 2, { steps: 3 });
   await page.mouse.down();
   await page.mouse.up();
   await expect(page.getByRole("textbox", { name: "Add a card" })).toBeFocused();
@@ -164,6 +186,14 @@ test("16: a slim + on a list's bottom edge adds a card, shown only on the list t
   const rec = await saved(page, id, (r) => r.board.cardOrder[listId].length === before + 1);
   expect(rec.board.cards[rec.board.cardOrder[listId].at(-1)!].title).toBe("ZZ slim card");
   await page.keyboard.press("Escape");
+  // While editing, pointing at the row of another list makes it stronger.
+  await expect(editingEl(page)).toHaveCount(1);
+  const rb = await box(b);
+  await page.mouse.move(rb.x + rb.width / 2, rb.y + 20, { steps: 3 });
+  await expect.poll(() => opacity(plusB)).toBe(1);
+  const pb = await box(plusB);
+  await page.mouse.move(pb.x + pb.width / 2, pb.y + pb.height / 2, { steps: 3 });
+  await expect.poll(() => plusB.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(faint);
 });
 
 test("16, 20: a board with no lists shows the full '+ Add a list'; an empty list shows the full '+ Add a card' and is just its header and that button", async ({ page }) => {
@@ -211,9 +241,25 @@ test("17: a list header shows its title and count; the other controls only while
   await page.mouse.move(ra.x + ra.width / 2, ra.y + ra.height - 20, { steps: 3 });
   await page.waitForTimeout(100);
   for (const c of await controls(a).all()) expect(await visibility(c)).toBe("hidden");
-  const ha = await box(a.locator("[data-list-header]"));
+  // The count sits at the header's right end; title and count stay put
+  // when the controls show (they appear before the count, clear of it).
+  const header = a.locator("[data-list-header]");
+  const count = header.locator("> span").last();
+  const title = header.locator("h2");
+  const ha = await box(header);
+  const countBefore = await box(count);
+  const titleBefore = await box(title);
+  const padRight = await header.evaluate((el) => parseFloat(getComputedStyle(el).paddingRight));
+  expect(Math.abs(countBefore.x + countBefore.width - (ha.x + ha.width - padRight))).toBeLessThan(2);
   await page.mouse.move(ha.x + 20, ha.y + ha.height / 2, { steps: 3 });
   await expect.poll(async () => Promise.all((await controls(a).all()).map(visibility))).toEqual((await controls(a).all()).map(() => "visible"));
+  expect(await box(count)).toEqual(countBefore);
+  expect(await box(title)).toEqual(titleBefore);
+  for (const c of await controls(a).all()) {
+    const cb = await box(c);
+    expect(cb.x + cb.width).toBeLessThanOrEqual(countBefore.x + 0.5);
+    expect(cb.x).toBeGreaterThanOrEqual(titleBefore.x + titleBefore.width - 0.5);
+  }
   for (const c of await controls(b).all()) expect(await visibility(c)).toBe("hidden");
   // Also while the board is edited.
   await page.mouse.dblclick(ra.x + ra.width / 2, ra.y + ra.height - 30);
