@@ -39,7 +39,7 @@ const BUTTON = '[data-testid="tools.board"], [data-testid="tools.more.board"]';
 
 /** The list of Boardkit's boards, under the Board button (or under the
     toolbar when the button is in the overflow menu). A click puts that
-    board on the current page, in the middle, selected. "+ New board" first
+    board on the current page, in the middle of the view, selected. "+ New board" first
     makes a new one in Boardkit (newBoard). */
 export function BoardPicker() {
   const editor = useEditor();
@@ -89,7 +89,7 @@ export function BoardPicker() {
       <div className="gb-picker-title">Boardkit boards</div>
       {boards.length === 0 && <div className="gb-picker-empty">No boards yet.</div>}
       {boards.map((b) => (
-        <button key={b.id} role="menuitem" data-board={b.id} onClick={() => placeBoard(editor, b.id)}>
+        <button key={b.id} role="menuitem" data-board={b.id} onClick={() => place(editor, b.id, "add board")}>
           {b.name}
         </button>
       ))}
@@ -108,26 +108,21 @@ function newBoard(editor: Editor): boolean {
   const boardId = createWhiteboardBoard("Untitled");
   if (!boardId) return false;
   registryChanged();
+  namingBoard.set(place(editor, boardId, "new board"));
+  return true;
+}
+
+/** One undo step: the widget for `boardId` in the middle of the view, kept
+    inside the page (placed there at once, so keepInside has nothing to
+    move), selected. Both picker entries place boards this way. */
+function place(editor: Editor, boardId: string, step: string) {
   const { w, h } = editor.getShapeUtil<BoardShape>(BOARD_TYPE).getDefaultProps();
   const view = editor.getViewportPageBounds();
   const at = { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
   const d = insideDelta(at, pageBox.get() ?? SHEET);
-  const id = place(editor, boardId, at.x + d.x, at.y + d.y, "new board");
-  namingBoard.set(id);
-  return true;
-}
-
-function placeBoard(editor: Editor, boardId: string) {
-  const { w, h } = editor.getShapeUtil<BoardShape>(BOARD_TYPE).getDefaultProps();
-  const page = pageBox.get() ?? SHEET;
-  place(editor, boardId, page.x + page.w / 2 - w / 2, page.y + page.h / 2 - h / 2, "add board");
-}
-
-/** One undo step: the widget for `boardId` at (x, y), selected. */
-function place(editor: Editor, boardId: string, x: number, y: number, step: string) {
   const id = createShapeId();
   editor.markHistoryStoppingPoint(step);
-  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x, y, props: { boardId } });
+  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: at.x + d.x, y: at.y + d.y, props: { boardId } });
   editor.setCurrentTool("select");
   editor.select(id);
   pickerOpen.set(false);

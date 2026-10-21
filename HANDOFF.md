@@ -3,7 +3,44 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-20): "+ New board" in the whiteboard's Board picker
+## NOW (2026-10-20): an existing board picked in the Board picker goes in the middle of the view
+
+- `src/boards/AddBoard.tsx`: one `place()` for both picker entries: the
+  middle of the VIEW, kept inside the page at once (insideDelta, the code
+  "+ New board" used; no jump), selected, one undo step. Picking an
+  existing board used the page's middle, off-screen when zoomed in. Undo,
+  redo, sync and the board list unchanged.
+- Nothing else on the whiteboard places a widget in the page's middle:
+  `AddBoard.tsx` is the only `createShape` in src/ (tldraw's own paste and
+  media drops are tldraw's, untouched).
+- e2e `e2e/placeboard.e2e.ts` (4), window 1600 x 1000 (smaller than the
+  1920 x 1080 sheet) for the first three: view away from the page's middle
+  -> fully in view, selected; view at the page's corner -> every box it
+  has (side-effect handlers, from the first) inside view and page;
+  zoomed past the board's size at the corner -> inside the page from box
+  0, at the corner; full-size window, existing + new board from the same
+  view -> same first box, same centre. On HEAD's AddBoard.tsx: 4/4 fail.
+  With the clamp removed: the third fails (box 0 at x+w 1639 > 1600);
+  newboard.e2e.ts's corner test still passes then (keepInside pulls it
+  in later), so the jump is only caught here. Uses a one-card board (the
+  seed board cut down): the full seed board is wider than a zoomed view.
+- No existing test assumed the page's middle (they all place from the 100%
+  view, where the view's middle is the page's): none changed.
+Results (real exit codes): lint 0, unit 81 + 5 exit 0, build 0 (old chunk
+warning). Full local `node scripts/local-e2e.mjs`, 6 runs in two sets of
+3: exit 0, 0, 1, 0, 0, 1 (gauntlet 92 = 88 + placeboard 4; Linkkit 20/20
+every run; placeboard 4/4 and realdata 5/5 every run). NOT 3 in a row.
+The failures, each once, none in board code:
+- whiteboard.e2e.ts:330 (remembered page gone): IndexedDB had 5 records,
+  the store 4, for 10 s after the undo (whiteboardSaved). Not reproduced;
+  cause not found. Running it alone (`--repeat-each`) fails every time
+  for another reason: a console 404 for /favicon.ico (the local proxy has
+  none; in the full suite an earlier test has the browser ask first).
+- fullpage.e2e.ts:192: zoom 1.4641 (4 wheel ticks) where 1.331 (3) was
+  expected after a resize. Not investigated.
+- unsaved.e2e.ts:176 (Ctrl+D x10 then close): the known one below.
+
+## Earlier (2026-10-20): "+ New board" in the whiteboard's Board picker
 
 Boardkit v0.0.99 (`69e83a2`, `main`, pinned in package.json) + gauntlet.
 - Boardkit `store/boardStore.ts`: `createWhiteboardBoard(name)` stores an

@@ -248,3 +248,7 @@ Changes to the plan, newest last. Each says what and why.
   board in Boardkit's list, as deleting a board widget does: Boardkit has
   no board trash, and deleting a board there is permanent. Redo puts the
   same board back. Such boards are deleted at /boardkit if unwanted.
+- 2026-10-20 — Widgets inserted from the Board menu go in the middle of the
+  current view. Picking an existing board used the page's middle, which a
+  zoomed-in view may not show; now it is placed as "+ New board" is (same
+  code): in the view's middle, kept inside the page, selected.
