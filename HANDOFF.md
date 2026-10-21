@@ -39,7 +39,9 @@ Boardkit v0.0.99 (`69e83a2`, `main`, pinned in package.json) + gauntlet.
 Results (real exit codes): Boardkit unit 209, lint 0 (27 old warnings),
 build 0. gauntlet lint 0, unit 81 + 5 exit 0, build 0 (old chunk warning,
 2,009.7 kB). Full local `node scripts/local-e2e.mjs` 3 runs in a row, exit
-0 each: gauntlet 88/88 (realdata 5/5) + Linkkit 20/20.
+0 each: gauntlet 88/88 (realdata 5/5) + Linkkit 20/20. Live (`f83710c`,
+Boardkit `69e83a2`): exit 0, 83 pass (newboard 6/6), 5 skipped (real
+data: local only); zoom p95 50 ms.
 
 ## Earlier (2026-10-20): Linkkit's full-run failures were test races (no app bug); perf zoom limit 108 ms
 
