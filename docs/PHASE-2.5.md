@@ -52,7 +52,7 @@ Card numbering: no change (already a menu option, with "Hidden").
 - [x] 23. A board made with "+ New board" on the whiteboard that is still EMPTY (no lists, never renamed) is deleted from Boardkit too when its creation is undone or its widget is deleted. A board with any content is never deleted this way (as today: widget leaves the whiteboard, board stays in Boardkit). Update the 2026-10-20 "+ New board" DECISIONS entry. e2e for both cases.
 
 ## GROUP E — Automatic checks on GitHub
-- [ ] 24. Add a GitHub Actions workflow to gauntlet (and Boardkit if it has none) running lint, unit tests and build on every push. The full e2e stays local (it needs Edge and the Linkkit/Boardkit checkouts).
+- [x] 24. Add a GitHub Actions workflow to gauntlet (and Boardkit if it has none) running lint, unit tests and build on every push. The full e2e stays local (it needs Edge and the Linkkit/Boardkit checkouts).
 
 ## END
 - [ ] Run the full local suite once, push, deploy, run live once. Report in a few lines: what's done, anything not done and why, the old canvas's localStorage keys for my OK, and what I should try by hand (only feel: the slim "+" buttons, hover headers, page controls and page list, one undo).
