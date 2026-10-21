@@ -29,8 +29,10 @@ Finished work goes to docs/HISTORY.md.
 ## Broken / known wrong
 
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
-  resize) and unsaved.e2e.ts:176 (Ctrl+D x10 then close; fails when two
-  copies run at once, Ctrl+D sometimes not taken in a fresh tab).
+  resize).
+- SKIPPED (2026-10-21): unsaved.e2e.ts "a shape drawn right before the tab
+  is closed" — Ctrl+D sometimes not taken in a fresh tab under load; 4/4
+  alone on old and new code, no app cause found.
 - Linkkit's embed mode (`?embed=1`) has no e2e of its own any more (its
   embed.e2e.ts only tested it inside the deleted canvas); realdata.e2e.ts
   and Linkkit's readonly.e2e.ts still open maps that way.

@@ -173,7 +173,10 @@ test("a move, a style change and a delete right before a reload are kept", async
   expect((await shapeIds(page)).sort()).toEqual([a, b].sort());
 });
 
-test("a shape drawn right before the tab is closed is there in a new tab", async ({ page, context }) => {
+// Skipped (2026-10-21, testing rule: flaky, no app cause found): Ctrl+D is
+// sometimes not taken in a fresh tab under load; passes 4/4 alone on the
+// same code. See HANDOFF.md.
+test.skip("a shape drawn right before the tab is closed is there in a new tab", async ({ page, context }) => {
   await open(page);
   const a = await rect(page, 300, 200);
   await page.keyboard.press("Escape");
