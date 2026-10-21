@@ -492,6 +492,13 @@ Changes to the plan, newest last. Each says what and why.
   creates each picture empty and fills it in afterwards, and the picture
   on the page never picked up the late data, so it stayed on tldraw's
   dotted "loading" box until a reload.
+- 2026-10-21 — Crop in the style panel (owner, Excalidraw parity item 3).
+  With one unlocked picture selected, the panel's Actions row has "Crop"
+  (tooltip "Crop"), which starts tldraw's own crop mode exactly as the
+  floating bar's crop button (kept) does; a picture imported from
+  Excalidraw starts from its imported crop. Done and cancel are tldraw's:
+  Enter, the floating bar's done button or a click away keeps the crop,
+  as one undo step; Escape cancels the whole crop session.
 
 IDEAS
 

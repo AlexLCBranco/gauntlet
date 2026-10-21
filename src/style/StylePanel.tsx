@@ -247,6 +247,8 @@ export function StylePanel() {
           ? shared(texty.map((s) => fontStepOf(s.meta, (s.props as { size: string }).size)))
           : next.fontStep,
         opacity: editor.getSharedOpacity(),
+        // One unlocked picture: the Actions row offers Crop.
+        croppable: shapes.length === 1 && shapes[0].type === "image" && !shapes[0].isLocked,
       };
     },
     [editor],
@@ -481,6 +483,22 @@ export function StylePanel() {
           <button type="button" className="gk-choice" title="Duplicate (Ctrl D)" aria-label="Duplicate" onClick={act(() => editor.duplicateShapes(editor.getSelectedShapeIds()))}>
             {svg(<><rect x="7" y="7" width="9" height="9" rx="1.5" /><path d="M13 7V5.5A1.5 1.5 0 0 0 11.5 4h-6A1.5 1.5 0 0 0 4 5.5v6A1.5 1.5 0 0 0 5.5 13H7" /></>)}
           </button>
+          {view.croppable && (
+            // tldraw's own crop mode, as its floating crop button starts it.
+            <button
+              type="button"
+              className="gk-choice"
+              title="Crop"
+              aria-label="Crop"
+              data-testid="action-crop"
+              onClick={() => {
+                editor.setCurrentTool("select.crop.idle");
+                editor.focus();
+              }}
+            >
+              {svg(<path d="M6 3v11h11M3 6h11v11" />)}
+            </button>
+          )}
           <button type="button" className="gk-choice gk-choice--danger" title="Delete (Delete)" aria-label="Delete" onClick={act(() => editor.deleteShapes(editor.getSelectedShapeIds()))}>
             {svg(<path d="M4 6h12M8 6V4.5h4V6M6 6l.7 9.5h6.6L14 6" />)}
           </button>
