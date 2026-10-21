@@ -9,8 +9,11 @@
 // branch each has checked out: check it out first), unless one already
 // listens on its port, then this repo's proxy (`dev-proxy.mjs`, the same
 // rewrites as production), then Playwright in each repo with BRIDGE_SITE
-// pointing at the proxy. Stops what it started when the tests end, and
-// exits non-zero if any suite failed.
+// pointing at the proxy. Stops what it started when the tests end, also
+// when they fail or the run is stopped (Ctrl+C), then checks that no test
+// browser is left running (scripts/leftovers.mjs: any found is listed and
+// stopped), and exits non-zero if any suite failed. Every browser runs
+// headless; `--headed` (passed on to Playwright) shows them.
 //
 // Folders and ports: LINKKIT_DIR, BOARDKIT_DIR, LINKKIT_PORT (5181),
 // BOARDKIT_PORT (5173), PORT (3000, the proxy).
@@ -21,6 +24,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { start } from "./dev-proxy.mjs";
+import { killLeftovers } from "./leftovers.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const env = process.env;
@@ -49,12 +53,29 @@ async function waitFor(port, ms = 60_000) {
 const branch = (dir) => spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: dir, encoding: "utf-8" }).stdout.trim();
 
 const started = [];
+let stopped = false;
 function stopAll() {
+  if (stopped) return;
+  stopped = true;
   for (const child of started) {
+    if (child.exitCode !== null) continue;
     // npm on Windows runs vite under cmd.exe: stop the whole tree.
     if (process.platform === "win32") spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore" });
     else child.kill();
   }
+  const left = killLeftovers();
+  if (left.length) console.error(`Stopped ${left.length} test browser process(es) left running: ${[...new Set(left.map((p) => p.name))].join(", ")}`);
+  else console.log("No test browser left running.");
+}
+// Stopped from outside (Ctrl+C, the terminal closing): stop everything first.
+for (const sig of ["SIGINT", "SIGTERM", "SIGBREAK", "SIGHUP"]) {
+  process.on(sig, () => {
+    console.error(`
+${sig}: stopping the dev servers, the tests and their browsers`);
+    proxy?.close();
+    stopAll();
+    process.exit(130);
+  });
 }
 
 const SUITES = { gauntlet: ROOT, linkkit: apps[0].dir };
@@ -65,7 +86,7 @@ let code = 1;
 let proxy;
 try {
   console.log("Gauntlet: building the canvas");
-  if (spawnSync("npm run build", { cwd: ROOT, shell: true, stdio: "inherit" }).status !== 0) throw new Error("The canvas build failed");
+  if (spawnSync("npm run build", { cwd: ROOT, shell: true, stdio: "inherit", windowsHide: true }).status !== 0) throw new Error("The canvas build failed");
 
   for (const app of apps) {
     if (await listening(app.port)) {
@@ -73,7 +94,7 @@ try {
       continue;
     }
     console.log(`${app.name}: starting its dev server on ${app.port} from ${app.dir} (${branch(app.dir)})`);
-    const child = spawn(`npm run dev -- --port ${app.port} --strictPort`, { cwd: app.dir, shell: true, stdio: "ignore" });
+    const child = spawn(`npm run dev -- --port ${app.port} --strictPort`, { cwd: app.dir, shell: true, stdio: "ignore", windowsHide: true });
     started.push(child);
     await waitFor(app.port);
   }
@@ -97,8 +118,10 @@ try {
       cwd: SUITES[suite],
       shell: true,
       stdio: "inherit",
+      windowsHide: true,
       env: { ...env, BRIDGE_SITE: site },
     });
+    started.push(run);
     const status = await new Promise((resolve) => run.on("exit", (s) => resolve(s ?? 1)));
     if (status !== 0) failed.push(suite);
   }

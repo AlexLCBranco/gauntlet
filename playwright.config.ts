@@ -18,6 +18,8 @@ export default defineConfig({
   use: {
     baseURL: process.env.BRIDGE_SITE ?? "https://gauntlet-home.vercel.app",
     channel: "msedge",
+    // Never a visible window, unless asked for (HEADED=1 or --headed).
+    headless: !process.env.HEADED,
     viewport: { width: 1400, height: 900 },
   },
   // Speed checks (perf.e2e.ts) measure frame times, so they run alone:
