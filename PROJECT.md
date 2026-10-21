@@ -252,3 +252,9 @@ Changes to the plan, newest last. Each says what and why.
   current view. Picking an existing board used the page's middle, which a
   zoomed-in view may not show; now it is placed as "+ New board" is (same
   code): in the view's middle, kept inside the page, selected.
+- 2026-10-20 — Automatic backups are also written to a folder the owner
+  picks on /backup/ (File System Access), same file, same keep rule (30
+  newest + 1/day for 90 days); only gauntlet-auto-*.json files are ever
+  deleted. A banner on / and /whiteboard/ shows when no folder is picked
+  or the browser needs permission again (Reconnect button). Why:
+  in-browser backups die with the browser's data.

@@ -44,6 +44,15 @@ function open(name: string, version?: number, upgrade?: (db: IDBDatabase) => voi
 export const AUTO_DB = "gauntlet-auto-backups";
 /** Their note of the last outcome (localStorage): not part of a backup either. */
 export const AUTO_NOTE = "gauntlet:auto-backup";
+/** The picked backup folder (`folder.ts`): a folder on this computer can't
+    go in a file, so never part of a backup and never restored. */
+export const FOLDER_DB = "gauntlet-backup-folder";
+/** Its note of the last write (localStorage): not part of a backup either. */
+export const FOLDER_NOTE = "gauntlet:folder-backup";
+
+/** Kept as they are here: never in a backup, never replaced by a restore. */
+const LOCAL_ONLY_KEYS = [AUTO_NOTE, FOLDER_NOTE];
+const LOCAL_ONLY_DBS = [AUTO_DB, FOLDER_DB];
 
 export const OTHER_TABS = "Another tab of this site is open. Close every other gauntlet, Boardkit and Linkkit tab, then try again.";
 
@@ -88,11 +97,11 @@ export async function makeBackup(now: Date): Promise<BackupFile> {
   const local: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)!;
-    if (key !== AUTO_NOTE) local[key] = localStorage.getItem(key)!;
+    if (!LOCAL_ONLY_KEYS.includes(key)) local[key] = localStorage.getItem(key)!;
   }
   const names = (await indexedDB.databases())
     .map((db) => db.name)
-    .filter((name): name is string => !!name && name !== AUTO_DB);
+    .filter((name): name is string => !!name && !LOCAL_ONLY_DBS.includes(name));
   const databases: DatabaseDump[] = [];
   for (const name of names.sort()) databases.push(await dumpDatabase(name));
   return { format: FORMAT, version: VERSION, createdAt: now.toISOString(), site: location.origin, localStorage: local, indexedDB: databases };
@@ -156,11 +165,13 @@ export async function restoreBackup(file: BackupFile): Promise<void> {
   // Databases first: a tab still holding one open makes this fail before
   // anything has been changed.
   for (const dump of file.indexedDB) {
-    if (dump.name !== AUTO_DB) await restoreDatabase(dump, existing.has(dump.name));
+    if (!LOCAL_ONLY_DBS.includes(dump.name)) await restoreDatabase(dump, existing.has(dump.name));
   }
-  // The automatic backups' note of their last outcome stays as it is here.
-  const note = localStorage.getItem(AUTO_NOTE);
+  // The automatic backups' and the folder's notes stay as they are here.
+  const notes = LOCAL_ONLY_KEYS.map((key) => [key, localStorage.getItem(key)] as const);
   localStorage.clear();
-  for (const [key, value] of Object.entries(file.localStorage)) localStorage.setItem(key, value);
-  if (note !== null) localStorage.setItem(AUTO_NOTE, note);
+  for (const [key, value] of Object.entries(file.localStorage)) {
+    if (!LOCAL_ONLY_KEYS.includes(key)) localStorage.setItem(key, value);
+  }
+  for (const [key, value] of notes) if (value !== null) localStorage.setItem(key, value);
 }

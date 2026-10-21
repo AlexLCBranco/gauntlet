@@ -4,5 +4,5 @@ import { startAutoBackup } from "./auto";
 import { BackupPage } from "./BackupPage";
 import "./backup.css";
 
-startAutoBackup();
+startAutoBackup({ banners: false });
 createRoot(document.getElementById("root")!).render(<BackupPage />);

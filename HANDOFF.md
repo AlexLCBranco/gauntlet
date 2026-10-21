@@ -3,7 +3,24 @@
 Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step.
 
-## NOW (2026-10-20): an existing board picked in the Board picker goes in the middle of the view
+## NOW (2026-10-20): automatic backups also go to a picked folder; favicon
+
+- Backup folder (written in another session for the owner): every
+  automatic backup is also written to a folder picked on `/backup/`
+  (`src/backup/folder.ts`, `folderNames.ts` pure + unit test; changes to
+  `auto.ts`, `storage.ts`, `BackupPage.tsx`, `main.tsx`). Banner with
+  Reconnect on `/` and `/whiteboard/`. DECISIONS entry added. e2e
+  `e2e/folder-backup.e2e.ts` (6).
+- `public/favicon.svg`, linked from all three pages: running
+  whiteboard.e2e.ts:330 alone failed on a console 404 for /favicon.ico.
+  Alone without it: fails; with it: 3/3 pass.
+Results: lint 0, unit 88 + 5 exit 0, build 0 (old chunk warning). Full
+local e2e once: exit 0 (gauntlet 98/98, Linkkit 20/20); no existing test
+affected by the banner. Live folder-backup: see below.
+Still flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off
+after a resize) and unsaved.e2e.ts:176 (Ctrl+D x10 then close).
+
+## Earlier (2026-10-20): an existing board picked in the Board picker goes in the middle of the view
 
 - `src/boards/AddBoard.tsx`: one `place()` for both picker entries: the
   middle of the VIEW, kept inside the page at once (insideDelta, the code

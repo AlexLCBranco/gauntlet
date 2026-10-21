@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 
 import { fileOf, keepBackup, lastStatus, listAutoBackups, type AutoBackup } from "./auto";
+import {
+  backupFolder,
+  canPickFolder,
+  FOLDER_CHANGED,
+  FOLDER_TEXT,
+  folderState,
+  forgetFolder,
+  lastFolderNote,
+  pickFolder,
+  reconnectFolder,
+  type FolderNote,
+  type FolderState,
+} from "./folder";
 import { describe, fileName, readBackup, summarize, type BackupFile } from "./format";
 import { WARNING_TEXT } from "./policy";
 import { makeBackup, restoreBackup } from "./storage";
@@ -147,7 +160,7 @@ export function BackupPage() {
         {status.kind === "busy" && <p>{status.text}</p>}
         {status.kind === "saved" && (
           <p className="ok">
-            Saved “{status.name}” to your Downloads folder ({status.what}). Move it somewhere safe, like OneDrive.
+            Saved “{status.name}” to your Downloads folder ({status.what}). Move it somewhere safe, like your Google Drive folder.
           </p>
         )}
         {status.kind === "error" && <p className="bad">{status.text}</p>}
@@ -166,6 +179,8 @@ export function BackupPage() {
         )}
       </div>
 
+      <FolderSection busy={busy} onBackUpNow={() => void backUpNow()} />
+
       <section className="autos" aria-labelledby="autos-title">
         <h2 id="autos-title">Automatic backups</h2>
         <p className="lead">
@@ -174,7 +189,7 @@ export function BackupPage() {
         </p>
         <p className="warn">
           They are kept in this browser, next to your data: clearing this browser's data (or a new computer) loses them
-          too. Only a saved backup file protects against that.
+          too. The copies in your backup folder (above) or a saved backup file protect against that.
         </p>
         {warning && (
           <p className="bad" data-testid="auto-warning">
@@ -249,5 +264,115 @@ export function BackupPage() {
         </div>
       )}
     </main>
+  );
+}
+
+/** The backup folder (`folder.ts`): every automatic backup is also written
+    there as a file, outside the browser. */
+function FolderSection({ busy, onBackUpNow }: { busy: boolean; onBackUpNow: () => void }) {
+  const [state, setState] = useState<FolderState | null>(null);
+  const [name, setName] = useState<string | null>(null);
+  const [last, setLast] = useState<FolderNote | null>(() => lastFolderNote());
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setState(await folderState());
+    setName((await backupFolder())?.name ?? null);
+    setLast(lastFolderNote());
+  };
+  useEffect(() => {
+    void refresh();
+    const on = () => void refresh();
+    window.addEventListener(FOLDER_CHANGED, on);
+    window.addEventListener("focus", on);
+    // Writes from this page's own automatic backups land in the note.
+    const timer = setInterval(on, 2000);
+    return () => {
+      window.removeEventListener(FOLDER_CHANGED, on);
+      window.removeEventListener("focus", on);
+      clearInterval(timer);
+    };
+  }, []);
+
+  const choose = async () => {
+    setError(null);
+    try {
+      if (await pickFolder()) onBackUpNow();
+    } catch (e) {
+      setError(`The folder could not be used: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    void refresh();
+  };
+  const reconnect = async () => {
+    setError(null);
+    if (await reconnectFolder()) onBackUpNow();
+    else setError("The browser didn't allow writing to the folder.");
+    void refresh();
+  };
+
+  return (
+    <section className="autos" aria-labelledby="folder-title" data-testid="backup-folder">
+      <h2 id="folder-title">Backup folder</h2>
+      <p className="lead">
+        Every automatic backup is also saved as a file in a folder on your computer, outside the browser. Pick a folder
+        inside your Google Drive folder and the backups also leave this computer. The newest 30 and one a day for 90 days
+        are kept there; other files in the folder are never touched.
+      </p>
+      {!canPickFolder() ? (
+        <p className="bad">This browser can't save to a folder. Use Edge or Chrome on a computer.</p>
+      ) : state === null ? (
+        <p className="lead">…</p>
+      ) : state === "none" ? (
+        <>
+          <p className="bad" data-testid="folder-state">
+            {FOLDER_TEXT.none}
+          </p>
+          <div className="actions">
+            <button type="button" className="primary" onClick={() => void choose()} disabled={busy}>
+              Choose a backup folder…
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className={state === "ready" && last?.problem !== "failed" ? "ok" : "bad"} data-testid="folder-state">
+            {state === "needs-permission"
+              ? FOLDER_TEXT["needs-permission"]
+              : last?.problem === "failed"
+                ? `${FOLDER_TEXT.failed} ${last.detail ?? ""}`
+                : last?.file
+                  ? `Saving to “${name}”. Last backup: ${new Date(last.at).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })} (${last.file}).`
+                  : `Saving to “${name}”. No backup written there yet.`}
+          </p>
+          <div className="actions">
+            {state === "needs-permission" && (
+              <button type="button" className="primary" onClick={() => void reconnect()} disabled={busy}>
+                Reconnect folder
+              </button>
+            )}
+            {state === "ready" && (
+              <button type="button" onClick={onBackUpNow} disabled={busy}>
+                Back up now
+              </button>
+            )}
+            <button type="button" onClick={() => void choose()} disabled={busy}>
+              Change folder…
+            </button>
+            <button
+              type="button"
+              onClick={() => void forgetFolder().then(refresh)}
+              disabled={busy}
+            >
+              Stop saving to this folder
+            </button>
+          </div>
+          <p className="lead">
+            Tip: when the browser asks to allow the folder, choose “Allow on every visit” if it offers it, so it doesn't ask
+            again after a restart.
+          </p>
+        </>
+      )}
+      {error && <p className="bad">{error}</p>}
+    </section>
   );
 }

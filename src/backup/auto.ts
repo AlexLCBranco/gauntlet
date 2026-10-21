@@ -6,9 +6,10 @@
 // kept, the page says so (a banner) and the backup page shows it too.
 //
 // They live in the same browser storage as the data: clearing the
-// browser's data for the site deletes them too. Only a saved file
-// protects against that.
+// browser's data for the site deletes them too. So each one is also
+// written to the backup folder the owner picked, if any (`folder.ts`).
 
+import { folderState, lastFolderNote, showFolderBanner, writeToFolder } from "./folder";
 import { describe, readBackup, summarize, type BackupFile } from "./format";
 import { fingerprint, plan, WARNING_TEXT, type Kept, type Warning } from "./policy";
 import { AUTO_DB, AUTO_NOTE, makeBackup } from "./storage";
@@ -102,6 +103,9 @@ export async function keepBackup(reason: Reason = "auto"): Promise<Outcome> {
     const file = await makeBackup(now);
     const json = JSON.stringify(file);
     const print = fingerprint(sameData(file));
+    // Outside the browser first, and whatever happens in it: a browser too
+    // full to keep a copy is exactly when the folder's copy matters.
+    await writeToFolder(json, print, now, reason === "before-restore");
     const existing = await listAutoBackups();
     if (reason === "auto" && existing[0]?.fingerprint === print) {
       outcome = { kind: "unchanged" };
@@ -204,13 +208,18 @@ export function showWarning(text: string): void {
 
 let started = false;
 
-/** Starts automatic backups on this page. */
-export function startAutoBackup(): void {
+/** Starts automatic backups on this page. `banners` false: the page shows
+    the folder's state itself (the backup page). */
+export function startAutoBackup({ banners = true } = {}): void {
   if (started || typeof indexedDB === "undefined") return;
   started = true;
   const run = async () => {
     const outcome = await keepBackup("auto");
     if (outcome.kind === "skipped") showWarning(WARNING_TEXT[outcome.warning]);
+    if (!banners) return;
+    const state = await folderState();
+    if (state !== "ready") showFolderBanner(state);
+    else if (lastFolderNote()?.problem === "failed") showFolderBanner("failed");
   };
   setTimeout(() => void run(), FIRST_AFTER_MS);
   setInterval(() => void run(), EVERY_MS);
