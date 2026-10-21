@@ -28,4 +28,4 @@ First: save this whole message as docs/PHASE-3.md and tick items off there as yo
   - [x] perf.e2e.ts: a big map (about 150 boxes) on the whiteboard: same drag and zoom limits as the big board.
 - [x] 7. src/README.md: add the maps/ row. Update the Board/Map picker docs.
 
-- [ ] END: full local suite once, push both repos, deploy, live once. Report in a few lines: what's done, anything not done and why, decisions you had to make, and what I should try by hand (feel only: placing and scaling a map, editing it in place, the List | Map | Both switch, one undo).
+- [x] END: full local suite once, push both repos, deploy, live once. Report in a few lines: what's done, anything not done and why, decisions you had to make, and what I should try by hand (feel only: placing and scaling a map, editing it in place, the List | Map | Both switch, one undo).

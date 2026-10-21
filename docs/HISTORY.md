@@ -1120,3 +1120,45 @@ are listed in `src/README.md`: `src/whiteboard/`, `src/pages/`,
   link at the top). Then the backup of the real data, then go-live only on
   the owner's word. Do not start phase 3.
 - Swap in the hobby key when it arrives, before 2026-11-01 (see top).
+
+
+## Phase 3 — Linkkit maps on the whiteboard (2026-10-21, done)
+
+docs/PHASE-3.md, the owner's list. Linkkit gained `src/app/whiteboard/`
+(v0.0.108): maps drawn by Linkkit's own components; the map being edited
+in Linkkit's store, others from read-only copies (`peekMap`,
+`MapStoreContext`); MapCanvas whiteboard mode (content box, no paper,
+never scrolls/zooms, page = the map's stored page, 120 px of paper while
+edited). Boardkit v0.0.103: the two apps hear each other's writes on one
+page. gauntlet: `src/maps/` (map widget, Map picker, empty new maps,
+appsTogether), boards/ views (List | Map | Both), page undo with map steps.
+Old state lines from HANDOFF:
+- Phase 2.5 (docs/PHASE-2.5.md, the owner's fixed polish list): all 24
+  items done and committed. Summary in docs/HISTORY.md. "/" is the
+  whiteboard now; the old iframe canvas is deleted.
+- Boardkit v0.0.100 (whiteboard mode changes) is pinned in package.json.
+- Last results: unit 63 + 5, Boardkit unit 211; full local e2e gauntlet
+  112 + 1 failed (a float-exact test, fixed; fullpage 13/13 after),
+  Linkkit 18; live (`1a1e5c3`) gauntlet 108 passed, 5 skipped (real data:
+  local only), Linkkit 18; CI green in gauntlet and Boardkit.
+- PHASE 3 in progress (docs/PHASE-3.md, ticked as done). Done: step 0
+  (Ctrl+D + close-tab test back: duplicates through the editor), steps 1-3
+  (map widgets, Map picker, List | Map | Both on linked boards). Linkkit
+  v0.0.108 (`732f7a6`) and Boardkit v0.0.103 (`a13cccc`) pushed, pinned.
+  Linkkit e2e 18 pass.
+- Steps 4-5 done: map steps in the page's one undo (pageUndo.ts), the map
+  save banner (Linkkit's MapParts). e2e/maps.e2e.ts 12 tests pass.
+- Steps 6-7 done: realdata (the backup file has 18 listed maps, not 19;
+  every one placed, both linked boards as Map and Both: no byte changed),
+  perf (150-box map: drag p95 17 ms, zoom p95 83 ms, longest 129 ms).
+- Next: END (full local suite once, push, deploy, live once, report).
+
+
+Fixed along the way (each with a test failing on the old code): a
+double-click starting a map's editing renames the box under it (the
+retry got the frame time as its count; BoardShape had the same latent
+bug); Enter in a new map's name field no longer starts editing the map.
+Test-only fixes: Ctrl+D + close-tab duplicates through the editor; the
+page-list rename waits for its field (lost first letter under load).
+Results: local gauntlet 131, Linkkit 18; live gauntlet 125 + 6 skipped,
+Linkkit 18.

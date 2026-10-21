@@ -6,30 +6,18 @@ Finished work goes to docs/HISTORY.md.
 
 ## Current state (2026-10-21)
 
-- Phase 2.5 (docs/PHASE-2.5.md, the owner's fixed polish list): all 24
-  items done and committed. Summary in docs/HISTORY.md. "/" is the
-  whiteboard now; the old iframe canvas is deleted.
-- Boardkit v0.0.100 (whiteboard mode changes) is pinned in package.json.
-- Last results: unit 63 + 5, Boardkit unit 211; full local e2e gauntlet
-  112 + 1 failed (a float-exact test, fixed; fullpage 13/13 after),
-  Linkkit 18; live (`1a1e5c3`) gauntlet 108 passed, 5 skipped (real data:
-  local only), Linkkit 18; CI green in gauntlet and Boardkit.
-- PHASE 3 in progress (docs/PHASE-3.md, ticked as done). Done: step 0
-  (Ctrl+D + close-tab test back: duplicates through the editor), steps 1-3
-  (map widgets, Map picker, List | Map | Both on linked boards). Linkkit
-  v0.0.108 (`732f7a6`) and Boardkit v0.0.103 (`a13cccc`) pushed, pinned.
-  Linkkit e2e 18 pass.
-- Steps 4-5 done: map steps in the page's one undo (pageUndo.ts), the map
-  save banner (Linkkit's MapParts). e2e/maps.e2e.ts 12 tests pass.
-- Steps 6-7 done: realdata (the backup file has 18 listed maps, not 19;
-  every one placed, both linked boards as Map and Both: no byte changed),
-  perf (150-box map: drag p95 17 ms, zoom p95 83 ms, longest 129 ms).
-- Next: END (full local suite once, push, deploy, live once, report).
+- PHASE 3 DONE (docs/PHASE-3.md, all ticked; summary in docs/HISTORY.md).
+  STOPPED for the owner's report (PROJECT.md rule 3); phase 4 not started.
+- Pinned: Boardkit v0.0.103 (`a13cccc`), Linkkit v0.0.108 (`732f7a6`).
+- Last results: unit 63 + 5, Linkkit 972, Boardkit 211; full local e2e
+  gauntlet 131, Linkkit 18; live (`8cd78c4`) gauntlet 125 passed, 6
+  skipped (real data: local only), Linkkit 18; CI green in all three.
 
 ## Waiting for the owner
 
-- Hand test (feel only): slim "+" buttons, hover-only list headers, the
-  "⋯" list menu, "‹ N / M ›" and the page list, one undo for the page.
+- Phase 3 hand test (feel only): placing and scaling a map, editing it in
+  place, the List | Map | Both switch, one undo. Then "go to phase 4".
+- Earlier hand test (phase 2.5 feel items), if not done yet.
 
 ## Half-done
 
@@ -40,6 +28,9 @@ Finished work goes to docs/HISTORY.md.
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
   resize); unsaved.e2e.ts:142 (Delete right after a click not taken, once
   in a live full run 2026-10-21; 5/5 alone, 12/12 with 6 workers).
+- Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms over
+  8 runs (limit 108, 1 run over; the board's is ~50). No DOM changes while
+  zooming: browser repaint. For the speed session; test kept as is.
 - Linkkit's embed mode (`?embed=1`) has no e2e of its own any more (its
   embed.e2e.ts only tested it inside the deleted canvas); realdata.e2e.ts
   and Linkkit's readonly.e2e.ts still open maps that way.
@@ -82,4 +73,4 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- The owner's hand test, then phase 3 (PROJECT.md section 6).
+- The owner's phase 3 hand test, then the speed session, then phase 4.
