@@ -55,4 +55,4 @@ Card numbering: no change (already a menu option, with "Hidden").
 - [x] 24. Add a GitHub Actions workflow to gauntlet (and Boardkit if it has none) running lint, unit tests and build on every push. The full e2e stays local (it needs Edge and the Linkkit/Boardkit checkouts).
 
 ## END
-- [ ] Run the full local suite once, push, deploy, run live once. Report in a few lines: what's done, anything not done and why, the old canvas's localStorage keys for my OK, and what I should try by hand (only feel: the slim "+" buttons, hover headers, page controls and page list, one undo).
+- [x] Run the full local suite once, push, deploy, run live once. Report in a few lines: what's done, anything not done and why, the old canvas's localStorage keys for my OK, and what I should try by hand (only feel: the slim "+" buttons, hover headers, page controls and page list, one undo).

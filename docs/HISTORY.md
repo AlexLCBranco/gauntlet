@@ -3,6 +3,33 @@
 Finished work, moved out of HANDOFF.md word for word (newest first).
 HANDOFF.md keeps only what is still open.
 
+## 2026-10-21: phase 2.5 (docs/PHASE-2.5.md), all 24 items
+
+- A: HANDOFF under 100 lines (old content moved here), missing DECISIONS
+  added, phase/IDEAS/testing rules.
+- B: tldraw pinned 5.5.2; 0x0 window: no longer reproducible (the crashing
+  code, `fillWindow` dividing by a zero fill zoom, went on 2026-10-19 with
+  `48dc941`; tldraw 5.5.2 also clamps the window to at least 1x1 px), e2e
+  kept as a guard (it passes on that code too); honest chunk limit (3000
+  kB); Backups in a new tab; 10% zoom steps (Ctrl+/- no longer animated,
+  quick presses were stuck one step up); no Laser/Note/Frame; pages:
+  "‹ N / M ›" beside the watermark, N / M opens tldraw's page list (above
+  the control, CSS pin), no Present, ←/→ keys; "/" is the whiteboard,
+  /whiteboard redirects, old canvas and its e2e deleted (Linkkit
+  embed.e2e.ts and the canvas step of boardname.e2e.ts too).
+- Found and fixed with item 14: every whiteboard visit kept a new
+  automatic backup (tldraw's per-tab session record is stamped on each
+  open); the "changed?" check now ignores tldraw's `session_state`
+  (policy.ts `sameDataText`, unit test).
+- C (Boardkit v0.0.100, whiteboard mode): `data-add` markers, slim "+",
+  hover-only header controls (pointer-position marks, since a board not
+  edited ignores the pointer), "⋯" menu, name on hover/selection, lists
+  sized to content, rail padding 0 (box hugs the lists).
+- D: SaveFailedBanner; one page undo (`pageUndo.ts` + Boardkit
+  `app/whiteboard/history.ts`); empty new boards leave Boardkit with their
+  widget (never the last board: Boardkit never writes an empty list).
+- E: GitHub Actions in gauntlet and Boardkit (lint, unit, build).
+
 ## Moved 2026-10-20 (start of phase 2.5): the whole HANDOFF.md as it was
 
 ## NOW (2026-10-20): automatic backups also go to a picked folder; favicon

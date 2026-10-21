@@ -140,6 +140,17 @@ const middle = async (page: Page, id: string) => {
 };
 
 const inside = (b: Bounds, p: Bounds, slack = 0.5) => b.x >= p.x - slack && b.y >= p.y - slack && b.x + b.w <= p.x + p.w + slack && b.y + b.h <= p.y + p.h + slack;
+/** No jump on the drop: what is read after it is what was read last
+    mid-drag (numbers to a millionth of a unit: page positions are floats). */
+function expectNoJump(after: unknown, last: unknown, path = "") {
+  if (typeof after === "number" && typeof last === "number") return expect(after, path).toBeCloseTo(last, 6);
+  if (after && last && typeof after === "object" && typeof last === "object") {
+    expect(Object.keys(after).sort(), path).toEqual(Object.keys(last).sort());
+    for (const k of Object.keys(after)) expectNoJump((after as Record<string, unknown>)[k], (last as Record<string, unknown>)[k], `${path}.${k}`);
+    return;
+  }
+  expect(after, path).toEqual(last);
+}
 
 /** Drags with the mouse from `from` to `to` (screen points) in `steps`,
     and after every step reads `check()`: the readings, the last one taken
@@ -470,7 +481,7 @@ test("a multi-selection dragged past each edge stops as one at the edge during t
       expect(d.gap.x).toBeCloseTo(startGap.x, 3);
       expect(d.gap.y).toBeCloseTo(startGap.y, 3);
     }
-    expect(after).toEqual(during[during.length - 1]);
+    expectNoJump(after, during[during.length - 1]);
   }
 });
 
@@ -507,7 +518,7 @@ test("an image and a Boardkit board widget dragged past the edges stay inside th
       const { during, after } = await dragWatching(page, from, { x: from.x + edge.dx * 2000, y: from.y + edge.dy * 2000 }, () => boundsOf(page, id));
       expect(during.some((d) => d.x !== s.x || d.y !== s.y), `${id} moved`).toBe(true);
       for (const d of during) expect(inside(d, p), `${id} ${edge.name} edge, mid-drag ${JSON.stringify(d)}`).toBe(true);
-      expect(after).toEqual(during[during.length - 1]);
+      expectNoJump(after, during[during.length - 1]);
     }
     await ed(page, (e, home: { id: string; type: string }[]) => void e.updateShapes(home.map((h) => ({ id: h.id, type: h.type, isLocked: false }))), home);
   }
@@ -542,7 +553,7 @@ test("resizing: a corner handle stops at the page's edge during the drag (free a
   ] as const) {
     const { during, after } = await resizeTo(corner, to);
     for (const d of during) expect(inside(d, p), `resize ${corner}, mid-drag ${JSON.stringify(d)}`).toBe(true);
-    expect(after).toEqual(during[during.length - 1]);
+    expectNoJump(after, during[during.length - 1]);
   }
   let r = await boundsOf(page, rect);
   // Reached the edges it was pushed against.
@@ -563,7 +574,7 @@ test("resizing: a corner handle stops at the page's edge during the drag (free a
     const { during, after } = await resizeTo("br", (f) => ({ x: f.x + 2000, y: f.y + 600 }));
     expect(during.some((d) => d.w > during[0].w - 0.5)).toBe(true);
     for (const d of during) expect(inside(d, p), `board resize, mid-drag ${JSON.stringify(d)}`).toBe(true);
-    expect(after).toEqual(during[during.length - 1]);
+    expectNoJump(after, during[during.length - 1]);
   }
 
   // A multi-selection.
@@ -575,7 +586,7 @@ test("resizing: a corner handle stops at the page's edge during the drag (free a
   {
     const { during, after } = await resizeTo("br", (f) => ({ x: f.x + 2000, y: f.y + 2000 }));
     for (const d of during) expect(inside(d, p), `multi resize, mid-drag ${JSON.stringify(d)}`).toBe(true);
-    expect(after).toEqual(during[during.length - 1]);
+    expectNoJump(after, during[during.length - 1]);
     r = during[during.length - 1];
     expect(Math.max(r.x + r.w - p.w, r.y + r.h - p.h)).toBeGreaterThan(-1); // it reached an edge
   }

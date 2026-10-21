@@ -4,25 +4,37 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-10-20)
+## Current state (2026-10-21)
 
-- Phase 2 is done and LIVE on `main` (gauntlet-home.vercel.app). Boardkit
-  is pinned in package.json (codeload tarball of a Boardkit `main` commit).
-- NOW: phase 2.5, the owner's fixed polish list, docs/PHASE-2.5.md. Items
-  are ticked there as they are done; continue from the first unticked one.
-  Phase 3 starts only when that list is done.
+- Phase 2.5 (docs/PHASE-2.5.md, the owner's fixed polish list): all 24
+  items done and committed. Summary in docs/HISTORY.md. "/" is the
+  whiteboard now; the old iframe canvas is deleted.
+- Boardkit v0.0.100 (whiteboard mode changes) is pinned in package.json.
+- NEXT is phase 3, but only once the owner has (1) tried the feel items
+  below and (2) answered about the old canvas's saved data.
+
+## Waiting for the owner
+
+- OK to delete the old canvas's saved data? localStorage keys, used only
+  by the deleted canvas (src/canvas/storage.ts, nothing else reads them):
+  `gauntlet:canvas` (its layout) and `gauntlet:scroll` (its frames'
+  scroll positions). NOT deleted until the owner says yes. They are still
+  inside every backup file.
+- Hand test (feel only): slim "+" buttons, hover-only list headers, the
+  "⋯" list menu, "‹ N / M ›" and the page list, one undo for the page.
 
 ## Half-done
 
-- Phase 2.5 (see docs/PHASE-2.5.md for exactly where it stopped).
+- Nothing.
 
 ## Broken / known wrong
 
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
   resize) and unsaved.e2e.ts:176 (Ctrl+D x10 then close; fails when two
   copies run at once, Ctrl+D sometimes not taken in a fresh tab).
-- If the window is 0 x 0 (seen in an embedded browser pane), the whiteboard
-  crashes with "camera.x: Expected a number, got NaN" (phase 2.5 item 8).
+- Linkkit's embed mode (`?embed=1`) has no e2e of its own any more (its
+  embed.e2e.ts only tested it inside the deleted canvas); realdata.e2e.ts
+  and Linkkit's readonly.e2e.ts still open maps that way.
 
 ## Deadlines
 
@@ -42,15 +54,23 @@ Finished work goes to docs/HISTORY.md.
   download/copy as PNG/PDF, shortcuts help, a trash panel (see HISTORY,
   "Whiteboard-level ideas"). Boardkit `npm audit` 7 high in the shadcn CLI:
   leave as is (owner).
+- tldraw internals this code relies on (why tldraw is pinned): the edge
+  wall (select tool states), the unsaved journal, undo skipping selection,
+  the page undo (`editor.history` stacks, `store.addHistoryInterceptor`),
+  the page list moved to "N / M" (pages.css pins Radix's popover).
 - Previews: /boardkit and /linkkit on a preview are the LIVE apps; the
   real-data test (`e2e/realdata.e2e.ts`, owner's backup file read at run
   time from Downloads) runs only on localhost.
-- Dev tips: after `node scripts/sync-boardkit.mjs` restart the dev server.
-  `local-e2e.mjs` joins its arguments into a shell line: use `file:line`.
-  Never pipe test commands without pipefail; use the real exit code.
+- Dev tips: after `node scripts/sync-boardkit.mjs` restart the dev server
+  (and a browser that had the page open may keep the old Boardkit module
+  cached: use a fresh profile). `local-e2e.mjs` joins its arguments into a
+  shell line: use `file:line`. Never pipe test commands without pipefail;
+  use the real exit code.
+- CI (GitHub Actions, gauntlet and Boardkit): lint, unit tests, build on
+  every push. The e2e stays local.
 - Vercel Authentication is off for previews; turn back on with
   `vercel project protection enable gauntlet-home --sso`.
 
 ## Next step
 
-- Continue docs/PHASE-2.5.md from the first unticked item.
+- Owner's answers above, then phase 3 (PROJECT.md section 6).
