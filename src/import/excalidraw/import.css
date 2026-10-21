@@ -1,0 +1,21 @@
+/* The notice after an Excalidraw paste or import: top middle, under the tools. */
+.gk-import-notice {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  width: min(520px, calc(100vw - 32px));
+  padding: 10px 12px;
+}
+.gk-import-notice__head { display: flex; align-items: flex-start; gap: 12px; justify-content: space-between; }
+.gk-import-notice__head button { width: 24px; height: 24px; font-size: 16px; line-height: 1; flex: none; }
+.gk-import-notice__list {
+  margin: 8px 0 0;
+  padding: 0 0 0 18px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: #b8b8c2;
+}
+.gk-import-notice__list li + li { margin-top: 2px; }

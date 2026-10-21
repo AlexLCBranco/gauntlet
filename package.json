@@ -12,6 +12,8 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@tldraw/tlschema": "5.5.2",
+    "@tldraw/utils": "5.5.2",
     "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/e8f694ea4354433042f16e5991f0ac0dd1786b7f",
     "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/88503b5aa9e14222b8cc926a183cb36401767f37",
     "react": "^19.3.1",

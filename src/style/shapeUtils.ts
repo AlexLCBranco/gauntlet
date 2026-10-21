@@ -62,6 +62,9 @@ function exactFill(meta: Record<string, unknown>, fill: TLDefaultFillStyle) {
 }
 
 const GeoWithMeta = GeoShapeUtil.configure({
+  // No halo in the page's colour round a shape's text (Excalidraw has
+  // none): on a dark fill it showed as a light rim round the letters.
+  showTextOutline: false,
   getCustomDisplayValues(_editor, shape, theme, mode) {
     const out: Record<string, unknown> = exact(shape.meta);
     const { fill, color } = shape.props;

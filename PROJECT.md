@@ -462,6 +462,36 @@ Changes to the plan, newest last. Each says what and why.
   a note's Stroke is its paper. Agent's choices: the dark shades' values
   (after Excalidraw's darkest), "Tint" fill of an exact colour drawn at
   35%.
+- 2026-10-21 — Excalidraw paste and import (owner, Excalidraw parity item
+  2). Pasting copied Excalidraw content, dropping a .excalidraw file on the
+  whiteboard and the main menu's "Import Excalidraw file…" all go through
+  our own converter (src/import/excalidraw/), not tldraw's. Kept: position,
+  size, rotation, stroke width (exact, in meta `strokePx`) and style
+  (Excalidraw's sketchy solid stays tldraw's sketchy "draw", roughness 0
+  is plain solid), corner roundness (Excalidraw's radius, `roundPx`),
+  opacity, exact colours (item 1), arrows' ends, heads and bindings (an
+  arrow with more than 3 points is drawn as one curve through its middle
+  point and listed), lines and freehand point by point, frames with their
+  children, groups (nested too), pictures with their crop and flip.
+  Fonts: hand-drawn (Virgil, Excalifont) -> tldraw's draw font, code
+  (Cascadia, Comic Shanns) -> mono, every other -> tldraw's sans; exact
+  font size and line height (`fontPx`, `lineHeight`), alignment, and
+  Excalidraw's own line breaks; where our font runs wider, a text box is
+  widened (its aligned edge kept) and a label's padding shrinks, so no
+  line breaks where Excalidraw's didn't and text stays inside its box.
+  Pictures become whiteboard assets before anything is drawn. Anything
+  else (embeds, an unreadable colour, a picture whose data isn't in the
+  paste) is a visible placeholder or listed; a notice after each paste or
+  import lists everything not converted exactly (it stays until closed;
+  with nothing to list it goes after 5 s). The drawing lands centred on
+  the pointer (else the view; a drop where it is dropped; the menu in the
+  view's middle), kept inside the page; one bigger than the page starts at
+  its edge and the page grows. One undo step. Shapes' labels have no halo
+  in the page's colour any more (Excalidraw has none; it showed as a light
+  rim on dark fills). Why today's paste lost pictures: tldraw's converter
+  creates each picture empty and fills it in afterwards, and the picture
+  on the page never picked up the late data, so it stayed on tldraw's
+  dotted "loading" box until a reload.
 
 IDEAS
 

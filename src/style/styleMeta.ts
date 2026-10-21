@@ -28,7 +28,7 @@ export interface StyleMeta {
   strokeHex?: string;
   fillHex?: string;
   textHex?: string;
-  fontPx?: number;
+  fontPx?: number | null;
 }
 
 const isStep = (v: unknown): v is FontStep => FONT_STEPS.some((s) => s.id === v);

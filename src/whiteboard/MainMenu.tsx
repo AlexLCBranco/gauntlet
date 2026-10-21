@@ -15,6 +15,28 @@ import {
   type Editor,
 } from "tldraw";
 
+import { IMPORT_EVENT, importExcalidrawFile } from "../import/excalidraw/importExcalidraw";
+
+/** Asks for a .excalidraw file and imports it in the middle of the view
+    (src/import/excalidraw/). */
+function pickExcalidrawFile(editor: Editor) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".excalidraw,.json,application/vnd.excalidraw+json,application/json";
+  input.dataset.testid = "import-excalidraw-input";
+  input.style.display = "none";
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    input.remove();
+    if (!file) return;
+    importExcalidrawFile(editor, file, editor.getViewportPageBounds().center).catch((err: Error) =>
+      window.dispatchEvent(new CustomEvent(IMPORT_EVENT, { detail: { source: "file", count: 0, notConverted: [err.message] } })),
+    );
+  });
+  document.body.append(input);
+  input.click();
+}
+
 /** Deletes everything on the current page, as one undo step. */
 export function clearPage(editor: Editor) {
   const ids = [...editor.getCurrentPageShapeIds()];
@@ -60,6 +82,7 @@ function ClearPageDialog({ onClose }: { onClose: () => void }) {
     "Reset the canvas", which asks first. */
 export function MainMenu() {
   const { addDialog } = useDialogs();
+  const editor = useEditor();
   return (
     <DefaultMainMenu>
       <TldrawUiMenuGroup id="gauntlet-page">
@@ -70,6 +93,12 @@ export function MainMenu() {
           onSelect={() => {
             addDialog({ component: ClearPageDialog });
           }}
+        />
+        <TldrawUiMenuItem
+          id="import-excalidraw"
+          label={"Import Excalidraw file…" as never}
+          icon="file"
+          onSelect={() => pickExcalidrawFile(editor)}
         />
         <TldrawUiMenuItem
           id="backup"

@@ -306,7 +306,8 @@ export function StylePanel() {
     editor.setStyleForNextShapes(style, c);
   };
 
-  const pickFont = (step: FontStep) => setMeta(editor, { fontStep: step }, TEXT_TYPES);
+  // A picked size replaces an imported exact one (fontPx, strokePx: null).
+  const pickFont = (step: FontStep) => setMeta(editor, { fontStep: step, fontPx: null }, TEXT_TYPES);
 
   // Changing a stroke width must not change the text size (tldraw ties
   // both to "size"): shapes without a picked font size keep the one they
@@ -319,6 +320,11 @@ export function StylePanel() {
         .filter((s) => TEXT_TYPES.has(s.type) && s.type !== "text" && s.meta.fontStep === undefined)
         .map((s) => ({ id: s.id, type: s.type, meta: { ...s.meta, fontStep: fontStepOf(s.meta, (s.props as { size: string }).size) } }) as TLShapePartial);
       if (pin.length > 0) editor.updateShapes(pin);
+      const exact = editor
+        .getSelectedShapes()
+        .filter((s) => s.meta.strokePx !== undefined && s.meta.strokePx !== null)
+        .map((s) => ({ id: s.id, type: s.type, meta: { ...s.meta, strokePx: null } }) as TLShapePartial);
+      if (exact.length > 0) editor.updateShapes(exact);
       if (editor.getSelectedShapeIds().length > 0) editor.setStyleForSelectedShapes(DefaultSizeStyle, v);
       editor.setStyleForNextShapes(DefaultSizeStyle, v);
     });

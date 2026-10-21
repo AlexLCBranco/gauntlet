@@ -25,6 +25,8 @@ import "tldraw/tldraw.css";
 
 import { BoardPicker, boardToolItem } from "../boards/AddBoard";
 import { BoardShapeUtil } from "../boards/BoardShape";
+import { ImportNotice } from "../import/excalidraw/ImportNotice";
+import { ourExcalidrawImport } from "../import/excalidraw/importExcalidraw";
 import { takeBackEmptyNewBoards } from "../boards/emptyNewBoards";
 import { BoardkitParts } from "../boards/BoardkitParts";
 import { LassoOverlay } from "../lasso/LassoOverlay";
@@ -199,6 +201,7 @@ function InFront() {
       <DragOutline />
       <BoardPicker />
       <MapPicker />
+      <ImportNotice />
     </>
   );
 }
@@ -251,6 +254,8 @@ function setUp(editor: Editor) {
   const stopTakeBack = takeBackEmptyNewBoards(editor);
   const stopTakeBackMaps = takeBackEmptyNewMaps(editor);
   const stopApps = appsTogether();
+  // Excalidraw pastes and .excalidraw files: our own import (src/import/excalidraw/).
+  ourExcalidrawImport(editor);
   return () => {
     stopApps();
     stopTakeBackMaps();
