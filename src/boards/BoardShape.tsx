@@ -207,7 +207,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     const vp = editor.getViewportScreenBounds();
     const at = slimPress ?? { x: p.x + vp.x, y: p.y + vp.y };
     slimPress = null;
-    let frame = requestAnimationFrame(function find(tries = 0) {
+    const find = (tries: number) => {
       const hit = document.elementFromPoint(at.x, at.y);
       const root = content.current?.querySelector('[data-boardkit-board][data-editing="true"]');
       if (!root) {
@@ -219,7 +219,8 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       const empty = !root.querySelector("section[data-list-id]");
       const title = root.contains(hit) ? hit.closest("[data-card-title], h2")?.querySelector<HTMLElement>("button") : null;
       (title ?? adds.find((b) => b.contains(hit)) ?? (empty ? adds.find((b) => b.dataset.add === "list") : null))?.click();
-    });
+    };
+    let frame = requestAnimationFrame(() => find(0));
     return () => cancelAnimationFrame(frame);
   }, [listEditing, editor]);
 

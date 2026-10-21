@@ -27,7 +27,7 @@ function changed(key: string) {
     cached = before;
     return;
   }
-  for (const reader of [...readers]) reader();
+  for (const reader of readers) reader();
 }
 
 let following = false;

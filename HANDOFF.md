@@ -18,10 +18,11 @@ Finished work goes to docs/HISTORY.md.
   (Ctrl+D + close-tab test back: duplicates through the editor), steps 1-3
   (map widgets, Map picker, List | Map | Both on linked boards). Linkkit
   v0.0.108 (`732f7a6`) and Boardkit v0.0.103 (`a13cccc`) pushed, pinned.
-  e2e/maps.e2e.ts 10 tests pass locally. Linkkit e2e 18 pass.
-- Next: step 4 (one undo across map edits: code in pageUndo.ts done, needs
-  its e2e), step 5 (map save banner: Linkkit's MapParts banner, needs e2e),
-  6 (realdata + perf), 7, END.
+  Linkkit e2e 18 pass.
+- Steps 4-5 done: map steps in the page's one undo (pageUndo.ts), the map
+  save banner (Linkkit's MapParts). e2e/maps.e2e.ts 12 tests pass.
+- Next: step 6 (realdata: 19 maps + linked boards in Map/Both; perf: a
+  150-box map), 7 (docs), END.
 
 ## Waiting for the owner
 

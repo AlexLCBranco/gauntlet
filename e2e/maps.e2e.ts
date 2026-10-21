@@ -288,12 +288,12 @@ test("box select and lasso pick the map like any other shape", async ({ page, co
   await openWhiteboard(page);
   const s = await placeMap(page, mapId);
   await page.keyboard.press("Escape");
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
   await page.keyboard.press("v");
   await drag(page, await pt(page, s.x - 20, s.y - 20), await pt(page, s.x + s.w + 20, s.y + s.h + 20));
   expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([s.id]);
 
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
   await page.keyboard.press("w");
   const loop = [
     await pt(page, s.x - 20, s.y - 20),
@@ -456,11 +456,11 @@ test("the switch shows on a board with a linked map only, on hover or selection;
 
   // A board without a linked map has none; nor has a map on its own.
   await page.keyboard.press("Escape");
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
   const other = await placeBoard(page, plain);
   await expect(page.locator(`[id="${other.id}"] [data-testid="view-switch"]`)).toHaveCount(0);
   await page.keyboard.press("Escape");
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
 
   // Not selected, pointer away: hidden. Pointer over it: shown.
   await page.mouse.move(5, 300);
@@ -489,7 +489,7 @@ test("the switch shows on a board with a linked map only, on hover or selection;
 
   // Per widget: a second widget of the same board keeps its own (List).
   await page.keyboard.press("Escape");
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
   const second = await placeBoard(page, boardId);
   expect(second.view).toBeUndefined();
   await expect(switchOf(page, second.id).locator('[data-view="list"]')).toHaveAttribute("aria-pressed", "true");
@@ -547,4 +547,140 @@ test("Both: an edit in the list shows in the map at once, and one in the map sho
     .toContain("List B");
   await expect.poll(() => names(page, mapId)).toContain("List B");
   await page.keyboard.press("Escape");
+});
+
+// ---- One undo for the page, maps included (step 4) ------------------------
+
+/** A box of the map widget `shapeId`, renamed in place by a double-click
+    (which also starts editing), then Escape until the map is no longer
+    edited. */
+async function renameMapBox(page: Page, shapeId: string, from: string, to: string) {
+  const b = await box(widget(page, shapeId).locator("[data-box-id]").filter({ hasText: new RegExp(`^${from}$`) }));
+  await page.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2);
+  const field = page.getByRole("textbox", { name: "Box name" });
+  await expect(field).toBeFocused();
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type(to);
+  await page.keyboard.press("Enter");
+  await expect(field).toHaveCount(0);
+  for (let i = 0; i < 4 && (await page.evaluate(() => (window as any).editor.getEditingShapeId())); i++) await page.keyboard.press("Escape");
+  await expect.poll(() => page.evaluate(() => (window as any).editor.getEditingShapeId())).toBeNull();
+}
+
+test("one undo for the page: a whiteboard move, a card edit and a map edit are undone and redone in exact order", async ({ page, context }) => {
+  const mapId = await seedMap(context, "Undo start");
+  const boardId = await seedBoard(context);
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openWhiteboard(page);
+
+  // A rectangle, a board and the map, apart.
+  await page.keyboard.press("2");
+  await drag(page, { x: 200, y: 150 }, { x: 300, y: 220 });
+  await page.keyboard.press("Escape");
+  const rectId = await page.evaluate(() => (window as any).editor.getCurrentPageShapes().find((s: any) => s.type === "geo").id as string);
+  const b = await placeBoard(page, boardId);
+  await page.keyboard.press("Escape");
+  const m = await placeMap(page, mapId);
+  // Out of the board's way: dragged down (an earlier step of its own).
+  const mc = await pt(page, m.x + m.w / 2, m.y + m.h / 2);
+  await drag(page, mc, { x: mc.x, y: Math.min(960, mc.y + b.h + 80) });
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => void (window as any).editor.selectNone());
+
+  const rec = () => page.evaluate((id) => JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!), boardId);
+  const r0 = await rec();
+  const cardId = r0.board.cardOrder[r0.board.listOrder[0]][0];
+  const oldTitle = r0.board.cards[cardId].title as string;
+  const rectAt = () => page.evaluate((id) => Math.round((window as any).editor.getShape(id).x), rectId);
+
+  // 1. Move the rectangle.
+  const x0 = await rectAt();
+  const rc = await pt(page, 250, 185);
+  await page.evaluate((id) => void (window as any).editor.select(id), rectId);
+  await drag(page, rc, { x: rc.x + 120, y: rc.y });
+  await page.keyboard.press("Escape");
+  const x1 = await rectAt();
+  expect(x1).toBeGreaterThan(x0);
+  // 2. Rename a card on the board.
+  const t = await box(page.locator(`[id="${b.id}"] article[data-card-id="${cardId}"] [data-card-title]`));
+  await page.mouse.dblclick(t.x + 10, t.y + t.height / 2);
+  await expect(page.locator('[data-boardkit-board][data-editing="true"]')).toHaveCount(1);
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("ZZ card renamed");
+  await page.keyboard.press("Enter");
+  for (let i = 0; i < 3 && (await page.locator('[data-boardkit-board][data-editing="true"]').count()) > 0; i++) await page.keyboard.press("Escape");
+  await expect.poll(async () => (await rec()).board.cards[cardId].title).toBe("ZZ card renamed");
+  // 3. Rename the map's box.
+  await renameMapBox(page, m.id, "Undo start", "ZZ box renamed");
+  await expect.poll(() => names(page, mapId)).toEqual(["ZZ box renamed"]);
+
+  const state = async () => ({ x: await rectAt(), card: (await rec()).board.cards[cardId].title, box: (await names(page, mapId))[0] });
+  const expectState = (x: number, card: string, boxName: string) => expect.poll(state).toEqual({ x, card, box: boxName });
+
+  // Undo: the map, then the card, then the move (keys and the button).
+  await page.keyboard.press("Control+z");
+  await expectState(x1, "ZZ card renamed", "Undo start");
+  await expect(widget(page, m.id).locator("[data-box-id]").filter({ hasText: /^Undo start$/ })).toBeVisible();
+  await page.keyboard.press("Control+z");
+  await expectState(x1, oldTitle, "Undo start");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expectState(x0, oldTitle, "Undo start");
+  // Redo in the same order: the move, the card, the map.
+  await page.keyboard.press("Control+y");
+  await expectState(x1, oldTitle, "Undo start");
+  await page.getByRole("button", { name: "Redo" }).click();
+  await expectState(x1, "ZZ card renamed", "Undo start");
+  await page.keyboard.press("Control+Shift+z");
+  await expectState(x1, "ZZ card renamed", "ZZ box renamed");
+  await expect(widget(page, m.id).locator("[data-box-id]").filter({ hasText: /^ZZ box renamed$/ })).toBeVisible();
+});
+
+// ---- Failed map saves (step 5) --------------------------------------------
+
+test("a map edit on the whiteboard that can't be saved (storage full) shows the banner and a Leave-site prompt; with room again, Try again saves it", async ({ page, context }) => {
+  const mapId = await seedMap(context, "Saved later");
+  await openWhiteboard(page);
+  const m = await placeMap(page, mapId);
+  await page.keyboard.press("Escape");
+  const filled = await page.evaluate(() => {
+    const keys: string[] = [];
+    for (const size of [1 << 20, 1 << 16, 1 << 10, 64, 1]) {
+      const chunk = "x".repeat(size);
+      for (;;) {
+        const key = `e2e:fill:${keys.length}`;
+        try {
+          localStorage.setItem(key, chunk);
+          keys.push(key);
+        } catch {
+          break;
+        }
+      }
+    }
+    return keys;
+  });
+  expect(filled.length).toBeGreaterThan(0);
+  const banner = page.locator("[data-map-save-failed]");
+  await expect(banner).toHaveCount(0);
+  // A much longer name: a write that replaces a key only needs room for
+  // what it adds.
+  const long = "ZZ saved later " + "x".repeat(400);
+  const b = await box(widget(page, m.id).locator("[data-box-id]").first());
+  await page.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2);
+  await expect(page.getByRole("textbox", { name: "Box name" })).toBeFocused();
+  await page.keyboard.press("Control+a");
+  await page.keyboard.insertText(long);
+  await page.keyboard.press("Enter");
+  await expect(banner).toBeVisible({ timeout: 5_000 });
+  await expect(banner).toContainText("Map changes aren't being saved");
+  expect(await names(page, mapId)).not.toContain(long);
+  // Closing the tab asks first.
+  const asked = new Promise<string>((resolve) => page.once("dialog", (d) => (resolve(d.type()), void d.dismiss())));
+  await page.close({ runBeforeUnload: true });
+  expect(await asked).toBe("beforeunload");
+  expect(page.isClosed()).toBe(false);
+  // Room again: Try again stores the edit, and the banner goes.
+  await page.evaluate((keys) => keys.forEach((k) => localStorage.removeItem(k)), filled);
+  await banner.getByRole("button", { name: "Try again" }).click();
+  await expect(banner).toHaveCount(0);
+  await expect.poll(() => names(page, mapId)).toEqual([long]);
 });

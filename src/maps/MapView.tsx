@@ -82,11 +82,21 @@ function useEditingEvents(editor: Editor, box: React.RefObject<HTMLDivElement | 
   }, [editing, editor, box]);
 }
 
-/** The latest double-click on the page (window pixels), for the editing it
-    starts. */
-let lastDoubleClick: { x: number; y: number; at: number } | null = null;
+/** The latest two presses on the page (window pixels): tldraw starts
+    editing on a double-click's second press, before the browser's own
+    "dblclick" event. */
+type Press = { x: number; y: number; at: number };
+let presses: [Press | null, Press | null] = [null, null];
 if (typeof window !== "undefined") {
-  window.addEventListener("dblclick", (e) => (lastDoubleClick = { x: e.clientX, y: e.clientY, at: performance.now() }), true);
+  window.addEventListener("pointerdown", (e) => (presses = [presses[1], { x: e.clientX, y: e.clientY, at: performance.now() }]), true);
+}
+
+/** Where the double-click just made was, if editing began with one. */
+function doubleClickJustMade(): Press | null {
+  const [first, second] = presses;
+  if (!first || !second || performance.now() - second.at > 800) return null;
+  const close = Math.hypot(second.x - first.x, second.y - first.y) < 8 && second.at - first.at < 600;
+  return close ? second : null;
 }
 
 /**
@@ -97,10 +107,10 @@ if (typeof window !== "undefined") {
 function useRenameWhereDoubleClicked(box: React.RefObject<HTMLDivElement | null>, editing: boolean) {
   useEffect(() => {
     if (!editing) return;
-    const at = lastDoubleClick && performance.now() - lastDoubleClick.at < 800 ? lastDoubleClick : null;
-    lastDoubleClick = null;
+    const at = doubleClickJustMade();
+    presses = [null, null];
     if (!at) return;
-    let frame = requestAnimationFrame(function find(tries = 0) {
+    const find = (tries: number) => {
       const ready = box.current?.querySelector('[data-linkkit-map][data-editing="true"] [data-ready]');
       if (!ready) {
         if (tries < 30) frame = requestAnimationFrame(() => find(tries + 1));
@@ -109,7 +119,8 @@ function useRenameWhereDoubleClicked(box: React.RefObject<HTMLDivElement | null>
       const hit = document.elementFromPoint(at.x, at.y);
       if (!hit || !box.current?.contains(hit) || !hit.closest("[data-box-id], [data-link-id]")) return;
       hit.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y }));
-    });
+    };
+    let frame = requestAnimationFrame(() => find(0));
     return () => cancelAnimationFrame(frame);
   }, [editing, box]);
 }
