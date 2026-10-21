@@ -173,3 +173,20 @@ test("the home page is the whiteboard and keeps backups by itself; the old /whit
   await expect(tab.getByRole("list", { name: "Automatic backups" }).getByRole("listitem")).toHaveCount(2);
   await tab.close();
 });
+
+test("opening the whiteboard deletes the old canvas's saved data (gauntlet:canvas, gauntlet:scroll) and nothing else", async ({ page, context }) => {
+  const id = await seedBoard(context);
+  await page.goto("/backup/");
+  await page.evaluate(() => {
+    localStorage.setItem("gauntlet:canvas", JSON.stringify({ pages: [] }));
+    localStorage.setItem("gauntlet:scroll", "{}");
+    localStorage.setItem("gauntlet:something-else", "kept");
+  });
+  const others = await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([k]) => !k.startsWith("gauntlet:canvas") && k !== "gauntlet:scroll")));
+  await page.goto("/");
+  await page.waitForFunction(() => "editor" in window);
+  expect(await page.evaluate(() => [localStorage.getItem("gauntlet:canvas"), localStorage.getItem("gauntlet:scroll")])).toEqual([null, null]);
+  const now = await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)));
+  for (const [k, v] of Object.entries(others)) expect(now[k], k).toBe(v);
+  expect(now[`boardkit:board:${id}`]).toBeDefined();
+});

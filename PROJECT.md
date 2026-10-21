@@ -366,6 +366,10 @@ Changes to the plan, newest last. Each says what and why.
   board). Redo, or undoing the delete, puts the same board back, same id.
   A board with any content is never deleted this way: the widget goes,
   the board stays in Boardkit.
+- 2026-10-21 — Owner: delete the old canvas's saved data. Opening the
+  whiteboard removes localStorage `gauntlet:canvas` and `gauntlet:scroll`
+  if present (`src/whiteboard/oldCanvasKeys.ts`). Backups made before
+  still hold them.
 
 IDEAS
 

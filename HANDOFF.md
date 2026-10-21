@@ -14,16 +14,11 @@ Finished work goes to docs/HISTORY.md.
   112 + 1 failed (a float-exact test, fixed; fullpage 13/13 after),
   Linkkit 18; live (`1a1e5c3`) gauntlet 108 passed, 5 skipped (real data:
   local only), Linkkit 18; CI green in gauntlet and Boardkit.
-- NEXT is phase 3, but only once the owner has (1) tried the feel items
-  below and (2) answered about the old canvas's saved data.
+- NEXT is phase 3, once the owner has tried the feel items below. The old
+  canvas's saved data is removed on opening the whiteboard (owner's OK).
 
 ## Waiting for the owner
 
-- OK to delete the old canvas's saved data? localStorage keys, used only
-  by the deleted canvas (src/canvas/storage.ts, nothing else reads them):
-  `gauntlet:canvas` (its layout) and `gauntlet:scroll` (its frames'
-  scroll positions). NOT deleted until the owner says yes. They are still
-  inside every backup file.
 - Hand test (feel only): slim "+" buttons, hover-only list headers, the
   "⋯" list menu, "‹ N / M ›" and the page list, one undo for the page.
 
@@ -77,4 +72,4 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- Owner's answers above, then phase 3 (PROJECT.md section 6).
+- The owner's hand test, then phase 3 (PROJECT.md section 6).
