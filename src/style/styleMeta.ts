@@ -5,6 +5,10 @@
 //   both to its one "size"), with two sizes smaller than tldraw's smallest.
 // - fillColor: the background colour of a shape, apart from its outline
 //   colour (tldraw fills with the outline's colour).
+// - strokeHex, fillHex, textHex: exact colours (colors.ts).
+// - fontPx, lineHeight, strokePx, roundPx, labelPad: exact sizes, set by an
+//   Excalidraw import (src/import/excalidraw/) so its drawing keeps its
+//   look; fontPx wins over fontStep until a font size is picked.
 
 export type FontStep = "xxs" | "xs" | "s" | "m" | "l" | "xl";
 
@@ -21,12 +25,24 @@ export const FONT_STEPS: readonly { id: FontStep; label: string; px: number }[] 
 export interface StyleMeta {
   fontStep?: FontStep;
   fillColor?: string;
+  strokeHex?: string;
+  fillHex?: string;
+  textHex?: string;
+  fontPx?: number;
 }
 
 const isStep = (v: unknown): v is FontStep => FONT_STEPS.some((s) => s.id === v);
 
+/** A number of zero or more kept in meta, or null. */
+export function metaNumber(meta: Record<string, unknown> | undefined, key: string): number | null {
+  const v = meta?.[key];
+  return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
+}
+
 /** The font size (px) a shape's meta asks for, or null to keep tldraw's. */
 export function metaFontPx(meta: Record<string, unknown> | undefined): number | null {
+  const exact = metaNumber(meta, "fontPx");
+  if (exact) return exact;
   const step = meta?.fontStep;
   return isStep(step) ? FONT_STEPS.find((s) => s.id === step)!.px : null;
 }

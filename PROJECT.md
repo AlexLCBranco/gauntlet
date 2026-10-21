@@ -442,6 +442,26 @@ Changes to the plan, newest last. Each says what and why.
   `data-control`). A click on plain board space still just selects the
   board. Map widgets have no such controls of their own (a box's buttons
   show only while the map is edited).
+- 2026-10-21 — Excalidraw parity (owner): what still kept the owner on
+  Excalidraw, done before the rest of the queue. Item 0, no leftover
+  windows: every test and script runs headless unless asked
+  (`HEADED=1` or `--headed`) and closes what it opens, also on failure or
+  Ctrl+C; `scripts/local-e2e.mjs` checks after each run that no test
+  browser is left (`scripts/leftovers.mjs`) and stops any it finds.
+- 2026-10-21 — Dark and custom colours (owner, Excalidraw parity item 1).
+  Stroke, Background and Text colour each get, after tldraw's colours
+  (all kept): black, dark grey, dark red, brown, olive, dark green, dark
+  blue, dark purple, then the last 5 custom colours used (one list for
+  all three rows, kept in this browser: localStorage
+  `gauntlet:recent-colors`), then a custom colour picker (colour area, hue,
+  hex field; applied on letting go or Enter, one undo step each). These
+  are exact colours, the same in dark and light mode: kept as hex in the
+  shape's meta (`strokeHex`, `fillHex`, `textHex`, src/style/colors.ts)
+  and drawn through tldraw's display values; picking a tldraw colour
+  clears the exact one. A text's one colour is its Stroke (tldraw's way);
+  a note's Stroke is its paper. Agent's choices: the dark shades' values
+  (after Excalidraw's darkest), "Tint" fill of an exact colour drawn at
+  35%.
 
 IDEAS
 

@@ -35,3 +35,37 @@
 }
 .gk-text-choice { font-size: 12px; font-weight: 600; }
 .gk-slider { width: 100%; accent-color: #a8a5ff; }
+
+/* Colour rows: tldraw's colours, then the fixed dark ones, the recent
+   custom ones and the custom picker. */
+.gk-section--colors .gk-swatches + .gk-swatches { margin-top: 4px; padding-top: 4px; border-top: 1px solid #3a3946; }
+.gk-swatch--custom { background: conic-gradient(#f44, #fd4, #4f4, #4ff, #44f, #f4f, #f44); }
+.gk-picker { margin-top: 6px; display: grid; gap: 6px; }
+.gk-picker-area { position: relative; height: 96px; border-radius: 4px; cursor: crosshair; touch-action: none; }
+.gk-picker-knob {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgb(0 0 0 / 0.5);
+  pointer-events: none;
+}
+.gk-picker-hue {
+  width: 100%;
+  height: 10px;
+  appearance: none;
+  border-radius: 5px;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+.gk-picker-row { display: flex; align-items: center; gap: 6px; }
+.gk-picker-hex {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  font: 12px ui-monospace, monospace;
+  color: inherit;
+  background: #232329;
+  border: 1px solid #3a3946;
+  border-radius: 4px;
+}

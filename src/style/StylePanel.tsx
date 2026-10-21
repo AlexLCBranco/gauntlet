@@ -17,6 +17,8 @@ import {
   type TLShapePartial,
 } from "tldraw";
 
+import { ColorRow } from "./ColorRow";
+import { metaHex, normalizeHex, type ColorKey } from "./colors";
 import { TEXT_TYPES } from "./shapeUtils";
 import { FONT_STEPS, fontStepOf, shared, type FontStep, type StyleMeta } from "./styleMeta";
 import "./style-panel.css";
@@ -42,9 +44,16 @@ export function nextMeta(editor: Editor): StyleMeta {
   return (editor.getInstanceState().meta.next ?? {}) as StyleMeta;
 }
 
+/** meta with patch applied; an undefined value removes its key. */
+function merged(meta: object, patch: object): Record<string, never> {
+  const out: Record<string, unknown> = { ...meta, ...patch };
+  for (const [k, v] of Object.entries(out)) if (v === undefined) delete out[k];
+  return out as Record<string, never>;
+}
+
 function setNextMeta(editor: Editor, patch: StyleMeta) {
   const meta = editor.getInstanceState().meta;
-  editor.updateInstanceState({ meta: { ...meta, next: { ...nextMeta(editor), ...patch } } });
+  editor.updateInstanceState({ meta: { ...meta, next: merged(nextMeta(editor), patch) } });
 }
 
 /** Sets a tldraw style on the selection and for the next shapes, as one
@@ -65,10 +74,44 @@ function setMeta(editor: Editor, patch: StyleMeta, types: Set<string>, alsoProps
     const updates: TLShapePartial[] = editor
       .getSelectedShapes()
       .filter((s) => types.has(s.type))
-      .map((s) => ({ id: s.id, type: s.type, meta: { ...s.meta, ...patch }, ...(alsoProps ? { props: alsoProps(s) } : {}) }) as TLShapePartial);
+      .map((s) => ({ id: s.id, type: s.type, meta: merged(s.meta, patch), ...(alsoProps ? { props: alsoProps(s) } : {}) }) as TLShapePartial);
     if (updates.length > 0) editor.updateShapes(updates);
     setNextMeta(editor, patch);
   });
+}
+
+/** Types each colour row colours. */
+const COLOR_TYPES: Record<ColorKey, Set<string>> = {
+  strokeHex: new Set(["geo", "text", "note", "arrow", "draw", "line"]),
+  fillHex: new Set(["geo"]),
+  textHex: new Set(["geo", "note", "arrow"]),
+};
+
+/** Picks a colour in one of the three rows, as one undo step: an exact
+    "#rrggbb" goes in meta (colors.ts); a tldraw colour goes in its style
+    (`tldraw()`) and drops the exact one. */
+function setColor(editor: Editor, key: ColorKey, picked: string, tldraw: () => void, alsoProps?: (s: TLShape) => object) {
+  const hex = normalizeHex(picked);
+  editor.markHistoryStoppingPoint("set colour");
+  editor.run(() => {
+    if (!hex) tldraw();
+    const updates: TLShapePartial[] = editor
+      .getSelectedShapes()
+      .filter((s) => COLOR_TYPES[key].has(s.type))
+      // tldraw merges a meta update into the old meta: null (not a missing
+      // key) is what clears an exact colour.
+      .map((s) => ({ id: s.id, type: s.type, meta: { ...s.meta, [key]: hex }, ...(hex && alsoProps ? { props: alsoProps(s) } : {}) }) as TLShapePartial);
+    if (updates.length > 0) editor.updateShapes(updates);
+    setNextMeta(editor, { [key]: hex ?? undefined });
+  });
+}
+
+/** A shape's colour in a row: its exact one, else tldraw's. */
+function colorIn(s: TLShape, key: ColorKey): string | undefined {
+  const props = s.props as { color?: string; labelColor?: string; fill?: string };
+  if (key === "fillHex") return props.fill === "none" ? "transparent" : (metaHex(s.meta, key) ?? (s.meta.fillColor as string) ?? props.color);
+  const exact = metaHex(s.meta, key) ?? (s.type === "text" && key === "strokeHex" ? metaHex(s.meta, "textHex") : null);
+  return exact ?? (key === "textHex" ? props.labelColor : props.color);
 }
 
 /** New shapes drawn with a tool get the meta-kept next styles. Returns a
@@ -80,6 +123,9 @@ export function applyNextMeta(editor: Editor): () => void {
     const meta: Record<string, unknown> = { ...shape.meta };
     if (next.fontStep && TEXT_TYPES.has(shape.type) && meta.fontStep === undefined) meta.fontStep = next.fontStep;
     if (next.fillColor && shape.type === "geo" && meta.fillColor === undefined) meta.fillColor = next.fillColor;
+    for (const key of ["strokeHex", "fillHex", "textHex"] as const) {
+      if (next[key] && COLOR_TYPES[key].has(shape.type) && meta[key] === undefined) meta[key] = next[key];
+    }
     return { ...shape, meta } as typeof shape;
   });
 }
@@ -92,6 +138,15 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
     <fieldset className="gk-section">
       <legend>{title}</legend>
       <div className="gk-row">{children}</div>
+    </fieldset>
+  );
+}
+
+function ColorSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <fieldset className="gk-section gk-section--colors">
+      <legend>{title}</legend>
+      {children}
     </fieldset>
   );
 }
@@ -124,48 +179,6 @@ function Choice<T extends string>({
     >
       {children}
     </button>
-  );
-}
-
-function useThemeColor() {
-  const editor = useEditor();
-  return useValue(
-    "theme colours",
-    () => {
-      const colors = editor.getCurrentTheme().colors[editor.getColorMode()] as unknown as Record<string, { solid: string }>;
-      return (name: string) => colors[name]?.solid ?? name;
-    },
-    [editor],
-  );
-}
-
-const COLORS = DefaultColorStyle.values;
-
-function Swatches({
-  name,
-  current,
-  onPick,
-  transparent,
-}: {
-  name: string;
-  current: Tri<string>;
-  onPick: (c: string) => void;
-  transparent?: boolean;
-}) {
-  const color = useThemeColor();
-  return (
-    <div className="gk-swatches" role="radiogroup" aria-label={name}>
-      {transparent && (
-        <Choice label={`${name}: transparent`} value="transparent" current={current} onPick={onPick} testId={`${name}-transparent`}>
-          <span className="gk-swatch gk-swatch--none" />
-        </Choice>
-      )}
-      {COLORS.map((c) => (
-        <Choice key={c} label={`${name}: ${c}`} value={c} current={current} onPick={onPick} testId={`${name}-${c}`}>
-          <span className="gk-swatch" style={{ background: color(c) }} />
-        </Choice>
-      ))}
-    </div>
   );
 }
 
@@ -222,14 +235,14 @@ export function StylePanel() {
       if (shapes.length === 0) return null;
       const types = new Set(shapes.map((s) => s.type));
       const next = nextMeta(editor);
-      const geos = shapes.filter((s) => s.type === "geo");
       const texty = shapes.filter((s) => TEXT_TYPES.has(s.type));
+      const row = (key: ColorKey) => shared(shapes.filter((s) => COLOR_TYPES[key].has(s.type)).map((s) => colorIn(s, key)));
       return {
         types: [...types],
         count: shapes.length,
-        fillColor: shapes.length
-          ? shared(geos.map((s) => (s.props as { fill: string }).fill === "none" ? "transparent" : ((s.meta.fillColor as string) ?? (s.props as { color: string }).color)))
-          : next.fillColor,
+        strokeColor: row("strokeHex"),
+        fillColor: row("fillHex"),
+        textColor: row("textHex"),
         fontStep: shapes.length
           ? shared(texty.map((s) => fontStepOf(s.meta, (s.props as { size: string }).size)))
           : next.fontStep,
@@ -269,12 +282,28 @@ export function StylePanel() {
   const geoTypes = new Set(["geo"]);
   const selection = view.count > 0;
 
+  const filled = (s: TLShape) => ((s.props as { fill: string }).fill === "none" || (s.props as { fill: string }).fill === "semi" ? { fill: "fill" } : {});
   const pickBackground = (c: string) => {
     if (c === "transparent") return setStyle(editor, DefaultFillStyle, "none");
-    setMeta(editor, { fillColor: c }, geoTypes, (s) =>
-      (s.props as { fill: string }).fill === "none" || (s.props as { fill: string }).fill === "semi" ? { fill: "fill" } : {},
+    setColor(
+      editor,
+      "fillHex",
+      c,
+      () => {
+        const updates = editor
+          .getSelectedShapes()
+          .filter((s) => geoTypes.has(s.type))
+          .map((s) => ({ id: s.id, type: s.type, meta: { ...s.meta, fillColor: c }, props: filled(s) }) as TLShapePartial);
+        if (updates.length > 0) editor.updateShapes(updates);
+        setNextMeta(editor, { fillColor: c });
+      },
+      filled,
     );
     if (fill === "none" || fill === "semi" || fill === undefined) editor.setStyleForNextShapes(DefaultFillStyle, "fill");
+  };
+  const tldrawStyle = (style: StyleProp<string>, c: string) => () => {
+    if (editor.getSelectedShapeIds().length > 0) editor.setStyleForSelectedShapes(style, c);
+    editor.setStyleForNextShapes(style, c);
   };
 
   const pickFont = (step: FontStep) => setMeta(editor, { fontStep: step }, TEXT_TYPES);
@@ -304,14 +333,14 @@ export function StylePanel() {
   return (
     <div ref={ref} className="gk-style-panel gauntlet-island" data-testid="style-panel" onPointerDown={(e) => e.stopPropagation()}>
       {stroke !== undefined && (
-        <Section title="Stroke">
-          <Swatches name="stroke" current={stroke} onPick={(c) => setStyle(editor, DefaultColorStyle, c as never)} />
-        </Section>
+        <ColorSection title="Stroke">
+          <ColorRow name="stroke" current={view.strokeColor} onPick={(c) => setColor(editor, "strokeHex", c, tldrawStyle(DefaultColorStyle as StyleProp<string>, c))} />
+        </ColorSection>
       )}
       {types.has("geo") && (
-        <Section title="Background">
-          <Swatches name="background" current={view.fillColor} onPick={pickBackground} transparent />
-        </Section>
+        <ColorSection title="Background">
+          <ColorRow name="background" current={view.fillColor} onPick={pickBackground} transparent />
+        </ColorSection>
       )}
       {types.has("geo") && fill !== undefined && fill !== "none" && (
         <Section title="Fill">
@@ -323,9 +352,9 @@ export function StylePanel() {
         </Section>
       )}
       {labelColor !== undefined && hasText && (
-        <Section title="Text colour">
-          <Swatches name="text" current={labelColor} onPick={(c) => setStyle(editor, LabelColorStyle, c)} />
-        </Section>
+        <ColorSection title="Text colour">
+          <ColorRow name="text" current={view.textColor} onPick={(c) => setColor(editor, "textHex", c, tldrawStyle(LabelColorStyle, c))} />
+        </ColorSection>
       )}
       {hasStroke && size !== undefined && (
         <Section title="Stroke width">
