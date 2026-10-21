@@ -25,6 +25,7 @@ import "tldraw/tldraw.css";
 
 import { BoardPicker, boardToolItem } from "../boards/AddBoard";
 import { BoardShapeUtil } from "../boards/BoardShape";
+import { takeBackEmptyNewBoards } from "../boards/emptyNewBoards";
 import { BoardkitParts } from "../boards/BoardkitParts";
 import { LassoOverlay } from "../lasso/LassoOverlay";
 import { LassoTool } from "../lasso/LassoTool";
@@ -41,6 +42,7 @@ import { applyNextMeta, StylePanel } from "../style/StylePanel";
 import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
 import { toolbarItems } from "./toolbarFit";
+import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
 import { undoSkipsSelection } from "./undoSkipsSelection";
 import { unsavedJournal } from "./unsavedJournal";
 import { ZoomUndo } from "./ZoomUndo";
@@ -124,8 +126,10 @@ const overrides: TLUiOverrides = {
       if (actions[id]) actions[id] = { ...actions[id], onSelect: () => void editor.zoomIn(at(cursor)) };
     for (const [id, cursor] of [["zoom-out", false], ["zoom-out-on-cursor", true]] as const)
       if (actions[id]) actions[id] = { ...actions[id], onSelect: () => void editor.zoomOut(at(cursor)) };
-    // Ctrl+Y redoes too, as in Excalidraw on Windows.
-    if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y" };
+    // One undo for the whole page, drawing and card edits in order
+    // (pageUndo.ts). Ctrl+Y redoes too, as in Excalidraw on Windows.
+    if (actions.undo) actions.undo = { ...actions.undo, onSelect: () => pageUndo(editor) };
+    if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y", onSelect: () => pageRedo(editor) };
     return actions;
   },
   translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board" } },
@@ -235,7 +239,11 @@ function setUp(editor: Editor) {
   const stopNext = applyNextMeta(editor);
   const stopFilled = keepFilled(editor);
   const stopUndo = undoSkipsSelection(editor);
+  const stopPageHistory = keepPageHistory(editor);
+  const stopTakeBack = takeBackEmptyNewBoards(editor);
   return () => {
+    stopTakeBack();
+    stopPageHistory();
     stopUndo();
     stopJournal();
     stopPage();

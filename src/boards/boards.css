@@ -41,11 +41,21 @@
 
 .gb-picker button:hover { background: rgb(255 255 255 / 0.08); }
 
-/* The board's name, above its lists (from Boardkit's board list). */
+/* The board's name, above its lists (from Boardkit's board list). Shown
+   only while the pointer is over the board or it is selected (owner,
+   2026-10-20; in phase 4 it becomes the board's handle). Its room is kept,
+   so the lists never jump. */
 .gb-name {
   padding: 0 4px 6px;
   color: #a3abb9;
   font: 600 14px/1.3 system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity 0.14s;
+}
+.gb-scaled[data-active] .gb-name,
+.gb-scaled:has([data-boardkit-board][data-pointer-over]) .gb-name,
+.gb-name.gb-name-field {
+  opacity: 1;
 }
 
 /* "+ New board", first in the Board picker. */

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { atom, useEditor, useValue, type TLShapeId } from "tldraw";
 
+import { pageUndo } from "../whiteboard/pageUndo";
 import { renameWhiteboardBoard } from "./boardkit";
 import { registryBoards, registryChanged, useRegistry } from "./registry";
 
@@ -53,7 +54,7 @@ function NameField({ shapeId, boardId, name, shown }: { shapeId: TLShapeId; boar
       else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z" && el.value === name) {
         e.preventDefault();
         finish(false);
-        editor.undo();
+        pageUndo(editor);
       }
     };
     const onPressElsewhere = (e: PointerEvent) => {

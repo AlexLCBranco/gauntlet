@@ -218,7 +218,9 @@ test("made with the view at the page's corner, it stays inside the page", async 
   }
 });
 
-test("one Ctrl+Z takes it off the whiteboard (right away, or after naming); the board stays in Boardkit; Ctrl+Y puts it back", async ({ page }) => {
+test("one Ctrl+Z takes it off the whiteboard (right away, or after naming); still empty and unnamed it leaves Boardkit too, named it stays; Ctrl+Y puts it back", async ({ page, context }) => {
+  // Another board in the list: Boardkit never deletes its last board.
+  await seedBoard(context);
   await openWhiteboard(page);
 
   // Right away, the name field still open.
@@ -227,9 +229,15 @@ test("one Ctrl+Z takes it off the whiteboard (right away, or after naming); the 
   await page.keyboard.press("Control+z");
   await expect.poll(async () => (await shapes(page)).length).toBe(0);
   await expect(field(page)).toHaveCount(0);
-  expect(await nameOf(page, a.boardId)).toBe("Untitled"); // still in Boardkit's list
+  // Empty and never renamed: gone from Boardkit too (owner, 2026-10-20).
+  await expect.poll(() => nameOf(page, a.boardId)).toBeUndefined();
+  expect(await page.evaluate((id) => localStorage.getItem(`boardkit:board:${id}`), a.boardId)).toBeNull();
   await page.keyboard.press("Control+y");
   await expect.poll(async () => (await shapes(page)).map((s) => s.boardId)).toEqual([a.boardId]);
+  // The same board again, same id, shown (not "isn't in Boardkit").
+  expect(await nameOf(page, a.boardId)).toBe("Untitled");
+  await expect(page.locator('[data-boardkit-board][data-status="missing"]')).toHaveCount(0);
+  await expect(page.locator('.tl-html-container [data-boardkit-board] [data-add="list"]')).toHaveCount(1);
 
   // After naming it.
   const b = await newBoard(page);
@@ -263,4 +271,58 @@ test("two in a row are two boards, and both survive a reload", async ({ page }) 
   await expect(page.locator(".gb-name", { hasText: "First" })).toBeVisible();
   await expect(page.locator(".gb-name", { hasText: "Second" })).toBeVisible();
   expect(await registry(page)).toEqual(reg);
+});
+
+test("deleting the widget of an empty, never renamed new board deletes the board from Boardkit (Ctrl+Z brings both back); a board with content, or renamed, stays in Boardkit", async ({ page, context }) => {
+  await seedBoard(context);
+  await openWhiteboard(page);
+  const del = async (shapeId: string) => {
+    await page.evaluate((id) => {
+      const e = (window as any).editor;
+      e.setEditingShape(null);
+      e.select(id);
+      e.focus();
+    }, shapeId);
+    await page.keyboard.press("Delete");
+    await expect.poll(async () => (await shapes(page)).some((s) => s.id === shapeId)).toBe(false);
+  };
+
+  // Empty: the widget deleted takes the board with it; Ctrl+Z brings both.
+  const a = await newBoard(page);
+  await page.keyboard.press("Enter");
+  await del(a.id);
+  await expect.poll(() => nameOf(page, a.boardId)).toBeUndefined();
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => nameOf(page, a.boardId)).toBe("Untitled");
+  await expect.poll(async () => (await shapes(page)).map((s) => s.boardId)).toEqual([a.boardId]);
+
+  // With a list: the widget goes, the board stays, list and all.
+  const add = page.locator('.tl-html-container [data-boardkit-board] [data-add="list"]');
+  const b = (await add.boundingBox())!;
+  await page.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2);
+  await page.keyboard.type("ZZ keeps it");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await expect
+    .poll(() => page.evaluate((id) => (JSON.parse(localStorage.getItem(`boardkit:board:${id}`)!).board.listOrder as string[]).length, a.boardId))
+    .toBe(1);
+  await del(a.id);
+  await page.waitForTimeout(300);
+  expect(await nameOf(page, a.boardId)).toBe("Untitled");
+  expect(await page.evaluate((id) => localStorage.getItem(`boardkit:board:${id}`), a.boardId)).not.toBeNull();
+
+  // Renamed, still empty: stays too.
+  const c = await newBoard(page);
+  await page.keyboard.type("Named");
+  await page.keyboard.press("Enter");
+  await del(c.id);
+  await page.waitForTimeout(300);
+  expect(await nameOf(page, c.boardId)).toBe("Named");
+  // /boardkit lists the two that stay, not the one taken back earlier.
+  const bk = await context.newPage();
+  await bk.goto("/boardkit/");
+  await bk.getByRole("button", { name: "Switch board" }).click();
+  await expect(bk.getByRole("menuitem", { name: "Named" })).toBeVisible();
+  await bk.close();
 });

@@ -6,6 +6,7 @@ import {
   resizeBox,
   useEditor,
   useIsEditing,
+  useValue,
   type Editor,
   type RecordProps,
   type TLResizeInfo,
@@ -75,6 +76,7 @@ export class BoardShapeUtil extends BaseBoxShapeUtil<BoardShape> {
 function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   const editor = useEditor();
   const editing = useIsEditing(shape.id);
+  const selected = useValue("board selected", () => editor.getSelectedShapeIds().includes(shape.id), [editor, shape.id]);
   const content = useRef<HTMLDivElement>(null);
   const { boardId, scale } = shape.props;
 
@@ -106,8 +108,10 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   }, [editor, shape.id]);
 
   // Editing began with a double-click on a card or list title: rename it,
-  // as a click on a title does in Boardkit. On "+ Add a card" or "+ Add a
-  // list" (anywhere, on a board with no lists yet): open it.
+  // as a click on a title does in Boardkit. On an add button ("+ Add a
+  // card", "+ Add a list" or their slim "+"; anywhere, on a board with no
+  // lists yet): open it. Found by Boardkit's fixed markers (`data-add`),
+  // never by their text.
   useEffect(() => {
     if (!editing) return;
     const p = editor.inputs.getCurrentScreenPoint();
@@ -121,13 +125,36 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         return;
       }
       if (!hit || !content.current?.contains(hit)) return;
-      const adds = [...root.querySelectorAll<HTMLElement>("button")].filter((b) => b.textContent?.startsWith("+ Add a "));
+      const adds = [...root.querySelectorAll<HTMLElement>("[data-add]")];
       const empty = !root.querySelector("section[data-list-id]");
       const title = root.contains(hit) ? hit.closest("[data-card-title], h2")?.querySelector<HTMLElement>("button") : null;
-      (title ?? adds.find((b) => b.contains(hit)) ?? (empty ? adds[0] : null))?.click();
+      (title ?? adds.find((b) => b.contains(hit)) ?? (empty ? adds.find((b) => b.dataset.add === "list") : null))?.click();
     });
     return () => cancelAnimationFrame(frame);
   }, [editing, editor]);
+
+  // Not editing, the board ignores the pointer (it is moved as a whole), and
+  // its slim "+" buttons sit just outside its box. A press on one that is
+  // showing starts editing right there, and the effect above opens it.
+  useEffect(() => {
+    if (editing) return;
+    const el = content.current;
+    if (!el) return;
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0 || editor.getCurrentToolId() !== "select") return;
+      const hit = [...el.querySelectorAll<HTMLElement>("[data-add][data-slim]")].find((b) => {
+        if (Number(getComputedStyle(b).opacity) < 0.5) return false;
+        const r = b.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      });
+      if (!hit) return;
+      editor.markEventAsHandled(e);
+      editor.select(shape.id);
+      editor.setEditingShape(shape.id);
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [editing, editor, shape.id]);
 
   // While editing, what happens inside the board is Boardkit's, not the
   // whiteboard's. Keys: Delete must not delete the board, arrows must not
@@ -180,6 +207,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       <div
         ref={content}
         className="gb-scaled"
+        data-active={selected || editing ? "" : undefined}
         style={{ transform: `scale(${scale || 1})`, visibility: scale ? "visible" : "hidden" }}
         {...portalEventsHandled(editor)}
         // A right-click inside the board being edited opens Boardkit's menu
@@ -189,7 +217,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         }}
       >
         <BoardName shapeId={shape.id} boardId={boardId} shown={scale > 0} />
-        <WhiteboardBoard boardId={boardId} editing={editing} />
+        <WhiteboardBoard boardId={boardId} editing={editing} active={selected || editing} />
       </div>
     </HTMLContainer>
   );

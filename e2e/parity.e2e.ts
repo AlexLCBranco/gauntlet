@@ -54,6 +54,29 @@ const listEl = (page: Page, listId: string) => editingEl(page).locator(`section[
 const cardEl = (page: Page, cardId: string) => editingEl(page).locator(`[data-card-id="${cardId}"]`);
 const header = (page: Page, listId: string) => listEl(page, listId).locator("[data-list-header]");
 
+/** Points at `l` (near its left edge, halfway down), as a person would
+    before using what shows only on hover (phase 2.5). */
+async function pointAt(l: Locator) {
+  const b = (await l.boundingBox())!;
+  await l.page().mouse.move(b.x + 6, b.y + b.height / 2, { steps: 2 });
+}
+/** A list header's control: on the whiteboard they show only while the
+    pointer is over that header (phase 2.5), so it points there first. */
+async function headerButton(page: Page, listId: string, name: string) {
+  await pointAt(header(page, listId));
+  return header(page, listId).getByRole("button", { name, exact: true });
+}
+/** The list's slim "+" (Add a card), shown while the pointer is over the list. */
+async function addCardButton(page: Page, listId: string) {
+  await pointAt(listEl(page, listId));
+  return listEl(page, listId).getByRole("button", { name: "Add a card", exact: true });
+}
+/** The board's slim "+" (Add a list), shown while the pointer is over the board. */
+async function addListButton(page: Page) {
+  await pointAt(editingEl(page).locator("section[data-list-id]").first());
+  return editingEl(page).getByRole("button", { name: "Add a list", exact: true });
+}
+
 async function placeBoard(page: Page, id: string) {
   await page.getByTestId("tools.board").click();
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
@@ -138,7 +161,7 @@ test("the whiteboard board has every control Boardkit's board has (lists, cards,
   await header(page, firstList!).click({ button: "right", position: { x: 4, y: 4 } });
   const wbHeaderMenu = await menuItems(page);
   await page.keyboard.press("Escape");
-  await listEl(page, firstList!).getByRole("button", { name: "Customise list", exact: true }).click();
+  await (await headerButton(page, firstList!, "Customise list")).click();
   const wbListPanel = await controlNames(page.locator("body > *").filter({ has: page.getByRole("group", { name: "Colour" }) }).last());
   await page.keyboard.press("Escape");
   await expect(page.getByRole("group", { name: "Colour" })).toHaveCount(0);
@@ -147,14 +170,22 @@ test("the whiteboard board has every control Boardkit's board has (lists, cards,
   await wb.locator("[data-card-id]").first().getByRole("button", { name: "Customise card", exact: true }).click();
   const wbCardPanel = await controlNames(page.locator("body > *").filter({ has: page.getByRole("group", { name: "Colour" }) }).last());
 
-  // The app's toolbar is left out on purpose (owner); everything else matches.
+  // The app's toolbar is left out on purpose (owner); everything else
+  // matches, but for phase 2.5's changes: the header's × is "⋯" (its menu
+  // has "Delete list…"), and the add buttons of lists with cards and of a
+  // board with lists are slim "+" (named "Add a card", "Add a list").
   expect(bkControls.length).toBeGreaterThan(10);
-  expect(wbControls).toEqual(bkControls);
-  expect(wbHeaderMenu).toEqual(bkHeaderMenu);
+  // (An empty list keeps the full "+ Add a card"; a list header, a button
+  // itself, is named after its text, whose × is "⋯" now.)
+  const asOnWhiteboard = (n: string) =>
+    n === "Delete list" ? ["List actions"] : n === "+ Add a list" ? ["Add a list"] : n === "+ Add a card" ? ["Add a card", n] : [n.replace(/‹▤⧉×$/, "‹▤⧉⋯")];
+  expect(wbControls).toEqual([...new Set(bkControls.flatMap(asOnWhiteboard))].sort());
+  expect(wbHeaderMenu.filter((n) => n !== "Delete list…")).toEqual(bkHeaderMenu);
+  expect(wbHeaderMenu).toContain("Delete list…");
   expect(wbListPanel).toEqual(bkListPanel);
   expect(wbCardPanel).toEqual(bkCardPanel);
   // The ones the owner named (2026-10-19 hand test).
-  for (const name of ["Collapse list", "Copy list as image", "Customise list", "Delete list", "Move or copy card to another board", "Customise card", "Delete card"]) {
+  for (const name of ["Collapse list", "Copy list as image", "Customise list", "List actions", "Move or copy card to another board", "Customise card", "Delete card"]) {
     expect(wbControls, name).toContain(name);
   }
   expect(wbControls.some((n) => /thots/.test(n))).toBe(true);
@@ -247,7 +278,7 @@ test("L12: Enter on an empty 'Add a card' adds a blank card at once, and keeps a
   const { id, rec, lists } = await setUp(page, context);
   const list = lists[0];
   const before = rec.board.cardOrder[list].length;
-  await listEl(page, list).getByRole("button", { name: "+ Add a card", exact: true }).click();
+  await (await addCardButton(page, list)).click();
   const field = listEl(page, list).getByRole("textbox", { name: "Add a card" });
   await expect(field).toBeFocused();
   await page.keyboard.press("Enter");
@@ -274,11 +305,11 @@ test("C4, L3, B1: rename a card and a list by clicking their titles; add a list"
   await page.keyboard.press("Control+a");
   await page.keyboard.type("Renamed card");
   await page.keyboard.press("Enter");
-  await header(page, list).getByRole("button", { name: "List title", exact: true }).click();
+  await (await headerButton(page, list, "List title")).click();
   await page.keyboard.press("Control+a");
   await page.keyboard.type("Renamed list");
   await page.keyboard.press("Enter");
-  await editingEl(page).getByRole("button", { name: "+ Add a list", exact: true }).click();
+  await (await addListButton(page)).click();
   await page.keyboard.type("New list");
   await page.keyboard.press("Enter");
   await page.keyboard.press("Escape");
@@ -339,7 +370,7 @@ test("C9, C1, C2: customise a card (colour, highlight + style, type, number emph
   await expect(cardEl(page, c1)).toHaveAttribute("data-highlight", "dashed");
 
   // Check circles: on for the list, then a click cycles the card's mark.
-  await listEl(page, list).getByRole("button", { name: "Customise list", exact: true }).click();
+  await (await headerButton(page, list, "Customise list")).click();
   await page.getByRole("group", { name: "Checks" }).getByRole("button", { name: "Check circles", exact: true }).click();
   await page.keyboard.press("Escape");
   const circle = cardEl(page, c2).getByRole("button", { name: /Not checked/ });
@@ -356,18 +387,18 @@ test("L4, L5, L6, L9, L10: list header — count, ‹ collapse and expand, ▤ t
   await expect(header(page, list)).toContainText(String(n));
 
   // ▤: every card's thots open, then postgame, then hidden.
-  await header(page, list).getByRole("button", { name: "Show pregame thots on every card", exact: true }).click();
+  await (await headerButton(page, list, "Show pregame thots on every card")).click();
   await expect(listEl(page, list).locator('[data-thots-toggle][aria-expanded="true"]')).toHaveCount(n);
-  await header(page, list).getByRole("button", { name: "Show postgame thots on every card", exact: true }).click();
-  await header(page, list).getByRole("button", { name: "Hide thots on every card", exact: true }).click();
+  await (await headerButton(page, list, "Show postgame thots on every card")).click();
+  await (await headerButton(page, list, "Hide thots on every card")).click();
   await expect(listEl(page, list).locator('[data-thots-toggle][aria-expanded="true"]')).toHaveCount(0);
 
   // ‹ collapses; a click on the strip opens it again.
-  await header(page, list).getByRole("button", { name: "Collapse list", exact: true }).click();
+  await (await headerButton(page, list, "Collapse list")).click();
   const strip = listEl(page, list).getByLabel(/collapsed$/);
   await expect(strip).toBeVisible();
   await strip.click();
-  await expect(header(page, list).getByRole("button", { name: "Collapse list", exact: true })).toBeVisible();
+  await expect(header(page, list).getByRole("button", { name: "Collapse list", exact: true })).toHaveCount(1);
 
   // Right-click: Duplicate list.
   await header(page, list).click({ button: "right", position: { x: 4, y: 4 } });
@@ -378,8 +409,10 @@ test("L4, L5, L6, L9, L10: list header — count, ‹ collapse and expand, ▤ t
   await page.getByRole("menuitemcheckbox", { name: "Just one thots box per card", exact: true }).click();
   await saved(page, id, (r) => r.board.lists[list].singleThots === true);
 
-  // × asks, then sends the list to the trash.
-  await header(page, list).getByRole("button", { name: "Delete list", exact: true }).click();
+  // "⋯" → Delete list… (the header's × on the whiteboard, phase 2.5) asks,
+  // then sends the list to the trash.
+  await (await headerButton(page, list, "List actions")).click();
+  await page.getByRole("menuitem", { name: "Delete list…", exact: true }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete", exact: true }).click();
   await saved(page, id, (r) => !r.board.listOrder.includes(list) && r.board.trashedLists.some((t) => t.listId === list), "list in the trash");
 });
@@ -387,7 +420,7 @@ test("L4, L5, L6, L9, L10: list header — count, ‹ collapse and expand, ▤ t
 test("L8, L1, L2: customise a list — colour, icon, number format, hidden numbers, continue numbering; keep/maybe/cut shows", async ({ page, context }) => {
   const { id, rec, lists } = await setUp(page, context);
   const [l1, l2] = lists;
-  await listEl(page, l2).getByRole("button", { name: "Customise list", exact: true }).click();
+  await (await headerButton(page, l2, "Customise list")).click();
   await page.getByRole("group", { name: "Colour" }).getByRole("button", { name: "green", exact: true }).click();
   const icons = page.getByRole("group", { name: "Icon" });
   await icons.getByRole("button").nth(2).click();
@@ -404,7 +437,7 @@ test("L8, L1, L2: customise a list — colour, icon, number format, hidden numbe
     const roman = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"][first - 1];
     await expect(cardEl(page, r.board.cardOrder[l2][0])).toContainText(roman);
   }
-  await listEl(page, l2).getByRole("button", { name: "Customise list", exact: true }).click();
+  await (await headerButton(page, l2, "Customise list")).click();
   await page.getByRole("group", { name: "Numbers" }).getByRole("button", { name: "Hidden", exact: true }).click();
   await page.keyboard.press("Escape");
   await saved(page, id, (r) => r.board.lists[l2].numbersHidden === true);
@@ -414,7 +447,7 @@ test("L8, L1, L2: customise a list — colour, icon, number format, hidden numbe
 test("L7: ⧉ copies the list as an image", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const { withCards } = await setUp(page, context);
-  await header(page, withCards[0]).getByRole("button", { name: "Copy list as image", exact: true }).click();
+  await (await headerButton(page, withCards[0], "Copy list as image")).click();
   await expect(header(page, withCards[0]).getByRole("button", { name: "Copy list as image", exact: true })).toHaveText("✓");
   const types = await page.evaluate(async () => (await navigator.clipboard.read()).flatMap((i) => i.types));
   expect(types).toContain("image/png");
@@ -584,5 +617,5 @@ test("L14: a full list says so instead of offering 'Add a card'", async ({ page,
   await placeBoard(page, id);
   await startEditing(page);
   await expect(listEl(page, list)).toContainText("List is full · 50 cards max");
-  await expect(listEl(page, list).getByRole("button", { name: "+ Add a card", exact: true })).toHaveCount(0);
+  await expect(listEl(page, list).getByRole("button", { name: /Add a card/ })).toHaveCount(0);
 });

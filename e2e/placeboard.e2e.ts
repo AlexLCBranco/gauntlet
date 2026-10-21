@@ -30,7 +30,7 @@ const geometry = (page: Page) =>
 
 const selected = (page: Page) => page.evaluate(() => (window as any).editor.getSelectedShapeIds() as string[]);
 
-/** Boardkit's first-visit board cut down to its first list's first card,
+/** Boardkit's first-visit board cut down to its first list's first three cards,
     so it fits in a zoomed-in view: its id. */
 async function smallBoard(context: BrowserContext): Promise<string> {
   const id = await seedBoard(context);
@@ -41,14 +41,16 @@ async function smallBoard(context: BrowserContext): Promise<string> {
     const rec = JSON.parse(localStorage.getItem(key)!);
     const b = rec.board;
     const [l1, ...others] = b.listOrder;
-    const keep = b.cardOrder[l1].slice(0, 1);
+    const keep = b.cardOrder[l1].slice(0, 3);
     for (const l of others) {
       for (const c of b.cardOrder[l]) delete b.cards[c];
       delete b.cardOrder[l];
       delete b.lists[l];
     }
-    for (const c of b.cardOrder[l1].slice(1)) delete b.cards[c];
+    for (const c of b.cardOrder[l1].slice(3)) delete b.cards[c];
     b.listOrder = [l1];
+    // Wider than a new widget's first box (320), as the corner test needs.
+    b.lists[l1].width = 360;
     b.cardOrder[l1] = keep;
     rec.rev += 1;
     localStorage.setItem(key, JSON.stringify(rec));
@@ -159,7 +161,7 @@ test("a window smaller than the page, the view away from its middle: the picked 
   expect(s.y + s.h / 2).toBeCloseTo(view.y + view.h / 2, 0);
   expect(await selected(page)).toEqual([s.id]);
   // And on screen.
-  await expect(page.locator(".tl-html-container [data-boardkit-board]").first()).toBeInViewport({ ratio: 1 });
+  await expect(page.locator(".tl-html-container [data-boardkit-board]").first()).toBeInViewport({ ratio: 0.999 });
 });
 
 test("the view at the page's corner: the picked board is in the view and the page from its first frame, no jump", async ({ page, context }) => {

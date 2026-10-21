@@ -2,6 +2,7 @@ import { useEditor, useValue } from "tldraw";
 
 import { zoomPercent } from "../pages/camera";
 import { zoomTo100 } from "../pages/keepFilled";
+import { pageHistory, pageRedo, pageUndo } from "./pageUndo";
 import "./chrome.css";
 
 const keepFocus = (e: React.PointerEvent) => e.preventDefault();
@@ -19,8 +20,8 @@ const REDO = "M12.5 10.833 15.833 7.5 12.5 4.167M15.833 7.5H6.667a3.333 3.333 0 
 export function ZoomUndo() {
   const editor = useEditor();
   const percent = useValue("zoom percent", () => zoomPercent(editor.getZoomLevel()), [editor]);
-  const canUndo = useValue("can undo", () => editor.getCanUndo(), [editor]);
-  const canRedo = useValue("can redo", () => editor.getCanRedo(), [editor]);
+  const canUndo = useValue("can undo", () => pageHistory.get().done.length > 0, []);
+  const canRedo = useValue("can redo", () => pageHistory.get().undone.length > 0, []);
   const readonly = useValue("readonly", () => editor.getIsReadonly(), [editor]);
   const run = (fn: () => void) => () => {
     fn();
@@ -48,10 +49,10 @@ export function ZoomUndo() {
         </button>
       </div>
       <div className="gauntlet-island" role="group" aria-label="History">
-        <button type="button" aria-label="Undo" title="Undo (Ctrl Z)" disabled={!canUndo} onPointerDown={keepFocus} onClick={run(() => editor.undo())}>
+        <button type="button" aria-label="Undo" title="Undo (Ctrl Z)" disabled={!canUndo} onPointerDown={keepFocus} onClick={run(() => pageUndo(editor))}>
           {icon(UNDO)}
         </button>
-        <button type="button" aria-label="Redo" title="Redo (Ctrl Shift Z)" disabled={!canRedo} onPointerDown={keepFocus} onClick={run(() => editor.redo())}>
+        <button type="button" aria-label="Redo" title="Redo (Ctrl Shift Z)" disabled={!canRedo} onPointerDown={keepFocus} onClick={run(() => pageRedo(editor))}>
           {icon(REDO)}
         </button>
       </div>

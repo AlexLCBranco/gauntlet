@@ -183,7 +183,8 @@ Changes to the plan, newest last. Each says what and why.
 - 2026-10-18 — Phase 2: lasso and box select pick a whole board. Picking
   single cards inside a board comes with phase 4, when cards become
   things that move anywhere (section 1 asks for it; it needs the same work).
-- (backgrounds part replaced by 2026-10-19, no board background)
+- (backgrounds part replaced by 2026-10-19, no board background; undo part
+  replaced by 2026-10-20, one undo for the page)
   2026-10-18 — Phase 2, how a board behaves. It is drawn at its natural
   size (Boardkit's list widths, every card shown, no scrollbar) and scaled
   as a whole: dragging a corner sets the scale, aspect kept. Its box follows
@@ -288,7 +289,7 @@ Changes to the plan, newest last. Each says what and why.
   /backup/). They live in the same browser storage as the data: clearing
   the browser's data loses them too; only a saved file protects against
   that.
-- 2026-10-20 — "+ New board" in the whiteboard's Board picker makes a real
+- (undo part replaced by 2026-10-20, empty new boards) 2026-10-20 — "+ New board" in the whiteboard's Board picker makes a real
   Boardkit board through Boardkit's own code (`createWhiteboardBoard`):
   empty, as Boardkit's own "+ New board" makes one, named "Untitled"
   (owner's wording; Boardkit's own dialog suggests "Untitled board N" but
@@ -330,6 +331,41 @@ Changes to the plan, newest last. Each says what and why.
   (`?embed=1`) stays: the real-data and read-only tests still open maps
   that way. The old canvas's saved data (localStorage `gauntlet:canvas`,
   `gauntlet:scroll`) is left in place until the owner says to delete it.
+- 2026-10-20 — Board widget polish (owner, phase 2.5 items 15-20), in
+  Boardkit's whiteboard mode only; standalone /boardkit unchanged. Add
+  buttons are found by fixed markers (`data-add`), never their text. "+ Add
+  a list" is a slim "+" on the last list's right edge, shown while the
+  pointer is over the board or it is selected; "+ Add a card" a slim "+"
+  on a list's bottom edge, shown only on the list the pointer is over.
+  Neither takes room: the widget's box hugs the lists. A board with no
+  lists, and an empty list, keep the full buttons. A list header shows its
+  title and count; its other controls only while the pointer is over that
+  header. The header's x is gone: "⋯" opens the list's menu, with "Delete
+  list…" (undo brings the list back). The board's name shows on hover or
+  while selected (its room kept; in phase 4 it becomes the handle). Lists
+  are as tall as their content. A press on a showing slim "+" starts
+  editing and opens that field.
+- 2026-10-20 — Failed board saves on the whiteboard are no longer silent
+  (owner, item 21): Boardkit's own save health drives a banner on the
+  whiteboard ("Board changes aren't being saved", "Try again") and the
+  browser's "Leave site?" prompt while any board write fails.
+- 2026-10-20 — One undo for the whole whiteboard page (owner, item 22):
+  Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z, the bottom-left buttons and the menu undo
+  and redo the latest thing done on the page, a drawing change or a card
+  edit, in order, whether or not a board is being edited (a text field
+  being typed in keeps its own undo). tldraw and Boardkit keep their own
+  histories; the page keeps the order (`src/whiteboard/pageUndo.ts`).
+  Each board's history is kept while another board is edited. Edits made
+  in /boardkit in another tab are not part of this page's history.
+- 2026-10-20 — Empty new boards (owner, item 23; replaces the undo part of
+  the "+ New board" entry): a board made with "+ New board" that is still
+  empty (no lists, nothing in its trash, never renamed) is deleted from
+  Boardkit too when its widget leaves the whiteboard (creation undone,
+  widget deleted, page cleared), unless another widget still shows it or
+  it is the last board in Boardkit's list (Boardkit never deletes its last
+  board). Redo, or undoing the delete, puts the same board back, same id.
+  A board with any content is never deleted this way: the widget goes,
+  the board stays in Boardkit.
 
 IDEAS
 

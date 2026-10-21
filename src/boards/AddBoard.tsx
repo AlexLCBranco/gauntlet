@@ -6,6 +6,7 @@ import { insideDelta, SHEET } from "../pages/sheet";
 import { BOARD_TYPE, type BoardShape } from "./BoardShape";
 import { namingBoard } from "./BoardName";
 import { createWhiteboardBoard } from "./boardkit";
+import { NEW_BOARD_NAME } from "./emptyNewBoards";
 import { registryBoards, registryChanged, useRegistry } from "./registry";
 
 const boardIcon = (
@@ -101,28 +102,28 @@ export function BoardPicker() {
  * "+ New board": a new, empty Boardkit board named "Untitled" (in Boardkit's
  * storage, so /boardkit lists it), placed in the middle of the view, inside
  * the page, selected, with its name ready to type (BoardName). One Ctrl+Z
- * takes it off the whiteboard; the board stays in Boardkit, as when a board
- * widget is deleted. Returns false when Boardkit could not store it.
+ * takes it off the whiteboard; still empty, the board leaves Boardkit too
+ * (emptyNewBoards.ts). Returns false when Boardkit could not store it.
  */
 function newBoard(editor: Editor): boolean {
-  const boardId = createWhiteboardBoard("Untitled");
+  const boardId = createWhiteboardBoard(NEW_BOARD_NAME);
   if (!boardId) return false;
   registryChanged();
-  namingBoard.set(place(editor, boardId, "new board"));
+  namingBoard.set(place(editor, boardId, "new board", { newBoard: true }));
   return true;
 }
 
 /** One undo step: the widget for `boardId` in the middle of the view, kept
     inside the page (placed there at once, so keepInside has nothing to
     move), selected. Both picker entries place boards this way. */
-function place(editor: Editor, boardId: string, step: string) {
+function place(editor: Editor, boardId: string, step: string, meta: Record<string, boolean> = {}) {
   const { w, h } = editor.getShapeUtil<BoardShape>(BOARD_TYPE).getDefaultProps();
   const view = editor.getViewportPageBounds();
   const at = { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
   const d = insideDelta(at, pageBox.get() ?? SHEET);
   const id = createShapeId();
   editor.markHistoryStoppingPoint(step);
-  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: at.x + d.x, y: at.y + d.y, props: { boardId } });
+  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: at.x + d.x, y: at.y + d.y, props: { boardId }, meta });
   editor.setCurrentTool("select");
   editor.select(id);
   pickerOpen.set(false);

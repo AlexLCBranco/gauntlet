@@ -153,7 +153,10 @@ test("edit in place: rename, add, move and delete cards, all in Boardkit's own r
   let now = await saved(page, id, (r) => r.board.cards[c1].title === "ZZ renamed on the whiteboard", "renamed");
   expect(now.rev).toBeGreaterThan(rec.rev);
 
-  // Add two cards to the second list (Enter keeps the field open).
+  // Add two cards to the second list (Enter keeps the field open), with its
+  // slim "+", shown while the pointer is over that list.
+  const l2Box = await box(listEl(page, l2));
+  await page.mouse.move(l2Box.x + l2Box.width / 2, l2Box.y + 20, { steps: 2 });
   await listEl(page, l2).getByRole("button", { name: /Add a card/ }).click();
   await page.keyboard.type("ZZ new one");
   await page.keyboard.press("Enter");
@@ -392,12 +395,12 @@ test("no panel behind the lists on the whiteboard: they sit on the whiteboard's 
   // Between two lists, nothing paints over the whiteboard's page.
   const gap = await gapBetweenLists(page);
   expect(await paintedAt(page, gap.x, gap.y)).toEqual([]);
-  // Below the lists and right of "+ Add a list" too, inside the board's box.
+  // Below the lists too, inside the board's box.
   const all = await box(board);
   expect(await paintedAt(page, all.x + all.width - 4, all.y + all.height - 4)).toEqual([]);
-  // The title and "+ Add a list" are still there.
+  // The title and the slim "+ Add a list" are still there.
   await expect(page.locator(".gb-name")).toHaveText(await boardName(page, id));
-  await expect(board.getByRole("button", { name: "+ Add a list" })).toBeVisible();
+  await expect(board.getByRole("button", { name: "Add a list", exact: true })).toHaveCount(1);
 
   // The same while the board is being edited.
   const firstCard = board.locator("article[data-card-id]").first();
