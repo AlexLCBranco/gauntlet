@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useEditor, type Editor } from "tldraw";
 
 import { portalEventsHandled } from "../whiteboard/widgetEvents";
 import { mapTakesEscape, WhiteboardMap, type PageRect } from "./linkkit";
+import { onBarePage } from "./mapEditing";
 
 /** How far Linkkit moved every box right and down so one could go left of
     or above its page's corner on the whiteboard (its map's `shift`). A
@@ -19,6 +20,7 @@ export function MapView({ mapId, editing, onContent }: { mapId: string; editing:
   const box = useRef<HTMLDivElement>(null);
   useEditingEvents(editor, box, editing);
   useRenameWhereDoubleClicked(box, editing);
+  const onPage = useCallback((x: number, y: number) => onBarePage(editor, x, y), [editor]);
   return (
     <div
       ref={box}
@@ -30,7 +32,7 @@ export function MapView({ mapId, editing, onContent }: { mapId: string; editing:
         if (editing || !e.currentTarget.contains(e.target as Node)) e.stopPropagation();
       }}
     >
-      <WhiteboardMap mapId={mapId} editing={editing} onContent={onContent} />
+      <WhiteboardMap mapId={mapId} editing={editing} onContent={onContent} onPage={onPage} />
     </div>
   );
 }

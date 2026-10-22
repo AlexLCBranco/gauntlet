@@ -1,7 +1,9 @@
 import { useLayoutEffect } from "react";
 import { atom, useValue, type Editor, type StateNode, type TLPointerEventInfo, type TLShapeId } from "tldraw";
 
-import { doubleClickOnWhiteboardMap } from "./linkkit";
+import { pageBox } from "../pages/keepFilled";
+import { SHEET } from "../pages/sheet";
+import { doubleClickOnWhiteboardMap, useWhiteboardMapAdding } from "./linkkit";
 import { useMapList } from "./mapList";
 
 // Editing a map: the whole page is the map's space, and it's obvious that a
@@ -32,6 +34,18 @@ export function useEditedMap(value: { shapeId: TLShapeId; mapId: string } | null
       if (editedMap.get()?.shapeId === shapeId) editedMap.set(null);
     };
   }, [shapeId, mapId]);
+}
+
+/** Whether this point on the screen (client px) is bare page an edited
+    map may use: on the page, over the canvas (no toolbar or panel there),
+    and no item under it, as for a double-click (`onEmpty` below). A box's
+    dot dragged out and let go there adds a box (Linkkit's `onPage`). */
+export function onBarePage(editor: Editor, x: number, y: number): boolean {
+  if (!document.elementFromPoint(x, y)?.closest(".tl-canvas")) return false;
+  const at = editor.screenToPage({ x, y });
+  const page = pageBox.get() ?? SHEET;
+  if (at.x < page.x || at.y < page.y || at.x > page.x + page.w || at.y > page.y + page.h) return false;
+  return !editor.getShapeAtPoint(at, { hitInside: false, margin: editor.getHitTestMargin() });
 }
 
 /** Two presses this close in time (ms) and place (screen px) are a
@@ -124,17 +138,48 @@ export function mapEditing(editor: Editor): () => void {
   };
 }
 
+/** What the label says adds a box, as the map's rules have it (owner,
+    2026-10-22): with tree rules on, a double-click on the paper only says
+    why not (Linkkit's hint, wherever it was). */
+const ADDING = {
+  anywhere: " — double-click anywhere to add a box",
+  "from-a-box": " — use a box’s + or drag its dot to add a box",
+  fixed: " — type the first round’s names; click a player to pick the winner",
+  none: "",
+} as const;
+
+/** How much of the page's colour lies over everything but the edited map. */
+const DIM = 0.75;
+
+/** The dim over everything but the edited map, as one layer (owner,
+    2026-10-22): a sheet in the page's colour in tldraw's shape layer, just
+    under the edited widget, which is raised over every other item while it
+    is edited. Dimming each item instead (its own opacity) let what lies
+    under a filled box show through it. Page units: the shape layer moves
+    with the camera. */
+function dimStyle(shapeId: TLShapeId, page: { x: number; y: number; w: number; h: number }): string {
+  return `
+.tl-shapes > .tl-shape[data-shape-id="${CSS.escape(shapeId)}"] { z-index: 2147483647 !important; }
+.tl-shapes::after {
+  content: ""; position: absolute; pointer-events: none; z-index: 2147483646;
+  left: ${page.x}px; top: ${page.y}px; width: ${page.w}px; height: ${page.h}px;
+  background: var(--tl-color-background); opacity: ${DIM};
+}`;
+}
+
 /** While a map is edited: everything else dimmed, and the label at the top
     of the screen, under the toolbar (maps.css). */
 export function MapEditingBar() {
   const edited = useValue("map being edited", () => editedMap.get(), []);
+  const page = useValue("page box", () => pageBox.get() ?? SHEET, []);
   const name = useMapList().find((m) => m.id === edited?.mapId)?.name ?? "";
+  const adding = useWhiteboardMapAdding(edited?.mapId ?? "");
   if (!edited) return null;
   return (
     <>
-      <style>{`.tl-shape:not([data-shape-id="${CSS.escape(edited.shapeId)}"]) { opacity: 0.25 !important; }`}</style>
+      <style data-testid="map-editing-dim">{dimStyle(edited.shapeId, page)}</style>
       <div className="gm-editing-bar" role="status" data-testid="map-editing-bar">
-        Editing map “{name}” — double-click anywhere to add a box · Esc to finish
+        Editing map “{name}”{ADDING[adding ?? "none"]} · Esc to finish
       </div>
     </>
   );

@@ -180,14 +180,17 @@ test("while editing: the label at the top says so, clear of the toolbar; everyth
     const id = e.getCurrentPageShapes().find((s: any) => s.type === "geo").id;
     return Number(getComputedStyle(document.querySelector(`.tl-shape[data-shape-id="${id}"]`)!).opacity);
   });
-  expect(geoOpacity).toBeLessThan(0.5);
+  // Dimmed as one layer over the page, not each item made see-through
+  // (mapfixes.e2e.ts checks what shows): the item keeps its opacity.
+  expect(geoOpacity).toBe(1);
+  await expect(page.getByTestId("map-editing-dim")).toHaveCount(1);
   const mapOpacity = await page.evaluate((id) => Number(getComputedStyle(document.querySelector(`.tl-shape[data-shape-id="${id}"]`)!).opacity), made.id);
   expect(mapOpacity).toBe(1);
   expect(await page.locator(`[id="${made.id}"] .gm-map`).evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
   // Editing ends: label gone, nothing dimmed.
   await escapeEditing(page);
   await expect(bar).toHaveCount(0);
-  await expect(page.locator("style", { hasText: "opacity: 0.25" })).toHaveCount(0);
+  await expect(page.getByTestId("map-editing-dim")).toHaveCount(0);
 });
 
 test("the map's name sits above the widget, never on it; an empty map is small with its hint centred; a map at the page's top-left corner works the same", async ({ page }) => {

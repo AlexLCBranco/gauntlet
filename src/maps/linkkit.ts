@@ -15,6 +15,7 @@ export {
   unlinkWhiteboardMap,
   deleteEmptyWhiteboardMap,
   doubleClickOnWhiteboardMap,
+  useWhiteboardMapAdding,
   renameWhiteboardMap,
   linkedMapOf,
   linkedMaps,
