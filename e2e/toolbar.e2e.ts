@@ -326,6 +326,39 @@ test("every key hint shown works: it picks its tool (Board and Map make one), an
   expect(chooser).toBeTruthy();
 });
 
+test("the bar's key hints and the ⋮ menu's text are drawn in Excalidraw's Assistant font, served from this site", async ({ page }) => {
+  const fontRequests: string[] = [];
+  page.on("requestfinished", (r) => {
+    if (/Assistant-Regular[^/]*\.woff2$/.test(r.url())) fontRequests.push(r.url());
+  });
+  await open(page);
+  await page.getByTestId("tools.more-button").click();
+  await expect(page.getByTestId("tools.more")).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  // The font the browser actually drew each text with (not just what CSS
+  // asks for): Chromium's own answer, per element.
+  const cdp = await page.context().newCDPSession(page);
+  const { root } = await cdp.send("DOM.getDocument", { depth: -1 });
+  await cdp.send("CSS.enable");
+  const drawnWith = async (selector: string) => {
+    const { nodeId } = await cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector });
+    expect(nodeId, selector).toBeGreaterThan(0);
+    const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+    return fonts.map((f) => f.familyName);
+  };
+  for (const selector of [
+    '[data-testid="tools.rectangle"] .gk-tool__kbd',
+    '[data-testid="tools.more.lasso"] .gk-more-item__text',
+    '[data-testid="tools.more.asset"] .gk-more-item__shortcut',
+  ])
+    expect(await drawnWith(selector), selector).toEqual(["Assistant"]);
+  // From this site, not from Google or anywhere else.
+  expect(fontRequests.length).toBeGreaterThan(0);
+  const site = new URL(page.url()).origin;
+  for (const url of fontRequests) expect(url.startsWith(site), url).toBe(true);
+  await cdp.detach();
+});
+
 test("screenshots of the bar and the open ⋮ menu, to compare with Excalidraw's (screenshots/)", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 800 });
   await open(page);

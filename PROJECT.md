@@ -728,8 +728,9 @@ Changes to the plan, newest last. Each says what and why.
   none clashing: B Board (Draw keeps P, X, 7), M Map, I Web embed, W
   Lasso; 9 Insert image now really works (tldraw ignored the image
   tool's keys; it was dead before). Markup's K comes with its tool.
-  Excalidraw's UI font (Assistant) isn't loaded: the same font list falls
-  back to system-ui.
+  Its UI font, Assistant Regular, is self-hosted (src/whiteboard/fonts/,
+  Excalidraw's copy; owner, same day). Third-party licences (Excalidraw
+  MIT, Tabler MIT, Assistant SIL OFL 1.1): THIRD_PARTY_LICENSES.
 
 IDEAS
 

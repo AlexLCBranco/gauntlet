@@ -1,8 +1,12 @@
+// Third-party code: icons copied from Excalidraw (MIT License, Copyright
+// (c) 2020 Excalidraw), most of them Tabler Icons (MIT License, Copyright
+// (c) 2020-2026 Paweł Kuna). Full licence texts: THIRD_PARTY_LICENSES at
+// the repo root.
+
 import type { ReactElement, SVGProps } from "react";
 
 // The toolbar's icons, copied from Excalidraw's own
-// (packages/excalidraw/components/icons.tsx, commit 1d4dc2c, MIT License,
-// Copyright (c) 2020 Excalidraw; most are tabler-icons, MIT), each with
+// (packages/excalidraw/components/icons.tsx, commit 1d4dc2c), each with
 // its own stroke width as there. Board, Map and Markup have none in
 // Excalidraw: drawn here in the same style (20-unit box, 1.25 stroke).
 
