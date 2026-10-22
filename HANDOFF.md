@@ -19,8 +19,9 @@ Finished work goes to docs/HISTORY.md.
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.111 (`c333d3d`).
 - Last results (2026-10-22, move cursor): unit 94 + 8 scripts; full local
   gauntlet 189 + 1 failed (a test serialising the editor, fixed, then
-  mapediting/boards/boardwidget 37/37); live: see below; no test browser
-  left. Linkkit not run (untouched).
+  mapediting/boards/boardwidget 37/37); live 181 + 8 skipped + 1 timed
+  out (clickaway.e2e.ts:298, whiteboard map box; 5/5 alone live); no test
+  browser left. Linkkit not run (untouched).
 
 ## Waiting for the owner
 
