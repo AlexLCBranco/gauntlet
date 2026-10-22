@@ -8,9 +8,13 @@
 //
 // Prints each visit's time, the median, p90 and max, and the slowest
 // visit's requests (count, bytes, slowest ones). Headless; closes
-// everything it opens, also on failure.
+// everything it opens, also on failure. On a deployed *.vercel.app site
+// each visit sends Vercel's automation bypass if a secret is set
+// (bypass.mjs); none set, nothing is sent.
 
 import { chromium } from "@playwright/test";
+
+import { sendBypass } from "./bypass.mjs";
 
 const site = process.argv[2] ?? "https://gauntlet-home.vercel.app";
 const visits = Number(process.argv[3] ?? 10);
@@ -25,6 +29,7 @@ try {
     const i = next++;
     if (i >= visits) return;
     const context = await browser.newContext();
+    await sendBypass(context, site);
     let status = 0;
     try {
       const page = await context.newPage();

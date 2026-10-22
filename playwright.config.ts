@@ -26,6 +26,9 @@ export default defineConfig({
     screenshot: "only-on-failure",
     viewport: { width: 1400, height: 900 },
   },
+  // Two browsers at once against a deployed site, whatever this PC's
+  // cores, so a run never sends Vercel a burst (owner, 2026-10-22).
+  workers: /^https:\/\/[^/]+\.vercel\.app/.test(process.env.BRIDGE_SITE ?? "https://gauntlet-home.vercel.app") ? 2 : undefined,
   // Speed checks (perf.e2e.ts) measure frame times, so they run alone:
   // after every other e2e has finished, even when some failed (a teardown
   // project always runs), one at a time.

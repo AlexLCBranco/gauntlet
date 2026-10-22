@@ -1,6 +1,9 @@
+import fs from "node:fs";
+
 import { chromium, type FullConfig } from "@playwright/test";
 
-import { sendBypass } from "./test";
+import { isCheckpoint } from "../scripts/bypass.mjs";
+import { CHECKPOINT_FILE, sendBypass } from "./test";
 
 /**
  * Before any test against a deployed site (live or a preview): /boardkit
@@ -10,10 +13,13 @@ import { sendBypass } from "./test";
  * run's start, "Switch board" never showing; every later test passed, and
  * 143 measured visits since, up to 8 at once, all loaded in under 2 s).
  * Waits up to 2 minutes, retrying, and says how long it waited; still
- * broken after that, the run stops with what the page showed.
+ * broken after that, the run stops with what the page showed. Vercel's
+ * security checkpoint (403) stops the run at once, never retried (owner,
+ * 2026-10-22).
  */
 export default async function globalSetup(config: FullConfig) {
   const site = config.projects[0]?.use.baseURL ?? "";
+  fs.rmSync(CHECKPOINT_FILE, { force: true });
   if (!site || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(site)) return;
   const browser = await chromium.launch({ channel: "msedge", headless: true });
   try {
@@ -28,12 +34,17 @@ export default async function globalSetup(config: FullConfig) {
         await sendBypass(context, site);
         try {
           const page = await context.newPage();
-          await page.goto(site + path, { waitUntil: "commit", timeout: 30_000 });
+          const res = await page.goto(site + path, { waitUntil: "commit", timeout: 30_000 });
+          if (res && isCheckpoint(site, res.url(), res.status())) {
+            fs.writeFileSync(CHECKPOINT_FILE, res.url());
+            throw new Error(`${site}${path}: Vercel's security checkpoint (403). Stopped, not retried.`);
+          }
           await page.getByRole("button", { name: button }).first().waitFor({ timeout: 15_000 });
           const waited = Date.now() - start;
           if (tries > 1) console.log(`${path} works after ${Math.round(waited / 1000)} s and ${tries} tries (last failure: ${last})`);
           break;
         } catch (e) {
+          if (fs.existsSync(CHECKPOINT_FILE)) throw e;
           const page = context.pages()[0];
           const text = page ? (await page.locator("body").innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 200) : "";
           last = `${String(e).split("\n")[0]} | page: ${text}`;

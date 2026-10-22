@@ -5,14 +5,21 @@
 //   node scripts/drag-feel.mjs <url> tldraw|excalidraw [--headed]
 //   node scripts/drag-feel.mjs https://gauntlet-home.vercel.app/whiteboard/ tldraw
 //   node scripts/drag-feel.mjs https://excalidraw.com/ excalidraw
+//
+// On a deployed *.vercel.app site it sends Vercel's automation bypass if a
+// secret is set (bypass.mjs); to any other site (excalidraw.com), never.
 import { chromium } from "@playwright/test";
+
+import { sendBypass } from "./bypass.mjs";
 
 // Headless unless --headed; the browser is closed however the script ends.
 const [url, kind] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const browser = await chromium.launch({ channel: "msedge", headless: !process.argv.includes("--headed") });
 for (const sig of ["SIGINT", "SIGTERM", "SIGBREAK", "SIGHUP"]) process.on(sig, () => browser.close().finally(() => process.exit(130)));
 try {
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+  await sendBypass(context, url);
+  const page = await context.newPage();
   await page.goto(url);
   await page.waitForTimeout(kind === "excalidraw" ? 4000 : 2500);
 

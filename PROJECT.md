@@ -708,6 +708,13 @@ Changes to the plan, newest last. Each says what and why.
   request to that origin, never another host). The secret lives in the
   environment or in the git-ignored .env.e2e, never in git. The deploy
   check polls GitHub's Vercel status every 30 s and hits the site once.
+  Update (owner, same day): Vercel offers that secret only with
+  Deployment Protection on, and gauntlet-home has none (fully public), so
+  there is no secret; with none, nothing is sent and every run carries on.
+  The 403 was the firewall/bot checks, most likely the burst. Live runs
+  use 2 browsers at once; a 403 from the site stops the run (the rest
+  skipped), never retried. boardkit-load.mjs and drag-feel.mjs follow the
+  same bypass rule.
 
 IDEAS
 

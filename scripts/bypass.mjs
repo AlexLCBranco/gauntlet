@@ -6,7 +6,9 @@
 // The secret is the owner's, never in git: the environment variable
 // VERCEL_AUTOMATION_BYPASS_SECRET, else the line
 // `VERCEL_AUTOMATION_BYPASS_SECRET=...` in `.env.e2e` at the repo root
-// (git-ignored by `.env*`). It goes only to the deployed site itself
+// (git-ignored by `.env*`). Without one (gauntlet-home has no Deployment
+// Protection, so Vercel offers no secret), nothing is sent and every run
+// carries on as before. It goes only to the deployed site itself
 // (a https://*.vercel.app address), never to localhost or another host.
 
 import fs from "node:fs";
@@ -50,3 +52,16 @@ export function bypassOrigin(site) {
 export function bypassHeaders(site, secret = bypassSecret()) {
   return secret && bypassOrigin(site) ? { [BYPASS_HEADER]: secret } : {};
 }
+
+/** Adds the header to every request a Playwright browser context makes to
+    `site` (pages, frames, fetches), and to nothing else. No secret, or not
+    a deployed site: nothing changes, no error. */
+export async function sendBypass(context, site, secret = bypassSecret()) {
+  const origin = bypassOrigin(site ?? "");
+  if (!origin || !secret) return;
+  await context.route(`${origin}/**`, (route) => route.continue({ headers: { ...route.request().headers(), [BYPASS_HEADER]: secret } }));
+}
+
+/** Vercel's security checkpoint answered (403 from the deployed site): a
+    run stops there instead of retrying (owner, 2026-10-22). */
+export const isCheckpoint = (site, url, status) => status === 403 && !!bypassOrigin(site) && url.startsWith(bypassOrigin(site));

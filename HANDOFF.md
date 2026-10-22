@@ -21,8 +21,8 @@ Finished work goes to docs/HISTORY.md.
 - Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
-- Last results (2026-10-22, toolbar step 1 + bypass): unit 92 + 10
-  scripts, full local gauntlet 195; live NOT run yet (needs the secret).
+- Last results (2026-10-22, toolbar step 1 + bypass): unit 92 + 12
+  scripts, full local gauntlet 195; live 187 + 8 skipped (hover p95 17.4 ms).
 
 ## Waiting for the owner
 
@@ -36,10 +36,10 @@ Finished work goes to docs/HISTORY.md.
 
 - TOOLBAR REWORK (owner, 2026-10-22; request word for word in
   docs/TOOLBAR-REWORK.md): 4 steps, STOP after each for the owner's OK.
-  Step 1 DONE (DECISIONS; e2e/toolbar.e2e.ts). Next: step 2, ONLY after
-  a passing live run. Markup greyed out in the ⋮ menu until step 4.
-- Live runs need Vercel's bypass secret in .env.e2e (DECISIONS
-  2026-10-22); after a push, `node scripts/wait-deploy.mjs`.
+  Step 1 DONE, live run passed (DECISIONS; e2e/toolbar.e2e.ts). Next:
+  step 2 when the owner says go. Markup greyed out in ⋮ until step 4.
+- Live runs: no bypass secret exists (DECISIONS 2026-10-22); after a
+  push, `node scripts/wait-deploy.mjs`. A 403 stops the run: tell the owner.
 - Phase 4 NOT started (owner: don't start it).
 
 ## Broken / known wrong
