@@ -1,4 +1,4 @@
-import { Box, getCursor, type Editor, type StateNode, type TLPointerEventInfo, type TLShape } from "tldraw";
+import { Box, Vec, atom, getCursor, react, type Editor, type StateNode, type TLPointerEventInfo, type TLShape } from "tldraw";
 
 import { CORNER_PX, EDGE_PX, HANDLE_CURSOR, edgeHit, type ResizeHandle } from "./edgeHit";
 
@@ -86,7 +86,39 @@ function showCursor(editor: Editor, hit: Hit | null) {
   delete container.dataset.edgeCursor;
 }
 
-/** Turns edge resizing on for this editor. Returns a stop function. */
+/** Whether the select tool, at rest, would drag something from this page
+    point: the body of an unlocked item tldraw hovers (its own hit test, the
+    one a press uses), or anywhere inside the current selection. */
+function grabbable(editor: Editor): boolean {
+  const hovered = editor.getHoveredShape();
+  if (hovered && !hovered.isLocked) return true;
+  if (editor.getSelectedShapes().every((s) => s.isLocked)) return false;
+  const bounds = editor.getSelectionRotatedPageBounds();
+  if (!bounds) return false;
+  const rotation = editor.getSelectionRotation();
+  const p = Vec.RotWith(editor.inputs.getCurrentPagePoint(), bounds.point, -rotation);
+  return bounds.containsPoint(p);
+}
+
+/** The move cursor over an item, as in Excalidraw (owner, 2026-10-22):
+    with the select tool at rest, the four-arrow cursor shows whenever the
+    pointer is over something a press would drag, selected or not. Through
+    tldraw's own cursor state (editor.setCursor), so tldraw's other cursors
+    (a selection handle's resize, space-bar panning, text editing, other
+    tools) are left alone: it only ever swaps "default" and "move". An edge
+    resize cursor (`edge`) wins over it. Returns a stop function. */
+function moveCursor(editor: Editor, edge: { get(): string | null }): () => void {
+  return react("move cursor", () => {
+    if (!editor.isIn("select.idle") || edge.get() || editor.overlays.getHoveredOverlayId()) return;
+    const { type } = editor.getInstanceState().cursor;
+    if (type !== "default" && type !== "move") return;
+    const next = grabbable(editor) && !onControl(editor) ? "move" : "default";
+    if (next !== type) editor.setCursor({ type: next, rotation: 0 });
+  });
+}
+
+/** Turns edge resizing, and the move cursor over items, on for this
+    editor. Returns a stop function. */
 export function hoverResize(editor: Editor): () => void {
   const idle = editor.getStateDescendant("select.idle") as (StateNode & Record<string, unknown>) | undefined;
   if (!idle) return () => {};
@@ -96,14 +128,17 @@ export function hoverResize(editor: Editor): () => void {
   // The cursor this sets (a key: shape, handle, rotation), or null. Kept so
   // that a pointer move costs no cursor change and no DOM lookup unless
   // what is under the pointer changed (hover-speed check in perf.e2e.ts).
-  let showing: string | null = null;
+  // An atom, so that the move cursor stands aside while it shows.
+  const edge = atom<string | null>("edge cursor", null);
   let control = false;
+  const stopMoveCursor = moveCursor(editor, edge);
 
   const move = function (this: StateNode, info: TLPointerEventInfo) {
     originalMove.call(this, info);
+    const showing = edge.get();
     if (editor.overlays.getHoveredOverlayId()) {
       if (showing) delete editor.getContainer().dataset.edgeCursor;
-      showing = null;
+      edge.set(null);
       return;
     }
     const hit = info.shiftKey || info.ctrlKey || info.altKey ? null : hitAt(editor, editor.inputs.getCurrentPagePoint());
@@ -111,16 +146,16 @@ export function hoverResize(editor: Editor): () => void {
     if (key && key !== showing) control = onControl(editor);
     if (key && !control) {
       if (key !== showing) showCursor(editor, hit);
-      showing = key;
+      edge.set(key);
     } else if (showing) {
       showCursor(editor, null);
-      showing = null;
+      edge.set(null);
     }
   };
   const exit = function (this: StateNode, info: unknown, to: string) {
     originalExit.call(this, info, to);
-    if (showing) {
-      showing = null;
+    if (edge.get()) {
+      edge.set(null);
       // The next state sets its own cursor; this one must not stay over it.
       queueMicrotask(() => showCursor(editor, null));
     }
@@ -129,7 +164,7 @@ export function hoverResize(editor: Editor): () => void {
     if ((info.target === "canvas" || info.target === "shape") && !info.shiftKey && !info.ctrlKey && !info.altKey && info.button === 0) {
       const hit = hitAt(editor, editor.inputs.getCurrentPagePoint());
       if (hit && !onControl(editor)) {
-        showing = null;
+        edge.set(null);
         delete editor.getContainer().dataset.edgeCursor;
         editor.select(hit.shape.id);
         this.onPointerDown({ ...info, target: "selection", handle: hit.handle } as TLPointerEventInfo);
@@ -142,6 +177,7 @@ export function hoverResize(editor: Editor): () => void {
   Object.defineProperty(idle, "onPointerDown", { value: down, configurable: true, writable: true });
   Object.defineProperty(idle, "onExit", { value: exit, configurable: true, writable: true });
   return () => {
+    stopMoveCursor();
     Object.defineProperty(idle, "onExit", { value: originalExit, configurable: true, writable: true });
     Object.defineProperty(idle, "onPointerMove", { value: originalMove, configurable: true, writable: true });
     Object.defineProperty(idle, "onPointerDown", { value: originalDown, configurable: true, writable: true });

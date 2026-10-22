@@ -612,6 +612,21 @@ Changes to the plan, newest last. Each says what and why.
   profile if its "Startup boost" is on; that one is Edge's, not ours.
   After the owner's reboot the Alt+Tab tiles were gone (owner, 2026-10-22):
   those Edge launches at sign-in were what brought them back.
+- 2026-10-22 — Move cursor over items, as in Excalidraw (owner). With
+  the select tool at rest, the four-arrow `move` cursor shows over the
+  body of any unlocked item, selected or not, every time; a resize edge
+  or handle keeps its resize cursor (it wins); text being edited shows
+  the text cursor; empty canvas, locked items, the hand tool and the
+  drawing tools keep their own (src/whiteboard/hoverResize.ts,
+  `moveCursor`; e2e/movecursor.e2e.ts). Set through tldraw's own cursor
+  state (`editor.setCursor`) from a reactor, and it only ever swaps
+  "default" and "move", so tldraw's other cursors (selection handles,
+  space-bar panning, other tools) are never overridden. Agent's choices:
+  "over an item" is what tldraw hovers (its own hit test, the one a press
+  uses) or anywhere inside the current selection; so an unselected
+  outline-only rectangle shows default inside (nothing there to grab, as
+  in Excalidraw) and move once selected; a widget's own buttons and
+  fields keep their cursor.
 
 IDEAS
 

@@ -234,7 +234,7 @@ test("box select and lasso pick the board like any other shape", async ({ page, 
   await placeBoard(page, id);
   const s = (await shapeOf(page))!;
   await page.keyboard.press("Escape");
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
 
   const pt = (x: number, y: number) => page.evaluate((p) => (window as any).editor.pageToScreen(p), { x, y }) as Promise<{ x: number; y: number }>;
   // Box select from outside its top-left to outside its bottom-right.
@@ -244,7 +244,7 @@ test("box select and lasso pick the board like any other shape", async ({ page, 
   await drag(page, a, z);
   expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([s.id]);
 
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
   await page.keyboard.press("w");
   const loop = [await pt(s.x - 20, s.y - 20), await pt(s.x + s.w + 20, s.y - 20), await pt(s.x + s.w + 20, s.y + s.h + 20), await pt(s.x - 20, s.y + s.h + 20), await pt(s.x - 20, s.y - 10)];
   await page.mouse.move(loop[0].x, loop[0].y);
@@ -386,7 +386,7 @@ test("no panel behind the lists on the whiteboard: they sit on the whiteboard's 
   await setBackground(page, id, { kind: "color", color: "#d33a3a" });
   await placeBoard(page, id);
   await page.keyboard.press("Escape");
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
 
   // No backdrop, and the board itself is see-through.
   const board = boardEl(page);
@@ -431,7 +431,7 @@ test("the board is selected and moved by pressing the empty space between its li
 
   // A drag from there moves it (and nothing in it). (Not right after the
   // click: that would be a double-click, which opens the board for editing.)
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
   await page.waitForTimeout(700);
   await drag(page, gap, { x: gap.x - 100, y: gap.y + 60 });
   const after = (await shapeOf(page))!;

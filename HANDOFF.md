@@ -4,7 +4,7 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-10-21)
+## Current state (2026-10-22)
 
 - PHASE 3 DONE (docs/PHASE-3.md, all ticked; summary in docs/HISTORY.md).
   STOPPED for the owner's report (PROJECT.md rule 3); phase 4 not started.
@@ -13,12 +13,14 @@ Finished work goes to docs/HISTORY.md.
   docs/HISTORY.md, decisions in PROJECT.md): no leftover test windows
   (scripts/leftovers.mjs), dark fixed + custom colours, our own Excalidraw
   paste/drop/import (src/import/excalidraw/), Crop in the panel.
+- Move cursor over items, as in Excalidraw (owner, 2026-10-22): done
+  (DECISIONS; src/whiteboard/hoverResize.ts `moveCursor`,
+  e2e/movecursor.e2e.ts, 8 tests).
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.111 (`c333d3d`).
-- Last results (2026-10-22, `edd5124`, Linkkit `c333d3d`): unit 94 +
-  8 scripts, Linkkit 977; full local gauntlet 180 + 2 failed (clickaway:
-  a top box's toolbar was clipped by the map's edge, fixed, then those
-  suites 44/44), Linkkit 18; live gauntlet 174 + 8 skipped, Linkkit 18;
-  no test browser left.
+- Last results (2026-10-22, move cursor): unit 94 + 8 scripts; full local
+  gauntlet 189 + 1 failed (a test serialising the editor, fixed, then
+  mapediting/boards/boardwidget 37/37); live: see below; no test browser
+  left. Linkkit not run (untouched).
 
 ## Waiting for the owner
 
@@ -37,6 +39,9 @@ Finished work goes to docs/HISTORY.md.
 
 ## Broken / known wrong
 
+- Hover speed (perf.e2e.ts:193, p95 limit 25 ms) is at 2 frames (~33 ms)
+  on this PC today: old code 4/4 over, new code 1/3 (2026-10-22). Not the
+  move cursor; kept, not skipped (it guards that code).
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
   resize); unsaved.e2e.ts:142 (Delete right after a click not taken, once
   in a live full run 2026-10-21; 5/5 alone, 12/12 with 6 workers).

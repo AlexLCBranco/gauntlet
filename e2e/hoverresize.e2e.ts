@@ -29,7 +29,7 @@ async function open(page: Page) {
   await page.waitForFunction(() => "editor" in window);
   await expect(page.getByTestId("sheet")).toBeVisible();
 }
-const ed = <T, A = undefined>(page: Page, fn: (editor: any, arg: A) => T, arg?: A) => page.evaluate(({ src, arg }) => new Function("e", "a", `return (${src})(e, a)`)((window as any).editor, arg), { src: fn.toString(), arg }) as Promise<T>;
+const ed = <T, A = undefined>(page: Page, fn: (editor: any, arg: A) => T, arg?: A) => page.evaluate(({ src, arg }) => { const e = (window as any).editor; const r = new Function("e", "a", `return (${src})(e, a)`)(e, arg); return r === e ? undefined : r; }, { src: fn.toString(), arg }) as Promise<T>;
 
 /** The item's box on screen. */
 const screenBox = (page: Page, id: string) =>
@@ -73,10 +73,10 @@ async function checkItem(page: Page, id: string) {
       expect(await ed(page, (e) => e.getSelectedShapeIds().length), "hovering selects nothing").toBe(0);
     }
   }
-  // The middle: as before (no resize cursor).
+  // The middle: no resize cursor; the move cursor (movecursor.e2e.ts).
   const mid = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
   await page.mouse.move(mid.x, mid.y, { steps: 3 });
-  await expect.poll(async () => (await cursorAt(page, mid)).type).toBe("default");
+  await expect.poll(async () => (await cursorAt(page, mid)).type).toBe("move");
 
   // One drag from the bottom-right corner, no click first: selected and bigger.
   const start = on(b, "bottom_right", 1);

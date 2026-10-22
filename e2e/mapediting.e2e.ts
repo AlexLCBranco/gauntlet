@@ -194,7 +194,7 @@ test("the map's name sits above the widget, never on it; an empty map is small w
   await openWhiteboard(page);
   const made = await newMap(page);
   // Name above the map (selected, so it shows), touching nothing.
-  await page.evaluate((id) => (window as any).editor.select(id), made.id);
+  await page.evaluate((id) => void (window as any).editor.select(id), made.id);
   const nameBox = await box(page.locator(`[id="${made.id}"] .gm-name`));
   const mapBox = await box(page.locator(`[id="${made.id}"] [data-map-view]`));
   expect(nameBox.y + nameBox.height).toBeLessThanOrEqual(mapBox.y + 0.5);

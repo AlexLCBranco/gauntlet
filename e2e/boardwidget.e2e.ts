@@ -61,7 +61,7 @@ async function placeBoard(page: Page, id: string) {
 async function leaveBoard(page: Page) {
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
-  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.evaluate(() => void (window as any).editor.selectNone());
   const b = await box(boardEl(page));
   const vp = page.viewportSize()!;
   const y = b.y > 120 ? b.y - 80 : Math.min(vp.height - 90, b.y + b.height + 60);
