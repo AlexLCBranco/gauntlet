@@ -29,3 +29,12 @@ body { background: #101011; overflow: hidden; }
    row, not above it: the toolbar never moves down over the page. */
 .gauntlet-top-toolbar .tlui-main-toolbar__left { position: relative; }
 .gauntlet-top-toolbar .tlui-main-toolbar__extras { position: absolute; right: 100%; top: 0; height: 44px; margin-right: 4px; display: flex; align-items: center; }
+
+/* The items' layer doesn't take the canvas's cursor (hoverResize.ts,
+   canvasCursor): a cursor change then re-styles the canvas alone, not every
+   element of every item. Most of an item lets the pointer through to the
+   canvas, which shows the cursor; the part under the pointer that doesn't
+   gets it set on itself; a widget's own controls have theirs. */
+.tl-canvas > .tl-html-layer {
+  cursor: var(--tl-cursor-default);
+}

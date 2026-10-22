@@ -56,9 +56,17 @@ function hitAt(editor: Editor, point: { x: number; y: number }): Hit | null {
   return null;
 }
 
-function onControl(editor: Editor): boolean {
+/** Items with buttons and fields of their own (Boardkit's, Linkkit's). */
+const HAS_CONTROLS = new Set(["boardkit-board", "linkkit-map", "embed"]);
+
+/** Whether the pointer is on one of item `shape`'s own controls. Only an
+    item that has any looks: the lookup asks the browser for its layout,
+    and over plain items that cost frames (perf.e2e.ts, hover speed). Where
+    the canvas is on the screen comes from tldraw's own copy, not the DOM. */
+function onControl(editor: Editor, shape: TLShape): boolean {
+  if (!HAS_CONTROLS.has(shape.type)) return false;
   const { x, y } = editor.inputs.getCurrentScreenPoint();
-  const box = editor.getContainer().getBoundingClientRect();
+  const box = editor.getViewportScreenBounds();
   const el = document.elementFromPoint(box.x + x, box.y + y);
   return !!el?.closest(CONTROLS);
 }
@@ -66,24 +74,72 @@ function onControl(editor: Editor): boolean {
 /** The cursors tldraw's useCursor draws from its own CSS variables. */
 const STATIC_CURSORS = new Set(["default", "pointer", "cross", "comment", "move", "grab", "grabbing", "text", "zoom-in", "zoom-out"]);
 
-/** Shows a resize cursor (or, with null, tldraw's own again) straight on
-    the container, as tldraw's useCursor does: going through
-    editor.setCursor changes the instance state, and at every edge crossed
-    that cost a frame or two (hover-speed check in perf.e2e.ts). The
-    container's `data-edge-cursor` says which one shows (for the e2e). */
-function showCursor(editor: Editor, hit: Hit | null) {
-  const container = editor.getContainer();
-  if (hit) {
-    const type = HANDLE_CURSOR[hit.handle];
-    const { cursor } = editor.getCurrentTheme().colors[editor.getColorMode()];
-    container.style.setProperty("--tl-cursor", getCursor(type, hit.rotation, cursor));
-    container.dataset.edgeCursor = type;
-    return;
+/** An edge resize cursor showing: which item, handle and rotation (`key`). */
+type Edge = { key: string; hit: Hit };
+
+/**
+ * The cursor the canvas shows: the edge resize cursor while one shows,
+ * otherwise tldraw's own (its instance state, as its useCursor draws it).
+ * Set as `.tl-canvas`'s own `cursor`, never through tldraw's
+ * `--tl-cursor` on its container: that variable is inherited by every
+ * element of every item, and each change re-styled them all (8-10 ms with
+ * 400 items, measured 2026-10-22: frames missed while hovering,
+ * perf.e2e.ts). `--tl-cursor` is registered as not inherited, so tldraw's
+ * own writes of it cost nothing either, and the items' layer doesn't
+ * inherit the canvas's cursor (whiteboard.css): a change re-styles one
+ * element (0.1-0.6 ms). Some of an item's own elements take the pointer
+ * (its text, a picture, any filled item while something is selected,
+ * tldraw.css): the one under the pointer gets the same cursor, set on it
+ * alone, unless it is a widget's own control or text being edited (they
+ * keep theirs). The container's `data-edge-cursor` says which edge cursor
+ * shows (for the e2e). Returns a stop function.
+ */
+function canvasCursor(editor: Editor, edge: { get(): Edge | null }): () => void {
+  try {
+    CSS.registerProperty({ name: "--tl-cursor", syntax: "*", inherits: false });
+  } catch {
+    // Registered already (another editor on this page).
   }
-  const { type, rotation } = editor.getInstanceState().cursor;
-  const { cursor } = editor.getCurrentTheme().colors[editor.getColorMode()];
-  container.style.setProperty("--tl-cursor", STATIC_CURSORS.has(type) ? `var(--tl-cursor-${type})` : getCursor(type, rotation, cursor));
-  delete container.dataset.edgeCursor;
+  let shown = "";
+  let marked: HTMLElement | SVGElement | null = null;
+  let markedWith = "";
+  const stop = react("canvas cursor", () => {
+    const container = editor.getContainer();
+    const { cursor: colour } = editor.getCurrentTheme().colors[editor.getColorMode()];
+    const e = edge.get();
+    let value: string;
+    if (e) {
+      const type = HANDLE_CURSOR[e.hit.handle];
+      value = getCursor(type, e.hit.rotation, colour);
+      container.dataset.edgeCursor = type;
+    } else {
+      const { type, rotation } = editor.getInstanceState().cursor;
+      value = STATIC_CURSORS.has(type) ? `var(--tl-cursor-${type})` : getCursor(type, rotation, colour);
+      delete container.dataset.edgeCursor;
+    }
+    const canvas = container.querySelector<HTMLElement>(".tl-canvas");
+    if (!canvas) return;
+    if (value !== shown) {
+      canvas.style.cursor = value;
+      shown = value;
+    }
+    // The item's own element under the pointer, if one takes it.
+    const p = editor.inputs.getCurrentScreenPoint();
+    let el: HTMLElement | SVGElement | null = null;
+    if (!editor.getEditingShapeId()) {
+      const b = editor.getViewportScreenBounds();
+      const hit = document.elementFromPoint(b.x + p.x, b.y + p.y) as HTMLElement | SVGElement | null;
+      if (hit && hit.closest(".tl-html-layer") && !hit.closest(CONTROLS)) el = hit;
+    }
+    if (marked && marked !== el) marked.style.cursor = "";
+    if (el && (el !== marked || markedWith !== value)) el.style.cursor = value;
+    marked = el;
+    markedWith = value;
+  });
+  return () => {
+    stop();
+    if (marked) marked.style.cursor = "";
+  };
 }
 
 /** Whether the select tool, at rest, would drag something from this page
@@ -106,13 +162,15 @@ function grabbable(editor: Editor): boolean {
     tldraw's own cursor state (editor.setCursor), so tldraw's other cursors
     (a selection handle's resize, space-bar panning, text editing, other
     tools) are left alone: it only ever swaps "default" and "move". An edge
-    resize cursor (`edge`) wins over it. Returns a stop function. */
-function moveCursor(editor: Editor, edge: { get(): string | null }): () => void {
+    resize cursor (`edge`) wins over it. A widget's own buttons take the
+    pointer only while it is edited, when this is off. Returns a stop
+    function. */
+function moveCursor(editor: Editor, edge: { get(): Edge | null }): () => void {
   return react("move cursor", () => {
     if (!editor.isIn("select.idle") || edge.get() || editor.overlays.getHoveredOverlayId()) return;
     const { type } = editor.getInstanceState().cursor;
     if (type !== "default" && type !== "move") return;
-    const next = grabbable(editor) && !onControl(editor) ? "move" : "default";
+    const next = grabbable(editor) ? "move" : "default";
     if (next !== type) editor.setCursor({ type: next, rotation: 0 });
   });
 }
@@ -125,47 +183,42 @@ export function hoverResize(editor: Editor): () => void {
   const originalMove = idle.onPointerMove as (info: TLPointerEventInfo) => void;
   const originalDown = idle.onPointerDown as (info: TLPointerEventInfo) => void;
   const originalExit = idle.onExit as (info: unknown, to: string) => void;
-  // The cursor this sets (a key: shape, handle, rotation), or null. Kept so
-  // that a pointer move costs no cursor change and no DOM lookup unless
-  // what is under the pointer changed (hover-speed check in perf.e2e.ts).
-  // An atom, so that the move cursor stands aside while it shows.
-  const edge = atom<string | null>("edge cursor", null);
+  // The edge resize cursor showing, or null. Changed only when what is
+  // under the pointer changes (item, handle, rotation), so a pointer move
+  // costs no cursor change and no DOM lookup otherwise (hover-speed check
+  // in perf.e2e.ts). An atom: the canvas's cursor follows it, and the move
+  // cursor stands aside while it shows.
+  const edge = atom<Edge | null>("edge cursor", null);
   let control = false;
+  const stopCanvasCursor = canvasCursor(editor, edge);
   const stopMoveCursor = moveCursor(editor, edge);
 
   const move = function (this: StateNode, info: TLPointerEventInfo) {
     originalMove.call(this, info);
-    const showing = edge.get();
+    const showing = edge.get()?.key ?? null;
     if (editor.overlays.getHoveredOverlayId()) {
-      if (showing) delete editor.getContainer().dataset.edgeCursor;
-      edge.set(null);
+      if (showing) edge.set(null);
       return;
     }
     const hit = info.shiftKey || info.ctrlKey || info.altKey ? null : hitAt(editor, editor.inputs.getCurrentPagePoint());
     const key = hit ? `${hit.shape.id} ${hit.handle} ${hit.rotation}` : null;
-    if (key && key !== showing) control = onControl(editor);
-    if (key && !control) {
-      if (key !== showing) showCursor(editor, hit);
-      edge.set(key);
+    if (hit && key !== showing) control = onControl(editor, hit.shape);
+    if (hit && key && !control) {
+      if (key !== showing) edge.set({ key, hit });
     } else if (showing) {
-      showCursor(editor, null);
       edge.set(null);
     }
   };
+  // The next state sets its own cursor; this one must not stay over it.
   const exit = function (this: StateNode, info: unknown, to: string) {
     originalExit.call(this, info, to);
-    if (edge.get()) {
-      edge.set(null);
-      // The next state sets its own cursor; this one must not stay over it.
-      queueMicrotask(() => showCursor(editor, null));
-    }
+    if (edge.get()) edge.set(null);
   };
   const down = function (this: StateNode & { onPointerDown: (info: TLPointerEventInfo) => void }, info: TLPointerEventInfo) {
     if ((info.target === "canvas" || info.target === "shape") && !info.shiftKey && !info.ctrlKey && !info.altKey && info.button === 0) {
       const hit = hitAt(editor, editor.inputs.getCurrentPagePoint());
-      if (hit && !onControl(editor)) {
+      if (hit && !onControl(editor, hit.shape)) {
         edge.set(null);
-        delete editor.getContainer().dataset.edgeCursor;
         editor.select(hit.shape.id);
         this.onPointerDown({ ...info, target: "selection", handle: hit.handle } as TLPointerEventInfo);
         return;
@@ -178,6 +231,7 @@ export function hoverResize(editor: Editor): () => void {
   Object.defineProperty(idle, "onExit", { value: exit, configurable: true, writable: true });
   return () => {
     stopMoveCursor();
+    stopCanvasCursor();
     Object.defineProperty(idle, "onExit", { value: originalExit, configurable: true, writable: true });
     Object.defineProperty(idle, "onPointerMove", { value: originalMove, configurable: true, writable: true });
     Object.defineProperty(idle, "onPointerDown", { value: originalDown, configurable: true, writable: true });
