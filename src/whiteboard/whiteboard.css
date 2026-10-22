@@ -11,3 +11,21 @@ body { background: #101011; overflow: hidden; }
 /* Excalidraw's corners: zoom and undo/redo bottom left (tldraw centres
    its bottom row). */
 .gauntlet-whiteboard .tlui-layout__bottom__main { justify-content: flex-start; }
+
+/* No bigger than Excalidraw's toolbar (toolbarFit.ts): 37 px tools, 44 px tall. */
+.gauntlet-top-toolbar .tlui-main-toolbar__tools { height: 44px; padding: 0 3px; }
+.gauntlet-top-toolbar .tlui-main-toolbar__tools .tlui-row { gap: 0; }
+.gauntlet-top-toolbar .tlui-main-toolbar__tools .tlui-button { width: 37px; min-width: 37px; height: 44px; margin: 0; padding: 0; }
+/* Lasso and highlighter live only in the overflow menu: tldraw's slot for
+   the last tool picked from there stays off the row; the "more" button
+   shows that one of them is on. */
+.gauntlet-top-toolbar .tlui-main-toolbar__tools > .tlui-row > :is([data-value="lasso"], [data-value="highlight"]) { display: none !important; }
+.gauntlet-top-toolbar:has(.tlui-main-toolbar__tools > .tlui-row > :is([data-value="lasso"], [data-value="highlight"])[aria-pressed="true"]) [data-testid="tools.more-button"] {
+  background: var(--tl-color-selected);
+  color: var(--tl-color-selected-contrast);
+  border-radius: var(--tl-radius-2);
+}
+/* tldraw's tool lock (shown while a drawing tool is on) sits left of the
+   row, not above it: the toolbar never moves down over the page. */
+.gauntlet-top-toolbar .tlui-main-toolbar__left { position: relative; }
+.gauntlet-top-toolbar .tlui-main-toolbar__extras { position: absolute; right: 100%; top: 0; height: 44px; margin-right: 4px; display: flex; align-items: center; }

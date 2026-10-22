@@ -154,14 +154,15 @@ function useWindowWidth() {
 }
 
 /** The toolbar along the top, as in Excalidraw, in Excalidraw's order, then
-    the Board and Map buttons (`src/boards/`, `src/maps/`). */
+    the Board and Map buttons (`src/boards/`, `src/maps/`); no bigger than
+    Excalidraw's (toolbarFit.ts). Lasso and highlighter are in its overflow
+    menu. */
 function TopToolbar() {
   const width = useWindowWidth();
   return (
     <div className="gauntlet-top-toolbar">
       <DefaultToolbar maxItems={toolbarItems(width)}>
         <SelectToolbarItem />
-        <ToolbarItem tool="lasso" />
         <HandToolbarItem />
         <RectangleToolbarItem />
         <DiamondToolbarItem />
@@ -174,6 +175,8 @@ function TopToolbar() {
         <EraserToolbarItem />
         <ToolbarItem tool="board" />
         <ToolbarItem tool="map" />
+        {/* In the overflow menu ("more"), keys unchanged. */}
+        <ToolbarItem tool="lasso" />
         <HighlightToolbarItem />
       </DefaultToolbar>
     </div>

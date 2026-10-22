@@ -870,9 +870,12 @@ test("no Laser, Note or Frame: not on the toolbar, not in its overflow menu, and
     await page.keyboard.press(key);
     expect(await tool(page)).toBe("select");
   }
-  // A wide window has every tool on the row: no more removed ones there.
+  // A wide window: the highlighter is in the "more" menu (toolbar.e2e.ts); no removed ones there.
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await expect(page.locator("[data-testid=\"tools.highlight\"]:visible")).toHaveCount(1);
+  await page.getByTestId("tools.more-button").click();
+  await expect(page.getByTestId("tools.more.highlight")).toBeVisible();
+  for (const id of ["laser", "note", "frame"]) await expect(page.getByTestId(`tools.more.${id}`)).toHaveCount(0);
+  await page.keyboard.press("Escape");
   for (const id of ["laser", "note", "frame"]) await expect(page.getByTestId(`tools.${id}`)).toHaveCount(0);
 });
 

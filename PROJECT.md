@@ -512,6 +512,17 @@ Changes to the plan, newest last. Each says what and why.
   in both modes, as every other exact colour (2026-10-21, dark and custom
   colours).
 
+- 2026-10-21 — Toolbar no bigger than Excalidraw's (owner, hand-test round
+  item 2). Excalidraw's toolbar measured on excalidraw.com (Edge, 1400, 1915
+  and 1920 px windows): 542 x 44 px at every width. Ours: 13 tools on the
+  row (Excalidraw's select, hand, rectangle, diamond, ellipse, arrow, line,
+  draw, text, image, eraser, then Board and Map) and the "more" button, 37
+  px each, 520 x 44. Lasso and highlighter are only in "more" (tldraw's
+  slot that shows the last tool picked from there is kept off the row;
+  the "more" button lights up while one is on); every key is unchanged.
+  tldraw's tool-lock button, shown while a drawing tool is on, sits left
+  of the row instead of above it, so the toolbar never moves down.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.
@@ -520,3 +531,5 @@ They wait here; the agent tells the owner instead of building them.
 - Text alignment per list (owner, 2026-10-21): left / center / right for
   the list title and, separately, for its cards, in Boardkit's per-list
   style menu; works the same on the whiteboard.
+- Toolbar redesign (owner, 2026-10-21): too many useless buttons; rethink
+  the whole menu later.
