@@ -1,6 +1,8 @@
 import {
   DefaultMainMenu,
-  DefaultMainMenuContent,
+  EditSubmenu,
+  ExportFileContentSubMenu,
+  PreferencesGroup,
   TldrawUiButton,
   TldrawUiButtonLabel,
   TldrawUiDialogBody,
@@ -12,6 +14,7 @@ import {
   TldrawUiMenuItem,
   useDialogs,
   useEditor,
+  ViewSubmenu,
   type Editor,
 } from "tldraw";
 
@@ -117,7 +120,14 @@ export function MainMenu() {
           }}
         />
       </TldrawUiMenuGroup>
-      <DefaultMainMenuContent />
+      {/* tldraw's own menu without "Insert embed…" and "Upload media…":
+          the toolbar's ⋮ menu is the only way in (owner, 2026-10-22). */}
+      <TldrawUiMenuGroup id="basic">
+        <EditSubmenu />
+        <ViewSubmenu />
+        <ExportFileContentSubMenu />
+      </TldrawUiMenuGroup>
+      <PreferencesGroup />
     </DefaultMainMenu>
   );
 }

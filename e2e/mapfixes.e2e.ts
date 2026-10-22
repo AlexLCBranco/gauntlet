@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "./test";
 
 import { box, seedBoard, seedMap, openBoardList, openMapList } from "./helpers";
 
@@ -17,12 +17,11 @@ import { box, seedBoard, seedMap, openBoardList, openMapList } from "./helpers";
 test.use({ viewport: { width: 1600, height: 1000 } });
 
 type Rect = { x: number; y: number; width: number; height: number };
-const centre = (r: Rect) => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 });
 const inside = (r: Rect, w: Rect, slack = 1) => r.x >= w.x - slack && r.y >= w.y - slack && r.x + r.width <= w.x + w.width + slack && r.y + r.height <= w.y + w.height + slack;
 
 /** The first ancestor that cuts this element off (its overflow or a
     clip-path, with the element reaching past it), or null: drawn whole. */
-const clippedBy = (l: import("@playwright/test").Locator) =>
+const clippedBy = (l: import("./test").Locator) =>
   l.evaluate((el) => {
     const r = el.getBoundingClientRect();
     for (let a = el.parentElement; a; a = a.parentElement) {

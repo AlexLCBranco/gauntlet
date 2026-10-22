@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page } from "./test";
 
 /**
  * Checks shared by excalidraw.e2e.ts (a made-up drawing) and

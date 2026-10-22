@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 /**
  * The toolbar (owner, 2026-10-22): Select, Rectangle, Arrow, Line, a
@@ -131,7 +131,7 @@ test("Board and Map put a new, empty board / map on the current page; existing o
   }
 });
 
-test("removed tools appear nowhere: not on the bar, the ⋮ menu, the main menu and its preferences, the right-click menu; their keys do nothing", async ({ page }) => {
+test("removed tools appear nowhere: not on the bar, the ⋮ menu, the main menu (nor its Insert embed / Upload media) and its preferences, the right-click menu; their keys do nothing", async ({ page }) => {
   await open(page);
   const nowhere = async (where: string, scope = page.locator("body")) => {
     for (const id of REMOVED)
@@ -147,6 +147,10 @@ test("removed tools appear nowhere: not on the bar, the ⋮ menu, the main menu 
   await page.keyboard.press("Escape");
   await page.getByTestId("main-menu.button").click();
   await nowhere("the main menu");
+  // Image and web embed come in only through the ⋮ menu.
+  await expect(page.getByRole("menuitem", { name: "Backups" })).toBeVisible();
+  for (const name of [/Insert embed/, /Upload media/, /Insert image/, /Web embed/]) await expect(page.getByRole("menuitem", { name }), String(name)).toHaveCount(0);
+  await expect(page.locator('[data-testid="main-menu.insert-embed"], [data-testid="main-menu.insert-media"]')).toHaveCount(0);
   await page.getByRole("menuitem", { name: "Preferences" }).click();
   await expect(page.getByRole("menuitemcheckbox").first()).toBeVisible();
   await nowhere("the preferences");

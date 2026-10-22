@@ -697,6 +697,17 @@ Changes to the plan, newest last. Each says what and why.
   menu until step 4 builds it. tldraw 5.5.2 has no draw-to-shape, bucket
   fill or AI items, so nothing to remove there. Toolbar names are the
   owner's, in English (tldraw's own labels follow the browser language).
+- 2026-10-22 — Owner, after step 1: tldraw's own "Insert embed…" and
+  "Upload media…" are gone from the main menu (the ⋮ items are the only
+  way in). Live tests: Vercel's security checkpoint blocked the test
+  browser (403 on every path). Never change Vercel's firewall or bot
+  protection for it; the live e2e and the deploy check
+  (scripts/wait-deploy.mjs) send Vercel's "Protection Bypass for
+  Automation" secret as the x-vercel-protection-bypass header, only to
+  the deployed site (scripts/bypass.mjs; e2e/test.ts routes it onto every
+  request to that origin, never another host). The secret lives in the
+  environment or in the git-ignored .env.e2e, never in git. The deploy
+  check polls GitHub's Vercel status every 30 s and hits the site once.
 
 IDEAS
 

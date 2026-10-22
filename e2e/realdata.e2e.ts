@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 /**
  * The owner's REAL data, restored into a fresh browser profile on a local

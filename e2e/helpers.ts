@@ -1,4 +1,4 @@
-import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Locator, type Page } from "./test";
 
 /**
  * Shared by the e2e. Each test runs in a fresh, empty browser profile, so

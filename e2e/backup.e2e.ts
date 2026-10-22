@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page, sendBypass } from "./test";
 
 import { seedBoard, seedMap } from "./helpers";
 
@@ -130,7 +130,7 @@ test.beforeEach(async ({ page }) => {
 });
 declare function storedRecordIds(): Promise<string[]>;
 
-test("a backup restored into an empty browser brings back boards, pictures, maps and the whiteboard", async ({ page, browser }) => {
+test("a backup restored into an empty browser brings back boards, pictures, maps and the whiteboard", async ({ page, browser, baseURL }) => {
   const { boardId, shapeId } = await seed(page.context(), "Backup e2e map");
   const original = await saveBackup(page);
   await expect(page.getByTestId("here")).toContainText("1 background picture");
@@ -138,6 +138,7 @@ test("a backup restored into an empty browser brings back boards, pictures, maps
 
   // A second, empty browser: a cleared one, or another computer.
   const empty = await browser.newContext();
+  await sendBypass(empty, baseURL);
   const fresh = await empty.newPage();
   const before = await restore(fresh, original);
   expect(Object.keys(before.localStorage as object)).toHaveLength(0);

@@ -1,5 +1,7 @@
 import { chromium, type FullConfig } from "@playwright/test";
 
+import { sendBypass } from "./test";
+
 /**
  * Before any test against a deployed site (live or a preview): /boardkit
  * and /linkkit must actually work, so a short outage of either app can't
@@ -23,6 +25,7 @@ export default async function globalSetup(config: FullConfig) {
       let last = "";
       for (let tries = 1; ; tries++) {
         const context = await browser.newContext();
+        await sendBypass(context, site);
         try {
           const page = await context.newPage();
           await page.goto(site + path, { waitUntil: "commit", timeout: 30_000 });

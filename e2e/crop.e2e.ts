@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 import { whiteboardSaved } from "./helpers";
 import { openWhiteboard } from "./excalidrawChecks";

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 import { checkBothModes, checkImported, imported, openWhiteboard, type ExcElement } from "./excalidrawChecks";
 
