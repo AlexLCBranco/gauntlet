@@ -15,11 +15,15 @@ export default defineConfig({
   timeout: 5 * 60_000,
   expect: { timeout: 5_000 },
   reporter: "list",
+  // Against a deployed site: wait until /boardkit and /linkkit work first.
+  globalSetup: "./e2e/global-setup.ts",
   use: {
     baseURL: process.env.BRIDGE_SITE ?? "https://gauntlet-home.vercel.app",
     channel: "msedge",
     // Never a visible window, unless asked for (HEADED=1 or --headed).
     headless: !process.env.HEADED,
+    // What the page showed when a test failed (test-results/).
+    screenshot: "only-on-failure",
     viewport: { width: 1400, height: 900 },
   },
   // Speed checks (perf.e2e.ts) measure frame times, so they run alone:

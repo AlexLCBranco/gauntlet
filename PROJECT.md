@@ -548,6 +548,21 @@ Changes to the plan, newest last. Each says what and why.
   entries in HKCU…Run (each starts Edge at sign-in) and restarting
   Explorer to clear the tiles.
 
+- 2026-10-21 — The 27 live failures (owner, hand-test round item 5). They
+  were tests 1-27 of the run in a row (~1.5 min at its start, 20:06), all
+  waiting for /boardkit's "Switch board"; every one of the 135 later tests
+  passed. No deploy overlapped (gauntlet-home 19:56 and 20:20, Boardkit
+  19:07). /boardkit measured live today in fresh profiles
+  (scripts/boardkit-load.mjs): one at a time median 389 ms, max 532 ms
+  (15 visits); 2 at once median 498, max 1233 (24); 6 at once median 1197,
+  max 1776 (24); 8 at once median 1386, max 1852 (80); no failure; the
+  page is 3 requests, 247 KB. Boardkit's first-visit dialog never hides
+  the button. So not slow visits and not too many workers: a short outage
+  of /boardkit at that moment, not reproduced. Test setup fixed, the app
+  unchanged: against a deployed site, a global setup (e2e/global-setup.ts)
+  first waits until /boardkit and /linkkit work (up to 2 min, says how
+  long and what the page showed), and failing tests keep a screenshot.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.
