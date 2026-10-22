@@ -14,11 +14,11 @@ Finished work goes to docs/HISTORY.md.
   (scripts/leftovers.mjs), dark fixed + custom colours, our own Excalidraw
   paste/drop/import (src/import/excalidraw/), Crop in the panel.
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.111 (`c333d3d`).
-- Last results (2026-10-21, `224f69e`): unit 88 + 6; full local e2e
-  gauntlet 162, Linkkit 18, no test browser left; live gauntlet 128 + 7
-  skipped + 27 failed, all on /boardkit not loading in time (Switch
-  board missing); those 6 files re-run live: 76 passed. Not chased
-  further (no app cause found). CI green.
+- Last results (2026-10-22, `edd5124`, Linkkit `c333d3d`): unit 94 +
+  8 scripts, Linkkit 977; full local gauntlet 180 + 2 failed (clickaway:
+  a top box's toolbar was clipped by the map's edge, fixed, then those
+  suites 44/44), Linkkit 18; live gauntlet 174 + 8 skipped, Linkkit 18;
+  no test browser left.
 
 ## Waiting for the owner
 
@@ -34,8 +34,8 @@ Finished work goes to docs/HISTORY.md.
 ## Half-done
 
 - HAND-TEST ROUND (owner, 2026-10-21) items 1-9 done and committed
-  (docs/HISTORY.md); phase 4 NOT started. Pushing and the live run are
-  the last steps; see "Waiting for the owner" for item 4's leftovers.
+  (docs/HISTORY.md), pushed and live; phase 4 NOT started. See
+  "Waiting for the owner" for item 4's leftovers.
 
 ## Broken / known wrong
 
