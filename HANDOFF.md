@@ -28,7 +28,13 @@ Finished work goes to docs/HISTORY.md.
 
 ## Half-done
 
-- Nothing.
+- HAND-TEST ROUND (owner, 2026-10-21), items 1-9 in order, phase 4 NOT
+  started. Done and committed: 1 (Excalidraw dark-mode colours), 2
+  (toolbar 520 x 44, Excalidraw's measured 542 x 44), 3 (resize from an
+  unselected edge). Next: 4 leftover windows, 5 the 27 live failures, 6 no
+  map dots, 7 map editing on the whole page, 8 linked boards visible, 9
+  List | Map | Both one click. Not pushed yet; full suite + push + live run
+  at the end.
 
 ## Broken / known wrong
 

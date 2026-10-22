@@ -537,6 +537,17 @@ Changes to the plan, newest last. Each says what and why.
   straight on the canvas (as tldraw does), not through tldraw's instance
   state, which cost 1-2 frames at every edge crossed.
 
+- 2026-10-21 — Leftover windows (owner, hand-test round item 4): the
+  ~35 Linkkit/Boardkit tiles in Alt+Tab are not windows: no top-level
+  window (visible, hidden or cloaked) carries those titles, so nothing can
+  be closed. They look like browser tabs Windows keeps in Alt+Tab (title
+  and site icon, no picture). Current test runs add none (checked after a
+  run). scripts/leftovers.mjs now also lists test-browser windows with
+  those titles and stale Playwright profile folders (--kill removes the
+  folders). Not touched, the owner decides: 41 `MicrosoftEdgeAutoLaunch_*`
+  entries in HKCU…Run (each starts Edge at sign-in) and restarting
+  Explorer to clear the tiles.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

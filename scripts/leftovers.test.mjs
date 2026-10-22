@@ -13,3 +13,16 @@ test("a browser with a Playwright profile or build is a test browser; the owner'
   ];
   assert.deepEqual(testBrowsers(ps).map((p) => p.pid), [1, 4]);
 });
+
+test("a Playwright profile folder no running process names is stale; one in use and other folders are not", async () => {
+  const { staleProfiles } = await import("./leftovers.mjs");
+  const names = ["playwright_chromiumdev_profile-AbC", "playwright_chromiumdev_profile-XyZ", "playwright-transform-cache", "other"];
+  const ps = [{ pid: 1, name: "msedge.exe", cmd: "msedge.exe --user-data-dir=C:\Temp\playwright_chromiumdev_profile-XyZ" }];
+  assert.deepEqual(staleProfiles(names, ps), ["playwright_chromiumdev_profile-AbC"]);
+});
+
+test("the window check runs and finds no test-browser window titled Linkkit, Boardkit or Gauntlet", async () => {
+  const { appWindows, processes, testBrowsers } = await import("./leftovers.mjs");
+  const test = new Set(testBrowsers(processes()).map((p) => p.pid));
+  assert.deepEqual(appWindows().filter((w) => test.has(w.pid)), []);
+});
