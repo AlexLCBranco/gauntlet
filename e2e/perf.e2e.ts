@@ -189,3 +189,27 @@ test("a big map (150 boxes, 100 arrows) stays smooth on the whiteboard: dragging
     expect(m.longest).toBeLessThan(250);
   }
 });
+
+test("hovering over many items stays smooth (the resize cursor on unselected edges, hand-test round item 3)", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openWhiteboard(page);
+  // 400 rectangles in a grid, pointer swept across them, over edges and middles.
+  await page.evaluate(() => {
+    const e = (window as any).editor;
+    const shapes = [];
+    for (let i = 0; i < 20; i++) for (let j = 0; j < 20; j++) shapes.push({ type: "geo", x: 40 + i * 75, y: 60 + j * 45, props: { w: 60, h: 34, fill: "solid" } });
+    e.createShapes(shapes);
+    e.selectNone();
+  });
+  await page.mouse.move(40, 60);
+  const m = await measureFrames(page, async () => {
+    for (let k = 0; k < 3; k++) for (let i = 0; i <= 120; i++) await page.mouse.move(40 + i * 12, 60 + i * 7 + k * 20);
+  });
+  console.log(`hover over 400 items: ${JSON.stringify(m)} (ms)`);
+  const REFRESH = 1000 / 60;
+  // Without the edge check p95 is one frame; setting the cursor through
+  // tldraw's instance state made it 2-3 frames (2026-10-21).
+  expect(m.median).toBeLessThan(1.5 * REFRESH);
+  expect(m.p95).toBeLessThan(1.5 * REFRESH);
+  expect(m.longest).toBeLessThan(100);
+});

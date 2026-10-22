@@ -523,6 +523,20 @@ Changes to the plan, newest last. Each says what and why.
   tldraw's tool-lock button, shown while a drawing tool is on, sits left
   of the row instead of above it, so the toolbar never moves down.
 
+- 2026-10-21 — Resize from the edge without selecting first (owner,
+  hand-test round item 3). Over an edge or corner of an unselected item
+  (rectangle, ellipse, diamond, text, picture, board, map, note, frame,
+  group, embed) the matching resize cursor shows at once; a press-and-drag
+  there selects it and resizes it in the same drag (src/whiteboard/
+  hoverResize.ts, edgeHit.ts). Agent's choices: the edge counts 6 screen px
+  either side of it, a corner 12 px along each edge from it; a filled item
+  hides the edges below it, an outline-only one doesn't; lines, arrows and
+  freehand strokes keep resizing from their selection only; a widget's own
+  buttons and fields (Boardkit's `data-add`/`data-control`) keep their
+  click; Shift/Ctrl/Alt presses are tldraw's as before. The cursor is set
+  straight on the canvas (as tldraw does), not through tldraw's instance
+  state, which cost 1-2 frames at every edge crossed.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

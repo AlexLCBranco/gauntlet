@@ -48,6 +48,7 @@ import { shapeUtils as styleShapeUtils } from "../style/shapeUtils";
 import { applyNextMeta, StylePanel } from "../style/StylePanel";
 import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
+import { hoverResize } from "./hoverResize";
 import { toolbarItems } from "./toolbarFit";
 import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
 import { undoSkipsSelection } from "./undoSkipsSelection";
@@ -250,6 +251,8 @@ function setUp(editor: Editor) {
   showPageStart(editor);
   const stopInside = keepInsideSheet(editor);
   const stopWall = edgeWall(editor);
+  // Resize an unselected item from its edge or corner, as in Excalidraw.
+  const stopHoverResize = hoverResize(editor);
   const stopNext = applyNextMeta(editor);
   const stopFilled = keepFilled(editor);
   const stopUndo = undoSkipsSelection(editor);
@@ -269,6 +272,7 @@ function setUp(editor: Editor) {
     stopPage();
     stopInside();
     stopWall();
+    stopHoverResize();
     stopNext();
     stopFilled();
   };
