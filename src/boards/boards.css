@@ -133,3 +133,71 @@
 .gb-map {
   flex: none;
 }
+
+/* A board's link to its Linkkit map (mapLink.tsx). In the pickers: a badge
+   on a board that has a map, and on a map that has a board. */
+.gb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(79 124 255 / 0.18);
+  color: #9db5ff;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+/* On the widget, beside the name, shown when the name is: "Add map view"
+   on a board without a map, "⋯" (Unlink map) on one with. */
+.gb-addmap-wrap,
+.gb-menu {
+  position: relative;
+  flex: none;
+  margin-bottom: 6px;
+  visibility: hidden;
+}
+.gb-scaled[data-active] :is(.gb-addmap-wrap, .gb-menu),
+.gb-scaled:has([data-boardkit-board][data-pointer-over]) :is(.gb-addmap-wrap, .gb-menu) {
+  visibility: visible;
+}
+.gb-addmap,
+.gb-menu-button,
+.gb-menu-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.06);
+  color: #a3abb9;
+  font: 600 12px/1.4 system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: all; /* the widget lets presses through to the whiteboard */
+}
+.gb-addmap:hover,
+.gb-menu-button:hover,
+.gb-menu-list button:hover {
+  color: #e3e3e8;
+  background: rgb(255 255 255 / 0.12);
+}
+.gb-menu-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 3;
+  margin-top: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: #232329;
+  box-shadow: 0 0 0 1px #2e2e36, 0 2px 8px rgb(0 0 0 / 0.35);
+}
+.gb-addmap-refused {
+  margin-left: 8px;
+  color: #f0b46b;
+  font: 12px/1.4 system-ui, sans-serif;
+}

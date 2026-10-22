@@ -4,7 +4,9 @@ import { atom, createShapeId, useEditor, useValue, type Editor, type TLUiToolIte
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta, SHEET } from "../pages/sheet";
 import { BOARD_TYPE, type BoardShape } from "./BoardShape";
+import { useLinkedMaps } from "../maps/linkedMap";
 import { namingBoard } from "./BoardName";
+import { MapBadge } from "./mapLink";
 import { createWhiteboardBoard } from "./boardkit";
 import { NEW_BOARD_NAME } from "./emptyNewBoards";
 import { registryBoards, registryChanged, useRegistry } from "./registry";
@@ -50,6 +52,7 @@ export function BoardPicker() {
   const [at, setAt] = useState<{ left: number; top: number } | null>(null);
   const [failed, setFailed] = useState(false);
   const boards = registryBoards(raw);
+  const links = useLinkedMaps();
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -92,6 +95,7 @@ export function BoardPicker() {
       {boards.map((b) => (
         <button key={b.id} role="menuitem" data-board={b.id} onClick={() => place(editor, b.id, "add board")}>
           {b.name}
+          {links[b.id] && <MapBadge />}
         </button>
       ))}
     </div>

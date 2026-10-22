@@ -586,6 +586,25 @@ Changes to the plan, newest last. Each says what and why.
   always adds a box. The name sits above the map, never on it (the band
   pulled the map up over it). An empty map is 260 x 48, its hint "Double-
   click anywhere to add a box", centred.
+- 2026-10-21 — Linked boards made visible (owner, hand-test round item
+  8). The Board picker marks a board with a linked map (map icon,
+  "+ map"); the Map picker marks a map linked to a board (board icon,
+  "+ board", the agent's reading of "same"). On a board widget without a
+  map, a hover control "Add map view" (one click, also when not selected)
+  makes a new Linkkit map linked to the board, as Linkkit's "Map from a
+  Boardkit board…" does (Linkkit v0.0.111 `createLinkedWhiteboardMap`);
+  the widget then has its List | Map | Both switch. On a linked one, "⋯"
+  beside the switch has "Unlink map" (Linkkit's own "Unlink from
+  Boardkit": the map keeps a copy, the board stays as it is), one undo
+  step: Ctrl+Z puts the map's record back, linked, with the view it had
+  (src/boards/mapLink.tsx). Not built: linking an existing map from a
+  short list. Linkkit can only link a map to a board it makes from that
+  map, or make a new map from a board: an existing map's boxes would have
+  to become the board's lists and cards, which neither app does.
+- 2026-10-21 — List | Map | Both on one click (owner, hand-test round item
+  9): checked by e2e (from a board neither selected nor edited, one click
+  on each of List, Map, Both switches at once). It already passed: the
+  switch takes its own presses (ViewSwitch.tsx); nothing changed.
 
 IDEAS
 

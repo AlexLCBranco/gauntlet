@@ -50,3 +50,12 @@ export function useLinkedMap(boardId: string): string | null {
 
 /** The same, read once (outside React). */
 export const linkedMapNow = (boardId: string): string | null => read()[boardId] ?? null;
+
+/** Every board with a linked map: board id -> map id, kept current. */
+export function useLinkedMaps(): Readonly<Record<string, string>> {
+  return useSyncExternalStore((onChange) => {
+    follow();
+    readers.add(onChange);
+    return () => readers.delete(onChange);
+  }, read);
+}

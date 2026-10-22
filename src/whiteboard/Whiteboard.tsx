@@ -48,6 +48,7 @@ import { shapeUtils as styleShapeUtils } from "../style/shapeUtils";
 import { applyNextMeta, StylePanel } from "../style/StylePanel";
 import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
+import { keepUnlinksUndoable } from "../boards/mapLink";
 import { MapEditingBar, mapEditing } from "../maps/mapEditing";
 import { hoverResize } from "./hoverResize";
 import { toolbarItems } from "./toolbarFit";
@@ -257,6 +258,8 @@ function setUp(editor: Editor) {
   const stopHoverResize = hoverResize(editor);
   // Editing a map: the whole page is its space (src/maps/mapEditing.tsx).
   const stopMapEditing = mapEditing(editor);
+  // "Unlink map" on a board widget is one undo step (src/boards/mapLink.tsx).
+  const stopUnlinks = keepUnlinksUndoable(editor);
   const stopNext = applyNextMeta(editor);
   const stopFilled = keepFilled(editor);
   const stopUndo = undoSkipsSelection(editor);
@@ -278,6 +281,7 @@ function setUp(editor: Editor) {
     stopWall();
     stopHoverResize();
     stopMapEditing();
+    stopUnlinks();
     stopNext();
     stopFilled();
   };

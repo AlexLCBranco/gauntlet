@@ -3,6 +3,8 @@ import { atom, createShapeId, useEditor, useValue, type Editor, type TLUiToolIte
 
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta, SHEET } from "../pages/sheet";
+import { BoardBadge } from "../boards/mapLink";
+import { useLinkedMaps } from "./linkedMap";
 import { createWhiteboardMap } from "./linkkit";
 import { mapListChanged, useMapList } from "./mapList";
 import { MAP_TYPE, type MapShape } from "./MapShape";
@@ -46,6 +48,7 @@ export function MapPicker() {
   const editor = useEditor();
   const open = useValue(pickerOpen);
   const maps = useMapList();
+  const linked = new Set(Object.values(useLinkedMaps()));
   const box = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<{ left: number; top: number } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -91,6 +94,7 @@ export function MapPicker() {
       {maps.map((m) => (
         <button key={m.id} role="menuitem" data-map={m.id} onClick={() => place(editor, m.id, "add map")}>
           {m.name}
+          {linked.has(m.id) && <BoardBadge />}
         </button>
       ))}
     </div>

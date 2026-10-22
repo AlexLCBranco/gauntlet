@@ -16,6 +16,7 @@ import {
 import { useLinkedMap } from "../maps/linkedMap";
 import type { PageRect } from "../maps/linkkit";
 import { useEditedMap } from "../maps/mapEditing";
+import { AddMapView, BoardMenu } from "./mapLink";
 import { MapView, type MapShift } from "../maps/MapView";
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta } from "../pages/sheet";
@@ -344,6 +345,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         <div className="gb-head">
           <BoardName shapeId={shape.id} boardId={boardId} shown={scale > 0} />
           {linkedMap && <ViewSwitch shapeId={shape.id} view={view} />}
+          {linkedMap ? <BoardMenu shapeId={shape.id} mapId={linkedMap} /> : <AddMapView shapeId={shape.id} boardId={boardId} />}
         </div>
         <div className="gb-views">
           {view !== "map" && <WhiteboardBoard boardId={boardId} editing={listEditing} active={selected || editing} />}
