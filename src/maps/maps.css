@@ -43,8 +43,15 @@
   pointer-events: all; /* the widget lets presses through to the whiteboard */
 }
 
+/* Over the name: a top box's own buttons (its toolbar) reach up past the
+   map's edge, onto the name's row, and must take presses there. */
 .gm-map {
+  position: relative;
+  z-index: 1;
   width: max-content;
+}
+.gm-name:not(.gm-name-field) {
+  pointer-events: none;
 }
 
 /* The map being edited (mapEditing.tsx): outlined, everything else dimmed. */

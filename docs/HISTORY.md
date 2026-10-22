@@ -1184,3 +1184,32 @@ What still kept the owner on Excalidraw (decisions in PROJECT.md).
   pictures before drawing. e2e/excalidraw.e2e.ts (made-up fixture),
   e2e/realexcalidraw.e2e.ts (the owner's file, local only).
 - 3, Crop in the style panel's Actions. e2e/crop.e2e.ts.
+
+## Hand-test round (owner, 2026-10-21/22)
+
+Decisions in PROJECT.md (one entry per item).
+- 1, Excalidraw's dark mode: imported colours drawn through Excalidraw's
+  own invert(93%) hue-rotate(180deg) in dark mode (ported from its
+  applyDarkModeFilter), stored ones in light; pictures untouched.
+  e2e/excalidraw.e2e.ts, realexcalidraw.e2e.ts (both modes; reference is
+  the browser's own CSS filter on a canvas).
+- 2, toolbar 520 x 44 (Excalidraw's measured 542 x 44); lasso and
+  highlighter only in "more". e2e/toolbar.e2e.ts.
+- 3, resize from an unselected item's edge (src/whiteboard/hoverResize.ts).
+  Setting the cursor through tldraw's instance state cost 1-2 frames per
+  edge crossed; set on the canvas directly instead. e2e/hoverresize.e2e.ts,
+  hover speed in perf.e2e.ts.
+- 4, the Alt+Tab tiles are not windows (none with those titles exists);
+  41 Edge auto-launch Run entries and an Explorer restart left to the
+  owner; leftovers.mjs also checks windows and stale profile folders.
+- 5, the 27 live failures were tests 1-27 in a row at the run's start;
+  /boardkit measured fast (max 1.9 s at 8 at once, 143 visits); live runs
+  now wait for /boardkit and /linkkit first (e2e/global-setup.ts).
+- 6-7, no dots; map editing on the whole page (src/maps/mapEditing.tsx,
+  Linkkit v0.0.111 `shift`, `addBoxNear`). e2e/mapediting.e2e.ts.
+- 8-9, linked boards visible, Add map view, Unlink map with undo
+  (src/boards/mapLink.tsx); one-click switch already worked.
+  e2e/maplink.e2e.ts.
+Test-only lessons: tldraw counts a double-click within 450 ms of the last
+clicks as a third/fourth click; the style panel (top left) takes clicks
+under it while something is selected.

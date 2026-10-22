@@ -15,7 +15,7 @@
     "@tldraw/tlschema": "5.5.2",
     "@tldraw/utils": "5.5.2",
     "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/e8f694ea4354433042f16e5991f0ac0dd1786b7f",
-    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/88503b5aa9e14222b8cc926a183cb36401767f37",
+    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/c333d3d831216f04fdaee09407fa5f15338cbecb",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "shadcn": "file:src/boards/vendor/shadcn",

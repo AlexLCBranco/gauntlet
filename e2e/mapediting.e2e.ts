@@ -121,7 +121,8 @@ test("while editing, a double-click far outside the widget (any side of the page
 test("a double-click right next to a box puts the new box beside it, never over it", async ({ page }) => {
   await mapWithA(page);
   const a = await box(boxOf(page, "A"));
-  await addBox(page, { x: a.x + a.width + 6, y: a.y + a.height / 2 }, "Near");
+  // Just past A's right edge (and its connect dot there).
+  await addBox(page, { x: a.x + a.width + 16, y: a.y + a.height / 2 }, "Near");
   const n = await box(boxOf(page, "Near"));
   expect(overlap(a, n)).toBe(false);
 });

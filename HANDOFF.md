@@ -13,7 +13,7 @@ Finished work goes to docs/HISTORY.md.
   docs/HISTORY.md, decisions in PROJECT.md): no leftover test windows
   (scripts/leftovers.mjs), dark fixed + custom colours, our own Excalidraw
   paste/drop/import (src/import/excalidraw/), Crop in the panel.
-- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.110 (`88503b5`).
+- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.111 (`c333d3d`).
 - Last results (2026-10-21, `224f69e`): unit 88 + 6; full local e2e
   gauntlet 162, Linkkit 18, no test browser left; live gauntlet 128 + 7
   skipped + 27 failed, all on /boardkit not loading in time (Switch
@@ -22,19 +22,20 @@ Finished work goes to docs/HISTORY.md.
 
 ## Waiting for the owner
 
+- Item 4 (Alt+Tab tiles): the owner decides on removing the 41
+  `MicrosoftEdgeAutoLaunch_*` Run entries and on restarting Explorer.
+- Hand test of items 1-9 (feel): dark-mode import, toolbar, edge resize,
+  map editing on the whole page, Add map view / Unlink map.
+
 - Phase 3 hand test (feel only): placing and scaling a map, editing it in
   place, the List | Map | Both switch, one undo. Then "go to phase 4".
 - Earlier hand test (phase 2.5 feel items), if not done yet.
 
 ## Half-done
 
-- HAND-TEST ROUND (owner, 2026-10-21), items 1-9 in order, phase 4 NOT
-  started. Done and committed: 1 (Excalidraw dark-mode colours), 2
-  (toolbar 520 x 44, Excalidraw's measured 542 x 44), 3 (resize from an
-  unselected edge). Next: 4 leftover windows, 5 the 27 live failures, 6 no
-  map dots, 7 map editing on the whole page, 8 linked boards visible, 9
-  List | Map | Both one click. Not pushed yet; full suite + push + live run
-  at the end.
+- HAND-TEST ROUND (owner, 2026-10-21) items 1-9 done and committed
+  (docs/HISTORY.md); phase 4 NOT started. Pushing and the live run are
+  the last steps; see "Waiting for the owner" for item 4's leftovers.
 
 ## Broken / known wrong
 
