@@ -16,33 +16,31 @@ Finished work goes to docs/HISTORY.md.
 - Move cursor over items, as in Excalidraw (owner, 2026-10-22): done
   (DECISIONS; src/whiteboard/hoverResize.ts `moveCursor`,
   e2e/movecursor.e2e.ts, 8 tests).
-- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.111 (`c333d3d`).
-- Last results (2026-10-22, move cursor): unit 94 + 8 scripts; full local
-  gauntlet 189 + 1 failed (a test serialising the editor, fixed, then
-  mapediting/boards/boardwidget 37/37); live 181 + 8 skipped + 1 timed
-  out (clickaway.e2e.ts:298, whiteboard map box; 5/5 alone live); no test
-  browser left. Linkkit not run (untouched).
+- Owner's hand test of the hand-test round PASSED (2026-10-22, HISTORY).
+  Item 8's existing-map picker dropped (DECISIONS, IDEAS).
+- Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
+  done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
+- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
+- Last results (2026-10-22, map fixes): unit 94 + 8 scripts, Linkkit
+  979; full local gauntlet 194 (hover p95 16.9 ms), Linkkit 18; live: see
+  below; no test browser left.
 
 ## Waiting for the owner
 
-- Hand test of items 1-9 (feel): dark-mode import, toolbar, edge resize,
-  map editing on the whole page, Add map view / Unlink map.
-
+- Feel of the map fixes: the dim while editing a map, the label, a dot
+  dragged far out, a board's Map and Both views.
 - Phase 3 hand test (feel only): placing and scaling a map, editing it in
   place, the List | Map | Both switch, one undo. Then "go to phase 4".
 - Earlier hand test (phase 2.5 feel items), if not done yet.
 
 ## Half-done
 
-- HAND-TEST ROUND (owner, 2026-10-21) items 1-9 done and committed
-  (docs/HISTORY.md), pushed and live; phase 4 NOT started. See
-  "Waiting for the owner" for item 4's leftovers.
+- Nothing half-done. Phase 4 NOT started (owner: don't start it).
 
 ## Broken / known wrong
 
-- Hover speed (perf.e2e.ts:193, p95 limit 25 ms) is at 2 frames (~33 ms)
-  on this PC today: old code 4/4 over, new code 1/3 (2026-10-22). Not the
-  move cursor; kept, not skipped (it guards that code).
+- Linkkit's tree layout lets long card names overlap their neighbours
+  (a board's map, and Linkkit's own page): not changed.
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
   resize); unsaved.e2e.ts:142 (Delete right after a click not taken, once
   in a live full run 2026-10-21; 5/5 alone, 12/12 with 6 workers).

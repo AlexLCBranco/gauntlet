@@ -1215,3 +1215,9 @@ Decisions in PROJECT.md (one entry per item).
 Test-only lessons: tldraw counts a double-click within 450 ms of the last
 clicks as a third/fourth click; the style panel (top left) takes clicks
 under it while something is selected.
+Owner hand test (2026-10-22), PASSED: Excalidraw dark-mode import (font
+size and colours right), a box toolbar near a map's top edge (fully
+visible, + adds a child), resizing a map from an edge, Add map view (the
+board gets List | Map | Both), switching List/Map/Both, "⋯" → Unlink map,
+Ctrl+Z relinks, the move cursor. Item 8's "link an existing map from a
+short list" dropped (DECISIONS 2026-10-22, IDEAS).

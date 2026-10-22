@@ -627,6 +627,61 @@ Changes to the plan, newest last. Each says what and why.
   outline-only rectangle shows default inside (nothing there to grab, as
   in Excalidraw) and move once selected; a widget's own buttons and
   fields keep their cursor.
+- 2026-10-22 — Hand test of the hand-test round passed (owner; list in
+  docs/HISTORY.md). Item 8's "link an existing map from a short list" is
+  dropped (owner): neither app can turn an existing map into a board's
+  lists and cards, and a converter only for this picker isn't worth it.
+  Moved to IDEAS with that blocker.
+- 2026-10-22 — Map fixes from the owner's hand test (Linkkit v0.0.112;
+  e2e/mapfixes.e2e.ts, each fails on the old code).
+  1. While a map is edited the rest of the page is dimmed as one layer: a
+     sheet in the page's colour (75%) in tldraw's shape layer, just under
+     the edited widget, which is raised over every other item meanwhile
+     (src/maps/mapEditing.tsx). Cause: each item got opacity 0.25, so a
+     filled box let what lay under it show through. Items keep opacity 1;
+     the label and the edited map stay bright.
+  2. The editing label says what adds a box under the map's rules
+     (Linkkit `useWhiteboardMapAdding`): tree rules on, "use a box’s + or
+     drag its dot to add a box"; off, "double-click anywhere to add a box";
+     a bracket, how to fill it in. With tree rules on, a double-click
+     anywhere (inside the map or out) shows Linkkit's "every box needs a
+     parent" hint where it was. Cause: the label was one fixed text, and
+     the hint outside the map was cut off with the map.
+  3. A box's dot dragged past the map's edge: the dashed arrow follows
+     anywhere, and let go on bare page (on the page, no item there, not on
+     a toolbar) it adds a child (gauntlet tells Linkkit where:
+     `onBarePage`). In a tree the child then settles into the tree's
+     layout, as on Linkkit's paper (agent's choice: tree rules keep every
+     box in the layout; it doesn't stay at the drop point). Cause: the map
+     was cut off 64 px past its area (this morning's toolbar fix), and a
+     drop counted only over Linkkit's own paper. Now only React Flow's own
+     layer is cut to the area (plus those 64 px), the previews and hints
+     over it are not. Dropping on bare paper inside the map's area worked
+     before (checked on the old code).
+  4. A board's Map and Both views showed a map from "Add map view" piled
+     up and cut off: it was stored with every box still at the page's
+     corner, never laid out (nothing opened it in Linkkit). Linkkit now
+     tidies such a tree (`neverLaidOut`) before it shows, shown or edited.
+     fit.ts unchanged. Known, not changed: Linkkit's tree layout lets long
+     card names overlap their neighbours, same in Linkkit's own page.
+- 2026-10-22 — Hover speed (perf.e2e.ts:193) was a real slowdown, from
+  resize-from-the-edge (2026-10-21, `7af6c09`) and a little more from the
+  move cursor: each cursor change re-styled every element of every item
+  (tldraw's `--tl-cursor` is inherited: 8 ms with 400 items), and a DOM
+  lookup ran on every hover over an item. Measured over 400 items: edge
+  resize off 0% frames missed, on 1.6-5.1% (p95 flips to 2 frames past
+  5%). Fixed (src/whiteboard/hoverResize.ts `canvasCursor`): the canvas
+  shows the cursor as its own `cursor`, the items' layer doesn't inherit
+  it, `--tl-cursor` is registered as not inherited, and the one item
+  element under the pointer that takes it gets the same cursor; the
+  control lookup runs only over widgets. Now 0.3-0.8% missed, p95 one
+  frame in every run; the limit (1.5 frames) is kept, it fits this PC.
+- 2026-10-22 — clickaway.e2e.ts:298 hanging 5 minutes in a full run: a
+  test race, not the app. On the whiteboard one click on empty page ends
+  map editing 500 ms later (by design); the test's next step still found
+  it editing, went to a box's "Add a child" just as the map turned back
+  into a picture (inert), and the click waited for the test's whole 5
+  minutes. Reproduced on purpose; the test now waits for editing to end.
 
 IDEAS
 
@@ -638,3 +693,7 @@ They wait here; the agent tells the owner instead of building them.
   style menu; works the same on the whiteboard.
 - Toolbar redesign (owner, 2026-10-21): too many useless buttons; rethink
   the whole menu later.
+- Link an existing map to a board from a short list (owner, 2026-10-21;
+  dropped 2026-10-22). Blocker: neither Linkkit nor Boardkit can turn an
+  existing map's boxes into a board's lists and cards; it needs that
+  converter first, not worth building only for this picker.
