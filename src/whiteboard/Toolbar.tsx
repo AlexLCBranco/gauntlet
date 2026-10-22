@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { TldrawUiIcon, useEditor, useIsToolSelected, useTools, useTranslation, useValue, type TLUiToolItem } from "tldraw";
 
-import { dotsIcon, TOOL_ICONS } from "./toolbarIcons";
-import { BAR, KEYS, LABELS, MORE, SEPARATOR, tooltip } from "./toolbarLayout";
+import { dotsIcon, resetIcon, TOOL_ICONS } from "./toolbarIcons";
+import { DEFAULT_LAYOUT, FIXED_ON_BAR, KEYS, LABELS, moveTool, SEPARATOR, tooltip, type Place } from "./toolbarLayout";
+import { setToolbarLayout, toolbarLayout } from "./toolbarStore";
 import "./toolbar.css";
 
 /** A tool's name (toolbarLayout.ts), else tldraw's own label. */
@@ -19,9 +20,19 @@ function Icon({ item, label }: { item: TLUiToolItem; label: string }) {
   return TOOL_ICONS[item.id] ?? <TldrawUiIcon icon={item.icon} label={label} small />;
 }
 
+/** What a button needs from the toolbar's drag (useToolDrag). */
+interface Dragging {
+  /** Starts watching a press: a move past a few pixels makes it a drag. */
+  onPointerDown: (e: ReactPointerEvent, id: string) => void;
+  /** True once, right after a drag: its click must not pick the tool. */
+  swallowClick: () => boolean;
+  /** The tool being dragged, if any. */
+  id: string | null;
+}
+
 /** A button on the bar, as Excalidraw's ToolIcon: the icon, and the key
     that picks it in the bottom-right corner. */
-function ToolButton({ item }: { item: TLUiToolItem }) {
+function ToolButton({ item, drag }: { item: TLUiToolItem; drag: Dragging }) {
   const selected = useIsToolSelected(item);
   const label = useLabel()(item);
   const hint = KEYS[item.id]?.hint;
@@ -31,11 +42,13 @@ function ToolButton({ item }: { item: TLUiToolItem }) {
       className="gk-tool"
       data-testid={`tools.${item.id}`}
       data-value={item.id}
+      data-dragging={drag.id === item.id || undefined}
       aria-label={label}
       aria-pressed={selected}
       aria-keyshortcuts={hint}
       title={tooltip(item.id)}
-      onClick={() => item.onSelect("toolbar")}
+      onPointerDown={(e) => drag.onPointerDown(e, item.id)}
+      onClick={() => drag.swallowClick() || item.onSelect("toolbar")}
     >
       <span className="gk-tool__icon">
         <Icon item={item} label={label} />
@@ -47,7 +60,7 @@ function ToolButton({ item }: { item: TLUiToolItem }) {
 
 /** The ⋮ "More tools" menu's entry for a tool, as Excalidraw's dropdown
     item: icon, name, its key on the right. */
-function MoreItem({ item, onDone }: { item: TLUiToolItem; onDone: () => void }) {
+function MoreItem({ item, drag, onDone }: { item: TLUiToolItem; drag: Dragging; onDone: () => void }) {
   const selected = useIsToolSelected(item);
   const label = useLabel()(item);
   const hint = KEYS[item.id]?.hint;
@@ -58,12 +71,16 @@ function MoreItem({ item, onDone }: { item: TLUiToolItem; onDone: () => void }) 
       className="gk-more-item"
       data-testid={`tools.more.${item.id}`}
       data-value={item.id}
+      data-dragging={drag.id === item.id || undefined}
       aria-pressed={selected}
       aria-keyshortcuts={hint}
       title={tooltip(item.id)}
-      // Markup's tool comes in step 4 of the toolbar rework.
+      // Markup's tool comes in step 4 of the toolbar rework (it can still
+      // be dragged: the press goes to the wrapper).
       disabled={item.id === "markup"}
+      onPointerDown={(e) => drag.onPointerDown(e, item.id)}
       onClick={() => {
+        if (drag.swallowClick()) return;
         onDone();
         item.onSelect("toolbar");
       }}
@@ -77,38 +94,163 @@ function MoreItem({ item, onDone }: { item: TLUiToolItem; onDone: () => void }) 
   );
 }
 
+/** Where a drop would go, and the line that shows it (window coordinates). */
+interface Target {
+  to: Place;
+  index: number;
+  mark: { left: number; top: number; width: number; height: number };
+}
+
+/** Pixels a press must move before it's a drag (below: a click). */
+const DRAG_START = 4;
+
 /**
- * The toolbar along the top, centred, as in Excalidraw: exactly the tools
- * in toolbarLayout.ts, at every window size (our own row, not tldraw's
- * overflowing one), then the ⋮ "More tools" button and its menu. Looks:
- * toolbar.css (Excalidraw's own values).
+ * Dragging tools between the bar and the ⋮ menu (pin, unpin), and within
+ * each (reorder): the press is watched on the window, so the menu, which
+ * only closes on a press outside the toolbar, stays open the whole drag.
+ * Over ⋮ the menu opens. Select and the separator stay on the bar.
+ * Escape, or a drop anywhere else, changes nothing.
+ */
+function useToolDrag(bar: React.RefObject<HTMLDivElement | null>, menu: React.RefObject<HTMLDivElement | null>, openMenu: () => void) {
+  const [state, setState] = useState<{ id: string; x: number; y: number; target: Target | null } | null>(null);
+  const swallow = useRef(false);
+  /** A drag is on (the menu's Escape leaves it to the drag). */
+  const active = useRef(false);
+
+  const targetAt = (id: string, x: number, y: number): Target | null => {
+    const inside = (el: Element | null, slack: number) => {
+      const r = el?.getBoundingClientRect();
+      return r && x >= r.left - slack && x <= r.right + slack && y >= r.top - slack && y <= r.bottom + slack ? r : null;
+    };
+    // The list's own entries (the bar's buttons and separator, the menu's
+    // slots), not the dragged one.
+    const items = (root: HTMLElement | null) =>
+      [...((root?.children ?? []) as HTMLCollectionOf<HTMLElement>)].filter((el) => el.dataset.value && el.dataset.value !== id);
+    // ⋮ first (it sits inside the bar's box): over it, the menu opens and
+    // the tool would go last in it; Select and the separator can't.
+    const moreButton = inside(document.querySelector('[data-testid="tools.more-button"]'), 0);
+    if (moreButton) {
+      if (FIXED_ON_BAR.has(id)) return null;
+      openMenu();
+      return { to: "more", index: Infinity, mark: { left: moreButton.right + 1, top: moreButton.top + 6, width: 2, height: moreButton.height - 12 } };
+    }
+    const barBox = inside(bar.current, 12);
+    if (barBox) {
+      const others = items(bar.current);
+      const index = others.filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.left + r.width / 2 < x;
+      }).length;
+      const before = others[index - 1]?.getBoundingClientRect();
+      const after = others[index]?.getBoundingClientRect();
+      const left = before && after ? (before.right + after.left) / 2 : before ? before.right + 2 : after ? after.left - 2 : barBox.left + 4;
+      return { to: "bar", index, mark: { left: left - 1, top: barBox.top + 6, width: 2, height: barBox.height - 12 } };
+    }
+    if (FIXED_ON_BAR.has(id)) return null;
+    const menuBox = inside(menu.current, 8);
+    if (menuBox) {
+      const others = items(menu.current);
+      const index = others.filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top + r.height / 2 < y;
+      }).length;
+      const before = others[index - 1]?.getBoundingClientRect();
+      const after = others[index]?.getBoundingClientRect();
+      const top = before && after ? (before.bottom + after.top) / 2 : before ? before.bottom + 1 : after ? after.top - 1 : menuBox.top + 8;
+      return { to: "more", index, mark: { left: menuBox.left + 8, top: top - 1, width: menuBox.width - 16, height: 2 } };
+    }
+    return null;
+  };
+
+  const onPointerDown = (e: ReactPointerEvent, id: string) => {
+    if (e.button !== 0 || id === SEPARATOR) return;
+    const x0 = e.clientX;
+    const y0 = e.clientY;
+    let started = false;
+    let target: Target | null = null;
+    const move = (ev: PointerEvent) => {
+      if (!started && Math.hypot(ev.clientX - x0, ev.clientY - y0) < DRAG_START) return;
+      started = true;
+      active.current = true;
+      ev.preventDefault();
+      target = targetAt(id, ev.clientX, ev.clientY);
+      setState({ id, x: ev.clientX, y: ev.clientY, target });
+    };
+    const end = (drop: boolean) => {
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", up, true);
+      window.removeEventListener("keydown", key, true);
+      if (!started) return;
+      active.current = false;
+      // The click that follows this release isn't a tool pick.
+      swallow.current = true;
+      setTimeout(() => (swallow.current = false), 0);
+      if (drop && target) setToolbarLayout(moveTool(toolbarLayout.get(), id, target.to, target.index));
+      setState(null);
+    };
+    const up = () => end(true);
+    const key = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape" || !started) return;
+      ev.stopPropagation();
+      end(false);
+    };
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", up, true);
+    window.addEventListener("keydown", key, true);
+  };
+
+  const swallowClick = () => {
+    const was = swallow.current;
+    swallow.current = false;
+    return was;
+  };
+  return { state, active, drag: { onPointerDown, swallowClick, id: state?.id ?? null } as Dragging };
+}
+
+/**
+ * The toolbar along the top, centred, as in Excalidraw: the owner's
+ * arrangement of the tools (toolbarLayout.ts, toolbarStore.ts), at every
+ * window size (our own row, not tldraw's overflowing one), then the ⋮
+ * "More tools" button and its menu. Tools are dragged between the two
+ * (useToolDrag). Looks: toolbar.css (Excalidraw's own values).
  */
 export function Toolbar() {
   const editor = useEditor();
   const tools = useTools();
+  const layout = useValue(toolbarLayout);
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const current = useValue("current tool", () => editor.getCurrentToolId(), [editor]);
+  const { state, active, drag } = useToolDrag(bar, menu, () => setOpen(true));
 
   useEffect(() => {
     if (!open) return;
     const close = (e: PointerEvent) => {
       if (!root.current?.contains(e.target as Node)) setOpen(false);
     };
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    // Escape mid-drag only ends the drag.
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && !active.current && setOpen(false);
     window.addEventListener("pointerdown", close, true);
     window.addEventListener("keydown", esc, true);
     return () => {
       window.removeEventListener("pointerdown", close, true);
       window.removeEventListener("keydown", esc, true);
     };
-  }, [open]);
+  }, [open, active]);
 
+  // The separator shows only between two tools.
+  const last = layout.bar.length - 1;
   return (
-    <div className="gauntlet-top-toolbar" ref={root} onPointerDown={(e) => e.stopPropagation()}>
-      <div className="gk-toolbar" role="toolbar" data-testid="toolbar">
-        {BAR.map((id, i) =>
-          id === SEPARATOR ? <div key={`sep${i}`} className="gk-toolbar-sep" role="separator" /> : tools[id] && <ToolButton key={id} item={tools[id]} />,
+    <div className="gauntlet-top-toolbar" ref={root} onPointerDown={(e) => e.stopPropagation()} data-dragging={state ? "" : undefined}>
+      <div className="gk-toolbar" role="toolbar" data-testid="toolbar" ref={bar}>
+        {layout.bar.map((id, i) =>
+          id === SEPARATOR ? (
+            i > 0 && i < last && <div key={SEPARATOR} className="gk-toolbar-sep" role="separator" data-value={SEPARATOR} />
+          ) : (
+            tools[id] && <ToolButton key={id} item={tools[id]} drag={drag} />
+          ),
         )}
         <button
           type="button"
@@ -118,16 +260,46 @@ export function Toolbar() {
           title="More tools"
           aria-expanded={open}
           // Lit while a tool from the menu is on.
-          aria-pressed={MORE.includes(current)}
+          aria-pressed={layout.more.includes(current)}
           onClick={() => setOpen((o) => !o)}
         >
           {dotsIcon}
         </button>
       </div>
       {open && (
-        <div className="gk-more" role="menu" data-testid="tools.more">
-          {MORE.map((id) => tools[id] && <MoreItem key={id} item={tools[id]} onDone={() => setOpen(false)} />)}
+        <div className="gk-more" role="menu" data-testid="tools.more" ref={menu}>
+          {layout.more.map((id) =>
+            tools[id] ? (
+              // A wrapper takes the press, so even a greyed-out entry drags.
+              <div key={id} className="gk-more-slot" data-value={id} onPointerDown={(e) => drag.onPointerDown(e, id)}>
+                <MoreItem item={tools[id]} drag={{ ...drag, onPointerDown: () => {} }} onDone={() => setOpen(false)} />
+              </div>
+            ) : null,
+          )}
+          {layout.more.length === 0 && <div className="gk-more-empty">Drag tools here to unpin them</div>}
+          <div className="gk-more-divider" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="gk-more-item"
+            data-testid="tools.more.reset"
+            onClick={() => {
+              setToolbarLayout(DEFAULT_LAYOUT);
+              setOpen(false);
+            }}
+          >
+            <span className="gk-more-item__icon">{resetIcon}</span>
+            <span className="gk-more-item__text">Reset toolbar to default</span>
+          </button>
         </div>
+      )}
+      {state && (
+        <>
+          <div className="gk-drag-ghost" style={{ left: state.x, top: state.y }} data-testid="toolbar-drag-ghost">
+            {TOOL_ICONS[state.id]}
+          </div>
+          {state.target && <div className="gk-drop-mark" style={state.target.mark} data-testid="toolbar-drop-mark" />}
+        </>
       )}
     </div>
   );

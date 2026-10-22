@@ -731,6 +731,18 @@ Changes to the plan, newest last. Each says what and why.
   Its UI font, Assistant Regular, is self-hosted (src/whiteboard/fonts/,
   Excalidraw's copy; owner, same day). Third-party licences (Excalidraw
   MIT, Tabler MIT, Assistant SIL OFL 1.1): THIRD_PARTY_LICENSES.
+- 2026-10-22 — Toolbar rework, step 3 (owner): the toolbar is arranged by
+  dragging. A tool dragged from the open ⋮ menu onto the bar is pinned
+  where it's dropped; a bar tool dropped into the menu, or on ⋮ (which
+  opens the menu), is unpinned; tools reorder within the bar and the
+  menu. The menu stays open during and after a drag; a drag never picks
+  the tool; Escape mid-drag, or a drop elsewhere, changes nothing. Select
+  never leaves the bar; the separator isn't dragged and shows only
+  between two tools. The layout is kept in this browser's localStorage
+  ("gauntlet:toolbar", so backups carry it; no key = default) and follows
+  other open tabs. "Reset toolbar to default" is last in the ⋮ menu,
+  under Excalidraw's menu separator (src/whiteboard/toolbarLayout.ts,
+  toolbarStore.ts, Toolbar.tsx useToolDrag).
 
 IDEAS
 

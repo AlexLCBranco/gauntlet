@@ -60,7 +60,7 @@ test("the ⋮ menu holds Insert image, Web embed, Lasso selection, Markup, Text,
   await open(page);
   const more = page.getByTestId("tools.more-button");
   await more.click();
-  const items = page.getByTestId("tools.more").getByRole("menuitem");
+  const items = page.locator('[data-testid="tools.more"] .gk-more-item[data-value]');
   expect(await items.evaluateAll((els) => els.map((e) => e.getAttribute("data-value")))).toEqual(MORE);
   await expect(items.locator(".gk-more-item__text")).toHaveText(MORE_LABELS);
   // Escape and a click outside close it.
@@ -269,13 +269,17 @@ test("the ⋮ menu looks as Excalidraw's: 32 px entries with 16 px icons, names,
   expect(await css(page, '[data-testid="tools.more.lasso"] .gk-more-item__shortcut', ["opacity"])).toEqual({ opacity: "0.5" });
   // Keys on the right, only where the key works (Markup: none yet).
   const keys = await page
-    .getByTestId("tools.more")
-    .getByRole("menuitem")
+    .locator('[data-testid="tools.more"] .gk-more-item[data-value]')
     .evaluateAll((els) => els.map((e) => e.querySelector(".gk-more-item__shortcut")?.textContent ?? ""));
   expect(keys).toEqual(["9", "I", "W", "", "T", "P"]);
 });
 
 test("every key hint shown works: it picks its tool (Board and Map make one), and the tooltip says it", async ({ page }) => {
+  // Listening from the start: Playwright turns on its file-picker
+  // interception a moment after a listener is added, and a key press,
+  // unlike a click, is instant.
+  const choosers: unknown[] = [];
+  page.on("filechooser", (c) => choosers.push(c));
   await open(page);
   const hints = await page
     .getByTestId("toolbar")
@@ -318,12 +322,14 @@ test("every key hint shown works: it picks its tool (Board and Map make one), an
     expect(await tool(page), `${key} → ${id}`).toBe(id);
   }
   await page.keyboard.press("v");
+  await page.keyboard.press("9");
+  await expect.poll(() => choosers.length).toBe(1);
+  // Last: closing tldraw's dialog leaves its keys off for a moment (they
+  // come back once the whiteboard has focus again), too short for a hand.
   await page.keyboard.press("i");
   await expect(page.locator(".tlui-dialog__content")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator(".tlui-dialog__content")).toHaveCount(0);
-  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.keyboard.press("9")]);
-  expect(chooser).toBeTruthy();
 });
 
 test("the bar's key hints and the ⋮ menu's text are drawn in Excalidraw's Assistant font, served from this site", async ({ page }) => {
@@ -357,6 +363,154 @@ test("the bar's key hints and the ⋮ menu's text are drawn in Excalidraw's Assi
   const site = new URL(page.url()).origin;
   for (const url of fontRequests) expect(url.startsWith(site), url).toBe(true);
   await cdp.detach();
+});
+
+// ---------------------------------------------------------------------------
+// Step 3: arranging the toolbar (Toolbar.tsx useToolDrag, toolbarLayout.ts,
+// toolbarStore.ts).
+
+const barOrder = (page: Page) => shown(page);
+const menuOrder = (page: Page) => page.locator('[data-testid="tools.more"] .gk-more-item[data-value]').evaluateAll((els) => els.map((e) => e.getAttribute("data-value")));
+const centre = async (page: Page, selector: string) => {
+  const b = (await page.locator(selector).boundingBox())!;
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+};
+/** Presses `from`, moves in steps to (x, y), checks mid-way, releases. */
+async function dragTo(page: Page, from: string, to: { x: number; y: number }, midway?: () => Promise<void>) {
+  const a = await centre(page, from);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(a.x + 10, a.y + 10, { steps: 3 });
+  await page.mouse.move(to.x, to.y, { steps: 10 });
+  if (midway) await midway();
+  await page.mouse.up();
+}
+/** A point on the bar just left of a tool's button (a drop before it). */
+const before = async (page: Page, id: string) => {
+  const b = (await page.getByTestId(`tools.${id}`).boundingBox())!;
+  return { x: b.x + 4, y: b.y + b.height / 2 };
+};
+const stored = (page: Page) => page.evaluate(() => localStorage.getItem("gauntlet:toolbar"));
+
+test("pin: a tool dragged from the open ⋮ menu onto the bar lands where it's dropped; the menu stays open the whole drag; no tool is picked; it survives a reload", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("tools.more-button").click();
+  await dragTo(page, '[data-testid="tools.more.lasso"]', await before(page, "arrow"), async () => {
+    await expect(page.getByTestId("tools.more")).toBeVisible();
+    await expect(page.getByTestId("toolbar-drag-ghost")).toBeVisible();
+    await expect(page.getByTestId("toolbar-drop-mark")).toBeVisible();
+  });
+  await expect(page.getByTestId("tools.more")).toBeVisible();
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "lasso", "arrow", "line", "|", "board", "map", "more"]);
+  expect(await menuOrder(page)).toEqual(["asset", "embed", "markup", "text", "draw"]);
+  expect(await tool(page)).toBe("select");
+  // On the bar it's a bar button: its key hint shows, and the key works.
+  await expect(page.locator('[data-testid="tools.lasso"] .gk-tool__kbd')).toHaveText("W");
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("w");
+  await expect(page.getByTestId("tools.lasso")).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("v");
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "lasso", "arrow", "line", "|", "board", "map", "more"]);
+});
+
+test("unpin: a bar tool dropped into the open menu goes there; dropped on ⋮ while the menu is shut, the menu opens and takes it; both survive a reload", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("tools.more-button").click();
+  const first = (await page.getByTestId("tools.more.asset").boundingBox())!;
+  await dragTo(page, '[data-testid="tools.line"]', { x: first.x + 40, y: first.y + 4 });
+  expect(await menuOrder(page)).toEqual(["line", "asset", "embed", "lasso", "markup", "text", "draw"]);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "map", "more"]);
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("tools.more")).toHaveCount(0);
+  // Onto ⋮ with the menu shut: it opens, and the tool goes to its end.
+  const more = await centre(page, '[data-testid="tools.more-button"]');
+  const a = await centre(page, '[data-testid="tools.map"]');
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(more.x, more.y, { steps: 10 });
+  await expect(page.getByTestId("tools.more")).toBeVisible();
+  const box = (await page.getByTestId("tools.more").boundingBox())!;
+  await page.mouse.move(box.x + 60, box.y + box.height - 50, { steps: 10 });
+  await page.mouse.up();
+  expect(await menuOrder(page)).toContain("map");
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "more"]);
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "more"]);
+  // With Board gone too, the separator would be last: it isn't shown.
+  await dragTo(page, '[data-testid="tools.board"]', await centre(page, '[data-testid="tools.more-button"]'));
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "more"]);
+  // The drop on ⋮ opened the menu, and it stays open.
+  await expect(page.getByTestId("tools.more")).toBeVisible();
+  expect((await menuOrder(page))[0]).toBe("line");
+  expect(await menuOrder(page)).toContain("map");
+});
+
+test("reorder: tools move within the bar, and within the menu", async ({ page }) => {
+  await open(page);
+  await dragTo(page, '[data-testid="tools.map"]', await before(page, "select"));
+  expect(await barOrder(page)).toEqual(["map", "select", "rectangle", "arrow", "line", "|", "board", "more"]);
+  const end = (await page.getByTestId("tools.line").boundingBox())!;
+  await dragTo(page, '[data-testid="tools.map"]', { x: end.x + end.width - 2, y: end.y + end.height / 2 });
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "line", "map", "|", "board", "more"]);
+  await page.getByTestId("tools.more-button").click();
+  const top = (await page.getByTestId("tools.more.asset").boundingBox())!;
+  await dragTo(page, '[data-testid="tools.more.draw"]', { x: top.x + 40, y: top.y + 4 });
+  expect(await menuOrder(page)).toEqual(["draw", "asset", "embed", "lasso", "markup", "text"]);
+  expect(JSON.parse((await stored(page))!)).toEqual({
+    bar: ["select", "rectangle", "arrow", "line", "map", "|", "board"],
+    more: ["draw", "asset", "embed", "lasso", "markup", "text"],
+  });
+});
+
+test("Select can't be unpinned: dropped into the menu or on ⋮ it stays on the bar; Escape mid-drag cancels and keeps the menu open", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("tools.more-button").click();
+  const menu = (await page.getByTestId("tools.more").boundingBox())!;
+  await dragTo(page, '[data-testid="tools.select"]', { x: menu.x + 60, y: menu.y + 30 }, async () => {
+    // No place to drop it in the menu.
+    await expect(page.getByTestId("toolbar-drop-mark")).toHaveCount(0);
+  });
+  await dragTo(page, '[data-testid="tools.select"]', await centre(page, '[data-testid="tools.more-button"]'));
+  expect(await barOrder(page)).toEqual(BAR);
+  expect(await menuOrder(page)).toEqual(MORE);
+  expect(await stored(page)).toBeNull();
+  // Escape mid-drag: nothing moves, the menu stays.
+  const a = await centre(page, '[data-testid="tools.more.text"]');
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(...(Object.values(await before(page, "arrow")) as [number, number]), { steps: 10 });
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  await expect(page.getByTestId("tools.more")).toBeVisible();
+  expect(await barOrder(page)).toEqual(BAR);
+  expect(await menuOrder(page)).toEqual(MORE);
+  // A plain click still picks the tool and closes the menu.
+  await page.getByTestId("tools.more.text").click();
+  expect(await tool(page)).toBe("text");
+  await expect(page.getByTestId("tools.more")).toHaveCount(0);
+});
+
+test("\"Reset toolbar to default\", last in the ⋮ menu, brings back the default bar and menu, also after a reload", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("tools.more-button").click();
+  await dragTo(page, '[data-testid="tools.more.draw"]', await before(page, "board"));
+  await dragTo(page, '[data-testid="tools.rectangle"]', await centre(page, '[data-testid="tools.more.asset"]'));
+  expect(await barOrder(page)).not.toEqual(BAR);
+  expect(await stored(page)).not.toBeNull();
+  const last = page.getByTestId("tools.more").getByRole("menuitem").last();
+  await expect(last).toHaveText("Reset toolbar to default");
+  await expect(last).toHaveAttribute("data-testid", "tools.more.reset");
+  await last.click();
+  expect(await barOrder(page)).toEqual(BAR);
+  expect(await stored(page)).toBeNull();
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  expect(await barOrder(page)).toEqual(BAR);
+  await page.getByTestId("tools.more-button").click();
+  expect(await menuOrder(page)).toEqual(MORE);
 });
 
 test("screenshots of the bar and the open ⋮ menu, to compare with Excalidraw's (screenshots/)", async ({ page }) => {

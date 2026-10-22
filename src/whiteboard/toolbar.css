@@ -204,3 +204,33 @@
 .gk-more-item__icon svg { width: 1rem; height: 1rem; display: block; }
 .gk-more-item__text { display: flex; align-items: center; width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; gap: 0.75rem; }
 .gk-more-item__shortcut { margin-inline-start: auto; opacity: 0.5; }
+
+/* Arranging the toolbar (Toolbar.tsx, useToolDrag): the tool being
+   dragged stays in place, faded; a copy follows the pointer; a line in
+   Excalidraw's primary colour (theme.scss, dark: #a8a5ff) shows where it
+   will go. */
+.gauntlet-top-toolbar { user-select: none; }
+.gauntlet-top-toolbar[data-dragging], .gauntlet-top-toolbar[data-dragging] * { cursor: grabbing !important; }
+[data-dragging="true"] { opacity: 0.4; }
+.gk-drag-ghost {
+  position: fixed;
+  z-index: 400;
+  width: var(--lg-button-size);
+  height: var(--lg-button-size);
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  border-radius: var(--border-radius-lg);
+  background: var(--color-surface-primary-container);
+  color: var(--color-on-primary-container);
+  box-shadow: var(--shadow-island);
+}
+.gk-drag-ghost svg { width: var(--lg-icon-size); height: var(--lg-icon-size); }
+.gk-drop-mark { position: fixed; z-index: 400; pointer-events: none; border-radius: 1px; background: #a8a5ff; }
+.gk-more-slot { display: flex; }
+.gk-more-empty { padding: 0.5rem; font-size: 0.75rem; color: var(--keybinding-color); }
+/* Above "Reset toolbar to default": dropdownMenu/DropdownMenuSeparator.tsx
+   (1 px, --default-border-color, 6 px above and below). */
+.gk-more-divider { height: 1px; margin: 6px 0; flex: 0 0 auto; background-color: var(--color-surface-high); }

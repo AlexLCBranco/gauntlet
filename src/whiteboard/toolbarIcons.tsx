@@ -109,6 +109,16 @@ export const dotsIcon = icon(
 );
 
 // Ours, in Excalidraw's style.
+/** "Reset toolbar to default" (tabler-icons: rotate, as Excalidraw's own
+    reset icons). */
+export const resetIcon = icon(
+  <g strokeWidth="1.25">
+    <path d="M16.25 10a6.25 6.25 0 1 1-1.83-4.42" />
+    <path d="M16.25 3.333v3.334h-3.333" />
+  </g>,
+  modifiedTabler,
+);
+
 const board = icon(
   <g strokeWidth="1.25">
     <rect x="2.5" y="3.333" width="4.167" height="13.333" rx="1" />

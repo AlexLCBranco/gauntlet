@@ -35,8 +35,8 @@ Finished work goes to docs/HISTORY.md.
 
 - TOOLBAR REWORK (owner, 2026-10-22; request word for word in
   docs/TOOLBAR-REWORK.md): 4 steps, STOP after each for the owner's OK.
-  Steps 1-2 DONE (DECISIONS; e2e/toolbar.e2e.ts; screenshots/ from the
-  e2e and scripts/excalidraw-shots.mjs). Next: step 3 when the owner
+  Steps 1-3 DONE (DECISIONS; e2e/toolbar.e2e.ts; screenshots/ from the
+  e2e and scripts/excalidraw-shots.mjs). Next: step 4 when the owner
   says go. Markup greyed out in ⋮ until step 4.
 - Live runs: no bypass secret exists (DECISIONS 2026-10-22); after a
   push, `node scripts/wait-deploy.mjs`. A 403 stops the run: tell the owner.

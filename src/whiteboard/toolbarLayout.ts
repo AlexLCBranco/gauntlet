@@ -87,3 +87,54 @@ export const REMOVED: readonly string[] = [
   "arrow-down",
   "arrow-right",
 ];
+
+/**
+ * The toolbar as the owner arranged it (step 3): the bar's order, with the
+ * separator, and the ⋮ menu's. Tools move between the two, and within
+ * each, by dragging (Toolbar.tsx); it's kept in this browser
+ * (toolbarStore.ts) and "Reset toolbar to default" brings back BAR and
+ * MORE.
+ */
+export interface Layout {
+  readonly bar: readonly string[];
+  readonly more: readonly string[];
+}
+export type Place = "bar" | "more";
+export const DEFAULT_LAYOUT: Layout = { bar: BAR, more: MORE };
+
+/** Never leave the bar: Select (owner) and the separator (not dragged). */
+export const FIXED_ON_BAR: ReadonlySet<string> = new Set(["select", SEPARATOR]);
+
+/** `id` moved to `to`, at `index` among that list's other items. The same
+    layout when the move isn't allowed (Select or the separator into the
+    menu, an unknown id) or changes nothing. */
+export function moveTool(layout: Layout, id: string, to: Place, index: number): Layout {
+  const from: Place | null = layout.bar.includes(id) ? "bar" : layout.more.includes(id) ? "more" : null;
+  if (!from || id === SEPARATOR || (to === "more" && FIXED_ON_BAR.has(id))) return layout;
+  const without = { bar: layout.bar.filter((x) => x !== id), more: layout.more.filter((x) => x !== id) };
+  const list = [...without[to]];
+  list.splice(Math.max(0, Math.min(index, list.length)), 0, id);
+  const next = { ...without, [to]: list };
+  return sameLayout(next, layout) ? layout : next;
+}
+
+export function sameLayout(a: Layout, b: Layout): boolean {
+  return a.bar.join() === b.bar.join() && a.more.join() === b.more.join();
+}
+
+/** A stored layout made whole: unknown and repeated ids dropped, Select and
+    the separator back on the bar, any tool missing put back where the
+    default has it (end of that list). Anything unreadable: the default. */
+export function normalizeLayout(raw: unknown): Layout {
+  const r = raw as { bar?: unknown; more?: unknown } | null;
+  if (!r || !Array.isArray(r.bar) || !Array.isArray(r.more)) return DEFAULT_LAYOUT;
+  const known = new Set([...BAR, ...MORE]);
+  const seen = new Set<string>();
+  const keep = (list: unknown[]) =>
+    list.filter((x): x is string => typeof x === "string" && known.has(x) && !seen.has(x) && (seen.add(x), true));
+  const bar = keep(r.bar);
+  const more = keep(r.more).filter((x) => !FIXED_ON_BAR.has(x) || (bar.push(x), false));
+  for (const id of BAR) if (!seen.has(id) && !bar.includes(id)) bar.push(id);
+  for (const id of MORE) if (!seen.has(id)) more.push(id);
+  return { bar, more };
+}

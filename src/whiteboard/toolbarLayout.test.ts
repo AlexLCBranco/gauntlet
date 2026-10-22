@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BAR, KEYS, LABELS, MORE, REMOVED, SEPARATOR, tooltip } from "./toolbarLayout";
+import { BAR, DEFAULT_LAYOUT, KEYS, LABELS, MORE, moveTool, normalizeLayout, REMOVED, sameLayout, SEPARATOR, tooltip } from "./toolbarLayout";
 
 describe("toolbar layout", () => {
   const onBar = BAR.filter((id) => id !== SEPARATOR);
@@ -32,5 +32,44 @@ describe("toolbar layout", () => {
     expect(tooltip("asset")).toBe("Insert image — 9");
     expect(tooltip("draw")).toBe("Draw — P or 7 or X");
     expect(tooltip("markup")).toBe("Markup");
+  });
+});
+
+describe("arranging the toolbar (step 3)", () => {
+  const D = DEFAULT_LAYOUT;
+
+  it("pins a menu tool onto the bar at the drop place, and unpins a bar tool into the menu", () => {
+    const pinned = moveTool(D, "lasso", "bar", 1);
+    expect(pinned.bar).toEqual(["select", "lasso", "rectangle", "arrow", "line", SEPARATOR, "board", "map"]);
+    expect(pinned.more).toEqual(["asset", "embed", "markup", "text", "draw"]);
+    const unpinned = moveTool(D, "rectangle", "more", 0);
+    expect(unpinned.bar).toEqual(["select", "arrow", "line", SEPARATOR, "board", "map"]);
+    expect(unpinned.more[0]).toBe("rectangle");
+  });
+
+  it("reorders within the bar and within the menu", () => {
+    expect(moveTool(D, "map", "bar", 0).bar).toEqual(["map", "select", "rectangle", "arrow", "line", SEPARATOR, "board"]);
+    expect(moveTool(D, "draw", "more", 0).more).toEqual(["draw", "asset", "embed", "lasso", "markup", "text"]);
+    // An index past the end goes last.
+    expect(moveTool(D, "select", "bar", 99).bar.at(-1)).toBe("select");
+  });
+
+  it("Select and the separator never go into the menu; a move that changes nothing returns the same layout", () => {
+    expect(moveTool(D, "select", "more", 0)).toBe(D);
+    expect(moveTool(D, SEPARATOR, "more", 0)).toBe(D);
+    expect(moveTool(D, SEPARATOR, "bar", 0)).toBe(D);
+    expect(moveTool(D, "nonsense", "bar", 0)).toBe(D);
+    expect(moveTool(D, "rectangle", "bar", 1)).toBe(D);
+  });
+
+  it("a stored layout is made whole; an unreadable one is the default", () => {
+    for (const bad of [null, "x", 3, {}, { bar: "x", more: [] }]) expect(normalizeLayout(bad)).toBe(D);
+    const fixed = normalizeLayout({ bar: ["lasso", "lasso", "zzz", "rectangle"], more: ["select", "asset", 7] });
+    // Select back on the bar; every tool once; missing ones where the default has them.
+    expect(fixed.bar).toEqual(["lasso", "rectangle", "select", "arrow", "line", SEPARATOR, "board", "map"]);
+    expect(fixed.more).toEqual(["asset", "embed", "markup", "text", "draw"]);
+    const all = [...fixed.bar, ...fixed.more];
+    expect(new Set(all).size).toBe(all.length);
+    expect(sameLayout(normalizeLayout({ bar: [...D.bar], more: [...D.more] }), D)).toBe(true);
   });
 });
