@@ -249,6 +249,12 @@ async function mapOnWhiteboard(page: Page, context: Parameters<typeof seedMap>[0
     away: async () => {
       const b = await box(root);
       await page.mouse.click(Math.min(vp.width - 30, b.x + b.width + 260), Math.min(vp.height - 120, b.y + b.height + 160));
+      // One click on empty page ends editing the map, but only once no
+      // second click came (500 ms, mapEditing.tsx). Waited for: a next step
+      // that still found it editing went on to a box's button just as the
+      // map turned back into a picture (inert), and the click on it waited
+      // for the test's whole 5 minutes (a busy full run, 2026-10-22).
+      await expect.poll(() => editing(page)).toBeNull();
     },
     rename: async (name) => {
       const b = await box(boxNamed(name));
