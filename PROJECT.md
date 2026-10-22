@@ -513,7 +513,7 @@ Changes to the plan, newest last. Each says what and why.
   in both modes, as every other exact colour (2026-10-21, dark and custom
   colours).
 
-- 2026-10-21 — Toolbar no bigger than Excalidraw's (owner, hand-test round
+- (replaced by 2026-10-22, toolbar rework) 2026-10-21 — Toolbar no bigger than Excalidraw's (owner, hand-test round
   item 2). Excalidraw's toolbar measured on excalidraw.com (Edge, 1400, 1915
   and 1920 px windows): 542 x 44 px at every width. Ours: 13 tools on the
   row (Excalidraw's select, hand, rectangle, diamond, ellipse, arrow, line,
@@ -682,6 +682,21 @@ Changes to the plan, newest last. Each says what and why.
   it editing, went to a box's "Add a child" just as the map turned back
   into a picture (inert), and the click waited for the test's whole 5
   minutes. Reproduced on purpose; the test now waits for editing to end.
+- 2026-10-22 — Toolbar rework, step 1 of 4 (owner; the IDEAS item
+  "Toolbar redesign", asked for now). The bar, left to right: Select,
+  Rectangle, Arrow, Line | Board, Map, then ⋮ "More tools" at the far
+  right. The ⋮ menu: Insert image, Web embed, Lasso selection, Markup,
+  Text, Draw. Our own row (src/whiteboard/Toolbar.tsx, toolbarLayout.ts),
+  not tldraw's: it never moves tools into an overflow, at any window size.
+  Gone everywhere (button, menu, keyboard-shortcuts list, key): hand,
+  diamond, ellipse, eraser, highlighter, laser, note, frame, tldraw's
+  other geo tools, and the tool lock (button, Preferences item, Q).
+  Shapes of those kinds already drawn stay. Board and Map make a new one
+  at once; adding an existing board or map moved to the main menu ("Add
+  existing board…", "Add existing map…"). Markup is greyed out in the
+  menu until step 4 builds it. tldraw 5.5.2 has no draw-to-shape, bucket
+  fill or AI items, so nothing to remove there. Toolbar names are the
+  owner's, in English (tldraw's own labels follow the browser language).
 
 IDEAS
 
@@ -691,8 +706,6 @@ They wait here; the agent tells the owner instead of building them.
 - Text alignment per list (owner, 2026-10-21): left / center / right for
   the list title and, separately, for its cards, in Boardkit's per-list
   style menu; works the same on the whiteboard.
-- Toolbar redesign (owner, 2026-10-21): too many useless buttons; rethink
-  the whole menu later.
 - Link an existing map to a board from a short list (owner, 2026-10-21;
   dropped 2026-10-22). Blocker: neither Linkkit nor Boardkit can turn an
   existing map's boxes into a board's lists and cards; it needs that

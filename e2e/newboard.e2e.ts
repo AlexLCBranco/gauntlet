@@ -57,8 +57,6 @@ async function zoomInAt(page: Page, x: number, y: number, ticks: number) {
 async function newBoard(page: Page): Promise<Shape> {
   const before = (await shapes(page)).map((s) => s.id);
   await page.getByTestId("tools.board").click();
-  await page.getByTestId("new-board").click({ timeout: 10_000 });
-  await expect(page.getByTestId("board-picker")).toHaveCount(0);
   let made: Shape | undefined;
   await expect
     .poll(async () => {

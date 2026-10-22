@@ -88,3 +88,18 @@ export async function seedMap(context: BrowserContext, name: string): Promise<st
 }
 
 export const box = async (l: Locator) => (await l.boundingBox())!;
+
+/** The list of Boardkit's boards: main menu → "Add existing board…" (the
+    toolbar's Board button makes a new one). */
+export async function openBoardList(page: Page) {
+  await page.getByTestId("main-menu.button").click();
+  await page.getByRole("menuitem", { name: "Add existing board…" }).click();
+  await expect(page.getByTestId("board-picker")).toBeVisible();
+}
+
+/** The list of Linkkit's maps: main menu → "Add existing map…". */
+export async function openMapList(page: Page) {
+  await page.getByTestId("main-menu.button").click();
+  await page.getByRole("menuitem", { name: "Add existing map…" }).click();
+  await expect(page.getByTestId("map-picker")).toBeVisible();
+}

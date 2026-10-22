@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { box, seedBoard } from "./helpers";
+import { box, seedBoard, openBoardList, openMapList } from "./helpers";
 
 /**
  * Speed checks. They measure frame times, so they run alone: Playwright
@@ -26,7 +26,7 @@ async function openWhiteboard(page: Page) {
 }
 
 async function placeBoard(page: Page, id: string) {
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   await expect(page.getByTestId("board-picker")).toHaveCount(0);
   await expect(boardEl(page)).toBeVisible();
@@ -161,7 +161,7 @@ test("a big map (150 boxes, 100 arrows) stays smooth on the whiteboard: dragging
     rec.rev += 1;
     localStorage.setItem(key, JSON.stringify(rec));
   }, mapId);
-  await page.getByTestId("tools.map").click();
+  await openMapList(page);
   await page.getByTestId("map-picker").locator(`[data-map="${mapId}"]`).click();
   const mapEl = page.locator(".tl-html-container [data-linkkit-map]").first();
   await expect(mapEl.locator("[data-map-view][data-ready]")).toBeVisible({ timeout: 15_000 });

@@ -12,23 +12,17 @@ body { background: #101011; overflow: hidden; }
    its bottom row). */
 .gauntlet-whiteboard .tlui-layout__bottom__main { justify-content: flex-start; }
 
-/* No bigger than Excalidraw's toolbar (toolbarFit.ts): 37 px tools, 44 px tall. */
-.gauntlet-top-toolbar .tlui-main-toolbar__tools { height: 44px; padding: 0 3px; }
-.gauntlet-top-toolbar .tlui-main-toolbar__tools .tlui-row { gap: 0; }
-.gauntlet-top-toolbar .tlui-main-toolbar__tools .tlui-button { width: 37px; min-width: 37px; height: 44px; margin: 0; padding: 0; }
-/* Lasso and highlighter live only in the overflow menu: tldraw's slot for
-   the last tool picked from there stays off the row; the "more" button
-   shows that one of them is on. */
-.gauntlet-top-toolbar .tlui-main-toolbar__tools > .tlui-row > :is([data-value="lasso"], [data-value="highlight"]) { display: none !important; }
-.gauntlet-top-toolbar:has(.tlui-main-toolbar__tools > .tlui-row > :is([data-value="lasso"], [data-value="highlight"])[aria-pressed="true"]) [data-testid="tools.more-button"] {
-  background: var(--tl-color-selected);
-  color: var(--tl-color-selected-contrast);
-  border-radius: var(--tl-radius-2);
-}
-/* tldraw's tool lock (shown while a drawing tool is on) sits left of the
-   row, not above it: the toolbar never moves down over the page. */
-.gauntlet-top-toolbar .tlui-main-toolbar__left { position: relative; }
-.gauntlet-top-toolbar .tlui-main-toolbar__extras { position: absolute; right: 100%; top: 0; height: 44px; margin-right: 4px; display: flex; align-items: center; }
+/* Our own row (Toolbar.tsx): exactly the tools in toolbarLayout.ts at every
+   window size, never an overflow. */
+.gk-toolbar { display: flex; align-items: center; gap: 2px; padding: 4px; }
+.gk-tool { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; }
+.gk-tool[aria-pressed="true"] { background: #403e6a; color: #e3e3e8; }
+.gk-toolbar-sep { width: 1px; height: 24px; margin: 0 4px; background: #3d3d44; }
+.gk-more-button { margin-left: 2px; }
+/* The ⋮ "More tools" menu, under the toolbar's right end. */
+.gk-more { position: absolute; top: calc(100% + 6px); right: 0; min-width: 200px; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.gk-more-item { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 8px; text-align: left; }
+.gk-more-item[aria-pressed="true"] { background: #403e6a; }
 
 /* The items' layer doesn't take the canvas's cursor (hoverResize.ts,
    canvasCursor): a cursor change then re-styles the canvas alone, not every

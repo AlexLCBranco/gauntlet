@@ -15,6 +15,8 @@ import {
   type Editor,
 } from "tldraw";
 
+import { openBoardPicker } from "../boards/AddBoard";
+import { openMapPicker } from "../maps/AddMap";
 import { IMPORT_EVENT, importExcalidrawFile } from "../import/excalidraw/importExcalidraw";
 
 /** Asks for a .excalidraw file and imports it in the middle of the view
@@ -79,12 +81,17 @@ function ClearPageDialog({ onClose }: { onClose: () => void }) {
 }
 
 /** tldraw's main menu (top left), plus "Clear page" like Excalidraw's
-    "Reset the canvas", which asks first. */
+    "Reset the canvas", which asks first, and adding an existing board or
+    map (the toolbar's Board and Map buttons make new ones). */
 export function MainMenu() {
   const { addDialog } = useDialogs();
   const editor = useEditor();
   return (
     <DefaultMainMenu>
+      <TldrawUiMenuGroup id="gauntlet-add">
+        <TldrawUiMenuItem id="add-existing-board" label={"Add existing board…" as never} icon="plus" onSelect={openBoardPicker} />
+        <TldrawUiMenuItem id="add-existing-map" label={"Add existing map…" as never} icon="plus" onSelect={openMapPicker} />
+      </TldrawUiMenuGroup>
       <TldrawUiMenuGroup id="gauntlet-page">
         <TldrawUiMenuItem
           id="clear-page"

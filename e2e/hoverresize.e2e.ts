@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedBoard, seedMap } from "./helpers";
+import { seedBoard, seedMap, openBoardList, openMapList } from "./helpers";
 
 /**
  * Resize from the edge without selecting first, as in Excalidraw
@@ -116,7 +116,7 @@ test("picture: the same", async ({ page }) => {
 test("board widget: the same", async ({ page, context }) => {
   const boardId = await seedBoard(context);
   await open(page);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${boardId}"]`).click();
   await expect(page.locator(".tl-html-container [data-boardkit-board]").first()).toBeVisible();
   await expect.poll(() => ed(page, (e) => e.getCurrentPageShapes().find((s: any) => s.type === "boardkit-board")?.props.scale ?? 0)).toBeGreaterThan(0);
@@ -129,7 +129,7 @@ test("board widget: the same", async ({ page, context }) => {
 test("map widget: the same", async ({ page, context }) => {
   const mapId = await seedMap(context, "Edge test");
   await open(page);
-  await page.getByTestId("tools.map").click();
+  await openMapList(page);
   await page.getByTestId("map-picker").locator(`[data-map="${mapId}"]`).click();
   await expect(page.locator("[data-map-view][data-ready]").first()).toBeVisible();
   await page.keyboard.press("Escape");

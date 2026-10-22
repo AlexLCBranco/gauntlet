@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
-import { box, seedBoard, seedMap, whiteboardSaved } from "./helpers";
+import { box, seedBoard, seedMap, whiteboardSaved, openBoardList, openMapList } from "./helpers";
 
 /**
  * Linkkit maps as whiteboard widgets (phase 3, src/maps/). Fresh, empty
@@ -40,8 +40,6 @@ async function openWhiteboard(page: Page) {
 async function newMap(page: Page): Promise<MapShape> {
   const before = (await mapShapes(page)).map((s) => s.id);
   await page.getByTestId("tools.map").click();
-  await page.getByTestId("new-map").click();
-  await expect(page.getByTestId("map-picker")).toHaveCount(0);
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.press("Enter");
   // Enter keeps the name; it starts nothing else (the widget is not edited).
@@ -96,7 +94,6 @@ const boxOf = (page: Page, mapId: string, name: string) =>
 test("+ New map: a real Linkkit map, named in place, placed in the middle of the view, selected, one undo", async ({ page }) => {
   await openWhiteboard(page);
   await page.getByTestId("tools.map").click();
-  await page.getByTestId("new-map").click();
   const field = page.getByTestId("map-name-field");
   await expect(field).toBeFocused();
   await expect(field).toHaveValue("Untitled map");
@@ -216,7 +213,7 @@ const appBytes = (page: Page) =>
 
 /** Map button -> an existing map; waits until it is drawn. Its shape. */
 async function placeMap(page: Page, mapId: string): Promise<MapShape> {
-  await page.getByTestId("tools.map").click();
+  await openMapList(page);
   await page.getByTestId("map-picker").locator(`[data-map="${mapId}"]`).click();
   await expect(page.getByTestId("map-picker")).toHaveCount(0);
   let made: MapShape | undefined;
@@ -430,7 +427,7 @@ const boardShapes = (page: Page) =>
 
 async function placeBoard(page: Page, boardId: string): Promise<BoardWidget> {
   const before = (await boardShapes(page)).map((s) => s.id);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${boardId}"]`).click();
   let made: BoardWidget | undefined;
   await expect

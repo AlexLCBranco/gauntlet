@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedBoard, whiteboardSaved } from "./helpers";
+import { seedBoard, whiteboardSaved, openBoardList } from "./helpers";
 
 /**
  * Drawings made just before a reload or tab close are kept
@@ -275,7 +275,7 @@ test("reloading twice in a row: the same drawing each time, nothing doubled", as
 test("a board moved right before a reload comes back moved and unchanged, and Boardkit's data is untouched", async ({ page, context }) => {
   const id = await seedBoard(context);
   await open(page);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   const board = page.locator(".tl-html-container [data-boardkit-board]").first();
   await expect(board).toBeVisible();

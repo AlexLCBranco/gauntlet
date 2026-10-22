@@ -289,7 +289,8 @@ test("snapped to half width: zoom and content unchanged, panning reaches every p
     expect(await allShapes(page)).toEqual(original);
   }
 
-  // Space + drag pans too, and the hand tool; both stop at the edges.
+  // Space + drag pans too, both ways, and stops at the edges (there is no
+  // hand tool: owner, 2026-10-22).
   await page.mouse.move(600, 300);
   await page.keyboard.down("Space");
   await page.mouse.down();
@@ -301,16 +302,16 @@ test("snapped to half width: zoom and content unchanged, panning reaches every p
   let v = await view(page);
   expect(v.x + v.w).toBeCloseTo(pb.w, 1);
   expect(v.y + v.h).toBeCloseTo(pb.h, 1);
-  await page.keyboard.press("h");
   await page.mouse.move(200, 200);
+  await page.keyboard.down("Space");
   await page.mouse.down();
   await page.mouse.move(700, 400, { steps: 6 });
   await page.mouse.move(3000, 3000, { steps: 6 });
   await page.mouse.up();
+  await page.keyboard.up("Space");
   v = await view(page);
   expect(v.x).toBeCloseTo(0, 1);
   expect(v.y).toBeCloseTo(0, 1);
-  await page.keyboard.press("v");
   expect(await allShapes(page)).toEqual(original);
 
   // Back to full size: the original view, every shape where it was on screen.

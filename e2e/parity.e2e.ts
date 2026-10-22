@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
-import { box, seedBoard } from "./helpers";
+import { box, seedBoard, openBoardList } from "./helpers";
 
 /**
  * Full parity with Boardkit's boards (owner, 2026-10-19). The inventory is
@@ -78,7 +78,7 @@ async function addListButton(page: Page) {
 }
 
 async function placeBoard(page: Page, id: string) {
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   await expect(page.getByTestId("board-picker")).toHaveCount(0);
   await expect(boardEl(page)).toBeVisible();

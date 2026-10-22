@@ -36,7 +36,11 @@ Finished work goes to docs/HISTORY.md.
 
 ## Half-done
 
-- Nothing half-done. Phase 4 NOT started (owner: don't start it).
+- TOOLBAR REWORK (owner, 2026-10-22; request word for word in
+  docs/TOOLBAR-REWORK.md): 4 steps, STOP after each for the owner's OK.
+  Step 1 DONE (DECISIONS; e2e/toolbar.e2e.ts). Next: step 2. Markup is
+  greyed out in the ⋮ menu until step 4.
+- Phase 4 NOT started (owner: don't start it).
 
 ## Broken / known wrong
 

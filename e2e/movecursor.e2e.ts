@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedBoard } from "./helpers";
+import { seedBoard, openBoardList } from "./helpers";
 
 /**
  * The move cursor over an item, as in Excalidraw (owner, 2026-10-22): with
@@ -142,7 +142,7 @@ test("outline-only rectangle: default inside when unselected (nothing to grab, a
 test("board widget (a stone): move over its body", async ({ page, context }) => {
   const boardId = await seedBoard(context);
   await open(page);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${boardId}"]`).click();
   await expect(page.locator(".tl-html-container [data-boardkit-board]").first()).toBeVisible();
   await expect.poll(() => ed(page, (e) => e.getCurrentPageShapes().find((s: any) => s.type === "boardkit-board")?.props.scale ?? 0)).toBeGreaterThan(0);

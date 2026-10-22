@@ -23,25 +23,43 @@ const boardIcon = (
 
 /** Whether the board list is open. */
 const pickerOpen = atom("board picker open", false);
+/** A new board could not be stored: the list opens to say so. */
+const newFailed = atom("new board failed", false);
 
-/** The toolbar's "Board" button, a tool like the others (so it shares the
-    toolbar's row and its overflow menu): it opens the list of Boardkit's
-    boards (BoardPicker). Wired in the whiteboard's `overrides.tools`. */
-export function boardToolItem(): TLUiToolItem {
+/** The main menu's "Add existing board…": the list of boards, under the
+    toolbar's Board button. */
+export function openBoardPicker() {
+  newFailed.set(false);
+  pickerOpen.set(true);
+}
+
+/** A new, empty board on the current page (newBoard); when it can't be
+    stored, the list opens with the reason. */
+function addNewBoard(editor: Editor) {
+  pickerOpen.set(false);
+  if (!newBoard(editor)) {
+    newFailed.set(true);
+    pickerOpen.set(true);
+  }
+}
+
+/** The toolbar's "Board" button: a click puts a new, empty Boardkit board
+    on the current page (owner, 2026-10-22). An existing board is added from
+    the main menu (openBoardPicker). Wired in the whiteboard's
+    `overrides.tools`. */
+export function boardToolItem(editor: Editor): TLUiToolItem {
   return {
     id: "board",
     label: "tool.board" as never,
     icon: boardIcon,
-    // (tldraw calls it on pointer down and again on click, so no toggle.)
-    onSelect: () => pickerOpen.set(true),
+    onSelect: () => addNewBoard(editor),
   };
 }
 
 /** The button, on the toolbar or in its overflow menu. */
 const BUTTON = '[data-testid="tools.board"], [data-testid="tools.more.board"]';
 
-/** The list of Boardkit's boards, under the Board button (or under the
-    toolbar when the button is in the overflow menu). A click puts that
+/** The list of Boardkit's boards, under the Board button. A click puts that
     board on the current page, in the middle of the view, selected. "+ New board" first
     makes a new one in Boardkit (newBoard). */
 export function BoardPicker() {
@@ -50,13 +68,12 @@ export function BoardPicker() {
   const raw = useRegistry();
   const box = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<{ left: number; top: number } | null>(null);
-  const [failed, setFailed] = useState(false);
+  const failed = useValue(newFailed);
   const boards = registryBoards(raw);
   const links = useLinkedMaps();
 
   useLayoutEffect(() => {
     if (!open) return;
-    setFailed(false);
     // The button on show (tldraw keeps hidden copies for measuring), else
     // the toolbar; kept inside the window.
     const shown = [...document.querySelectorAll(BUTTON), document.querySelector(".gauntlet-top-toolbar")]
@@ -86,7 +103,7 @@ export function BoardPicker() {
   if (!open || !at) return null;
   return (
     <div className="gb-picker" role="menu" data-testid="board-picker" ref={box} style={at}>
-      <button role="menuitem" data-testid="new-board" className="gb-picker-new" onClick={() => setFailed(!newBoard(editor))}>
+      <button role="menuitem" data-testid="new-board" className="gb-picker-new" onClick={() => addNewBoard(editor)}>
         + New board
       </button>
       {failed && <div className="gb-picker-empty">The board could not be saved: this browser's storage is full.</div>}

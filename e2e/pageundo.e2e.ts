@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { box, seedBoard } from "./helpers";
+import { box, seedBoard, openBoardList } from "./helpers";
 
 /**
  * One undo for the whole whiteboard page (docs/PHASE-2.5.md item 22):
@@ -67,7 +67,7 @@ async function moveShape(page: Page, id: string, dx: number, dy: number) {
 
 /** Puts board `id` on the page, in the lower half, out of the rectangles' way. */
 async function placeBoard(page: Page, id: string) {
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   await expect(boardEl(page)).toBeVisible();
   await expect.poll(() => page.evaluate(() => (window as any).editor.getCurrentPageShapes().find((s: any) => s.type === "boardkit-board")?.props.scale ?? 0)).toBeGreaterThan(0);

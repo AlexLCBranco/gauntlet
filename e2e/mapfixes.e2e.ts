@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
-import { box, seedBoard, seedMap } from "./helpers";
+import { box, seedBoard, seedMap, openBoardList, openMapList } from "./helpers";
 
 /**
  * Map fixes from the owner's hand test (2026-10-22):
@@ -49,7 +49,7 @@ const field = (page: Page) => page.getByRole("textbox", { name: "Box name" });
 /** Map `mapId` placed from the Map picker, moved so its top-left is at
     page point `at` (camera at 100%, page corner at the window's): its id. */
 async function placeMap(page: Page, mapId: string, at: { x: number; y: number }): Promise<string> {
-  await page.getByTestId("tools.map").click();
+  await openMapList(page);
   await page.getByTestId("map-picker").locator(`[data-map="${mapId}"]`).click();
   await expect(page.locator('[data-linkkit-map][data-editing="false"] [data-map-view][data-ready]').first()).toBeVisible();
   await page.keyboard.press("Escape");
@@ -189,7 +189,6 @@ test("bug 2: the label says what adds a box: tree rules on, a box's + or its dot
 
   // Tree rules off ("+ New map"): the double-click text, and it works there.
   await page.getByTestId("tools.map").click();
-  await page.getByTestId("new-map").click();
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.type("Loose");
   await page.keyboard.press("Enter");
@@ -295,7 +294,7 @@ test("bug 3: a box's dot dragged far past the map's edge (above, below, left, ri
 /** A board widget placed from the picker, on a fresh board of Boardkit's own example. */
 async function placeBoard(page: Page, boardId: string) {
   const before: string[] = await page.evaluate(() => (window as any).editor.getCurrentPageShapes().map((s: any) => s.id));
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${boardId}"]`).click();
   const made = () => page.evaluate((before) => (window as any).editor.getCurrentPageShapes().find((s: any) => s.type === "boardkit-board" && !before.includes(s.id)) ?? null, before);
   await expect.poll(async () => (await made())?.props.scale ?? 0).toBeGreaterThan(0);

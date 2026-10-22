@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { box, seedBoard } from "./helpers";
+import { box, seedBoard, openBoardList } from "./helpers";
 
 /**
  * The board widget on the whiteboard, phase 2.5 (docs/PHASE-2.5.md items
@@ -50,7 +50,7 @@ async function openWhiteboard(page: Page) {
 
 /** Puts board `id` on the page (selected, as placing leaves it). */
 async function placeBoard(page: Page, id: string) {
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   await expect(boardEl(page)).toBeVisible();
   await expect.poll(async () => (await shapeOf(page))?.scale ?? 0).toBeGreaterThan(0);
@@ -199,7 +199,6 @@ test("16: '+ Add a card' is a faint full-width row inside the list at its bottom
 test("16, 20: a board with no lists shows the full '+ Add a list'; an empty list shows the full '+ Add a card' and is just its header and that button", async ({ page }) => {
   await openWhiteboard(page);
   await page.getByTestId("tools.board").click();
-  await page.getByTestId("new-board").click({ timeout: 10_000 });
   await page.keyboard.press("Enter");
   await expect(boardEl(page)).toBeVisible();
   const addList = boardEl(page).locator('[data-add="list"]');

@@ -140,7 +140,7 @@ test("starts dark at 100%: the page fills the window exactly, and nothing outsid
   await expect.poll(() => view(page)).toEqual(fit);
 });
 
-test("Excalidraw's number keys pick the tools, and each draws its shape", async ({ page }) => {
+test("Excalidraw's number keys pick the tools still on the whiteboard, and each draws its shape", async ({ page }) => {
   await open(page);
   const last = () => ed(page, (e) => {
     const s = e.getCurrentPageShapesSorted().at(-1);
@@ -148,9 +148,7 @@ test("Excalidraw's number keys pick the tools, and each draws its shape", async 
   });
   const cases: [string, string][] = [
     ["2", "geo:rectangle"],
-    ["3", "geo:diamond"],
-    ["d", "geo:diamond"],
-    ["4", "geo:ellipse"],
+    ["r", "geo:rectangle"],
     ["5", "arrow"],
     ["6", "line"],
     ["7", "draw"],
@@ -170,7 +168,7 @@ test("Excalidraw's number keys pick the tools, and each draws its shape", async 
   await page.keyboard.type("Game 1 notes");
   await page.keyboard.press("Escape");
   expect(await ed(page, (e) => e.getCurrentPageShapesSorted().at(-1).type)).toBe("text");
-  for (const [key, id] of [["1", "select"], ["0", "eraser"], ["h", "hand"], ["w", "lasso"], ["v", "select"]]) {
+  for (const [key, id] of [["1", "select"], ["w", "lasso"], ["v", "select"]]) {
     await page.keyboard.press(key);
     expect(await tool(page), `key ${key}`).toBe(id);
   }
@@ -677,7 +675,7 @@ test("fix 5: Excalidraw's layout: menu top-left, tools top-centre, zoom and undo
   const menu = await box(page.getByTestId("main-menu.button"));
   expect(menu.x).toBeLessThan(60);
   expect(menu.y).toBeLessThan(60);
-  const tools = await box(page.locator(".gauntlet-top-toolbar .tlui-main-toolbar__tools"));
+  const tools = await box(page.getByTestId("toolbar"));
   expect(Math.abs(tools.x + tools.width / 2 - vp.width / 2)).toBeLessThan(4);
   expect(tools.y).toBeLessThan(60);
   for (const l of [page.getByTestId("zoom-percent"), page.getByRole("button", { name: "Undo" }), page.getByRole("button", { name: "Redo" })]) {
@@ -696,7 +694,7 @@ test("fix 5: Excalidraw's layout: menu top-left, tools top-centre, zoom and undo
   const b = await rect(page, 900, 500);
   await ed(page, (e, id: string) => void e.select(id), b);
   await expect(panel(page)).toBeVisible();
-  expect((await box(page.locator(".gauntlet-top-toolbar .tlui-main-toolbar__tools"))).x).toBeCloseTo(tools.x, 0);
+  expect((await box(page.getByTestId("toolbar"))).x).toBeCloseTo(tools.x, 0);
 
   // The undo/redo buttons work.
   const a = await rect(page, 300, 300);
@@ -802,9 +800,9 @@ test("one Ctrl+Z undoes a shape just drawn, even after Escape, as in Excalidraw;
   const keep = await rect(page, 100, 100); // rect() ends with Escape
   const id = await rect(page, 400, 300);
   // A shape drawn and left selected (no Escape) also goes in one press.
-  await page.keyboard.press("4");
+  await page.keyboard.press("2");
   await drag(page, { x: 800, y: 300 }, { x: 950, y: 420 });
-  const ellipse = (await shapeIds(page)).find((s) => s !== keep && s !== id)!;
+  const third = (await shapeIds(page)).find((s) => s !== keep && s !== id)!;
   await page.keyboard.press("Control+z");
   await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
   await page.keyboard.press("Escape");
@@ -816,7 +814,7 @@ test("one Ctrl+Z undoes a shape just drawn, even after Escape, as in Excalidraw;
   await expect.poll(() => shapeIds(page)).toEqual([keep]);
   await page.keyboard.press("Control+Shift+z");
   await expect.poll(() => shapeIds(page)).toEqual([keep, id]);
-  expect(ellipse).toBeTruthy();
+  expect(third).toBeTruthy();
   // Deselecting with a click on empty space isn't an undo step either.
   await page.keyboard.press("2");
   await drag(page, { x: 1200, y: 600 }, { x: 1350, y: 700 });
@@ -855,29 +853,7 @@ test("zoom buttons and Ctrl+/Ctrl- go in steps of 10% up to 800%; at 100% on a w
   await expect(pct).toHaveText("790%");
 });
 
-test("no Laser, Note or Frame: not on the toolbar, not in its overflow menu, and K/N/F do nothing; Highlighter stays", async ({ page }) => {
-  await page.setViewportSize({ width: 900, height: 900 }); // narrow, so the overflow menu is there
-  await open(page);
-  for (const id of ["laser", "note", "frame"]) {
-    await expect(page.getByTestId(`tools.${id}`)).toHaveCount(0);
-  }
-  await page.getByTestId("tools.more-button").click();
-  for (const id of ["laser", "note", "frame"]) await expect(page.getByTestId(`tools.more.${id}`)).toHaveCount(0);
-  await expect(page.locator("[data-testid=\"tools.more.highlight\"]:visible, [data-testid=\"tools.highlight\"]:visible")).not.toHaveCount(0);
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Escape");
-  for (const key of ["k", "n", "f"]) {
-    await page.keyboard.press(key);
-    expect(await tool(page)).toBe("select");
-  }
-  // A wide window: the highlighter is in the "more" menu (toolbar.e2e.ts); no removed ones there.
-  await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.getByTestId("tools.more-button").click();
-  await expect(page.getByTestId("tools.more.highlight")).toBeVisible();
-  for (const id of ["laser", "note", "frame"]) await expect(page.getByTestId(`tools.more.${id}`)).toHaveCount(0);
-  await page.keyboard.press("Escape");
-  for (const id of ["laser", "note", "frame"]) await expect(page.getByTestId(`tools.${id}`)).toHaveCount(0);
-});
+// Removed tools (laser, note, frame and the rest): toolbar.e2e.ts.
 
 test("main menu Backups opens /backup/ in a new tab; the whiteboard stays", async ({ page, context }) => {
   await open(page);

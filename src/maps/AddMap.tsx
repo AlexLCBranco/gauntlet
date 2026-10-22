@@ -22,26 +22,43 @@ const mapIcon = (
 
 /** Whether the map list is open. */
 const pickerOpen = atom("map picker open", false);
+/** A new map could not be stored: the list opens to say so. */
+const newFailed = atom("new map failed", false);
 
-/** The toolbar's "Map" button, next to "Board", a tool like the others (so
-    it shares the toolbar's row and its overflow menu): it opens the list
-    of Linkkit's maps (MapPicker). Wired in the whiteboard's
+/** The main menu's "Add existing map…": the list of maps, under the
+    toolbar's Map button. */
+export function openMapPicker() {
+  newFailed.set(false);
+  pickerOpen.set(true);
+}
+
+/** A new, empty map on the current page (newMap); when it can't be
+    stored, the list opens with the reason. */
+function addNewMap(editor: Editor) {
+  pickerOpen.set(false);
+  if (!newMap(editor)) {
+    newFailed.set(true);
+    pickerOpen.set(true);
+  }
+}
+
+/** The toolbar's "Map" button, next to "Board": a click puts a new, empty
+    Linkkit map on the current page (owner, 2026-10-22). An existing map is
+    added from the main menu (openMapPicker). Wired in the whiteboard's
     `overrides.tools`. */
-export function mapToolItem(): TLUiToolItem {
+export function mapToolItem(editor: Editor): TLUiToolItem {
   return {
     id: "map",
     label: "tool.map" as never,
     icon: mapIcon,
-    // (tldraw calls it on pointer down and again on click, so no toggle.)
-    onSelect: () => pickerOpen.set(true),
+    onSelect: () => addNewMap(editor),
   };
 }
 
 /** The button, on the toolbar or in its overflow menu. */
 const BUTTON = '[data-testid="tools.map"], [data-testid="tools.more.map"]';
 
-/** The list of Linkkit's maps, under the Map button (or under the toolbar
-    when the button is in the overflow menu), in the Board picker's style.
+/** The list of Linkkit's maps, under the Map button, in the Board picker's style.
     A click puts that map on the current page, in the middle of the view,
     selected. "+ New map" first makes a new one in Linkkit (newMap). */
 export function MapPicker() {
@@ -51,11 +68,10 @@ export function MapPicker() {
   const linked = new Set(Object.values(useLinkedMaps()));
   const box = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<{ left: number; top: number } | null>(null);
-  const [failed, setFailed] = useState(false);
+  const failed = useValue(newFailed);
 
   useLayoutEffect(() => {
     if (!open) return;
-    setFailed(false);
     // The button on show (tldraw keeps hidden copies for measuring), else
     // the toolbar; kept inside the window.
     const shown = [...document.querySelectorAll(BUTTON), document.querySelector(".gauntlet-top-toolbar")]
@@ -85,7 +101,7 @@ export function MapPicker() {
   if (!open || !at) return null;
   return (
     <div className="gb-picker" role="menu" data-testid="map-picker" ref={box} style={at}>
-      <button role="menuitem" data-testid="new-map" className="gb-picker-new" onClick={() => setFailed(!newMap(editor))}>
+      <button role="menuitem" data-testid="new-map" className="gb-picker-new" onClick={() => addNewMap(editor)}>
         + New map
       </button>
       {failed && <div className="gb-picker-empty">The map could not be saved: this browser's storage is full.</div>}

@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { box, seedBoard, seedMap } from "./helpers";
+import { box, seedBoard, seedMap, openBoardList, openMapList } from "./helpers";
 
 /**
  * Hand-test fixes (owner, 2026-10-21). 1: wherever text is typed, a click
@@ -53,7 +53,7 @@ const cardAt = (root: Locator, list: number, card: number) => listAt(root, list)
 async function onWhiteboard(page: Page, context: Parameters<typeof seedBoard>[0]): Promise<Where> {
   const id = await seedBoard(context);
   await openWhiteboard(page);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   const root = page.locator(".tl-html-container [data-boardkit-board]").first();
   await expect(root).toBeVisible();
@@ -235,7 +235,7 @@ type MapWhere = { page: Page; mapId: string; root: Locator; away: () => Promise<
 async function mapOnWhiteboard(page: Page, context: Parameters<typeof seedMap>[0]): Promise<MapWhere> {
   const mapId = await seedMap(context, "Top");
   await openWhiteboard(page);
-  await page.getByTestId("tools.map").click();
+  await openMapList(page);
   await page.getByTestId("map-picker").locator(`[data-map="${mapId}"]`).click();
   const root = page.locator(".tl-html-container [data-linkkit-map]").first();
   await expect(root.locator("[data-map-view][data-ready]")).toBeVisible();
@@ -416,7 +416,6 @@ test("one click on a board's hover controls, from an unselected board not being 
 test("one click on the full '+ Add a list' of a board with no lists, from a board not being edited", async ({ page }) => {
   await openWhiteboard(page);
   await page.getByTestId("tools.board").click();
-  await page.getByTestId("new-board").click();
   await expect(page.getByTestId("board-name-field")).toBeFocused();
   await page.keyboard.press("Enter");
   const root = page.locator(".tl-html-container [data-boardkit-board]").first();
@@ -491,7 +490,6 @@ for (const [label, make] of [
 test(`typing at once after one click on the full "+ Add a list" of a board with no lists, on the whiteboard`, async ({ page }) => {
   await openWhiteboard(page);
   await page.getByTestId("tools.board").click();
-  await page.getByTestId("new-board").click();
   await expect(page.getByTestId("board-name-field")).toBeFocused();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Escape");
@@ -601,7 +599,7 @@ test("click away saves a bracket player's name, in /linkkit and on the whiteboar
   await expect.poll(() => playerNames(page, mapId)).toEqual(["Ann"]);
 
   await openWhiteboard(page);
-  await page.getByTestId("tools.map").click();
+  await openMapList(page);
   await page.getByTestId("map-picker").locator(`[data-map="${mapId}"]`).click();
   const root = page.locator(".tl-html-container [data-linkkit-map]").first();
   await expect(root.locator("[data-map-view][data-ready]")).toBeVisible();
@@ -661,7 +659,6 @@ test("click away saves the map's name and a template's name, in /linkkit", async
 test("click away saves a new map widget's name, on the whiteboard", async ({ page }) => {
   await openWhiteboard(page);
   await page.getByTestId("tools.map").click();
-  await page.getByTestId("new-map").click();
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.press("Control+a");
   await page.keyboard.type("Named by a click away");
@@ -701,7 +698,7 @@ test("a double-click on a card title of a big board (8 lists, 240 cards), not be
     rec.rev += 1;
     localStorage.setItem(key, JSON.stringify(rec));
   }, id);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   const root = page.locator(".tl-html-container [data-boardkit-board]").first();
   await expect(root.locator("article[data-card-id]")).toHaveCount(240);

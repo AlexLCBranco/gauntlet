@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
-import { seedBoard } from "./helpers";
+import { seedBoard, openBoardList } from "./helpers";
 
 /**
  * Picking an existing board in the Board picker places it as "+ New board"
@@ -107,7 +107,7 @@ async function drawn(page: Page, before: string[]): Promise<Shape> {
 /** Board button -> the board `boardId` in the list. Its shape, once drawn. */
 async function pickBoard(page: Page, boardId: string): Promise<Shape> {
   const before = (await shapes(page)).map((s) => s.id);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${boardId}"]`).click();
   await expect(page.getByTestId("board-picker")).toHaveCount(0);
   return drawn(page, before);
@@ -117,8 +117,6 @@ async function pickBoard(page: Page, boardId: string): Promise<Shape> {
 async function newBoard(page: Page): Promise<Shape> {
   const before = (await shapes(page)).map((s) => s.id);
   await page.getByTestId("tools.board").click();
-  await page.getByTestId("new-board").click({ timeout: 10_000 });
-  await expect(page.getByTestId("board-picker")).toHaveCount(0);
   return drawn(page, before);
 }
 

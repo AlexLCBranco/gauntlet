@@ -44,7 +44,6 @@ async function openWhiteboard(page: Page) {
 /** "+ New map", name kept; waits until it is drawn. */
 async function newMap(page: Page): Promise<MapShape> {
   await page.getByTestId("tools.map").click();
-  await page.getByTestId("new-map").click();
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.press("Enter");
   await expect.poll(async () => (await mapShapes(page))[0]?.scale ?? 0).toBeGreaterThan(0);
@@ -173,7 +172,7 @@ test("while editing: the label at the top says so, clear of the toolbar; everyth
   // (Linkkit names an untitled map after its first box.)
   await expect(bar).toHaveText("Editing map “A” — double-click anywhere to add a box · Esc to finish");
   const b = await box(bar);
-  const tools = await box(page.locator(".gauntlet-top-toolbar .tlui-main-toolbar__tools"));
+  const tools = await box(page.getByTestId("toolbar"));
   expect(b.y, "under the toolbar").toBeGreaterThanOrEqual(tools.y + tools.height);
   const geoOpacity = await page.evaluate(() => {
     const e = (window as any).editor;

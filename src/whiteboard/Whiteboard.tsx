@@ -1,21 +1,6 @@
-import { useEffect, useState } from "react";
 import {
-  ArrowToolbarItem,
-  AssetToolbarItem,
   DefaultHelperButtons,
-  DefaultToolbar,
-  DiamondToolbarItem,
-  DrawToolbarItem,
-  EllipseToolbarItem,
-  EraserToolbarItem,
-  HandToolbarItem,
-  HighlightToolbarItem,
-  LineToolbarItem,
-  RectangleToolbarItem,
-  SelectToolbarItem,
-  TextToolbarItem,
   Tldraw,
-  ToolbarItem,
   type Editor,
   type TLCameraOptions,
   type TLComponents,
@@ -51,7 +36,8 @@ import { MainMenu } from "./MainMenu";
 import { keepUnlinksUndoable } from "../boards/mapLink";
 import { MapEditingBar, mapEditing } from "../maps/mapEditing";
 import { hoverResize } from "./hoverResize";
-import { toolbarItems } from "./toolbarFit";
+import { Toolbar } from "./Toolbar";
+import { REMOVED } from "./toolbarLayout";
 import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
 import { undoSkipsSelection } from "./undoSkipsSelection";
 import { unsavedJournal } from "./unsavedJournal";
@@ -105,29 +91,30 @@ const overrides: TLUiOverrides = {
     const keys: Record<string, string> = {
       select: "v,1",
       rectangle: "r,2",
-      diamond: "d,3",
-      ellipse: "o,4",
       arrow: "a,5",
       line: "l,6",
       draw: "p,7,b,x",
       text: "t,8",
       asset: "cmd+u,ctrl+u,9",
-      eraser: "e,0",
     };
     for (const [id, kbd] of Object.entries(keys)) if (tools[id]) tools[id] = { ...tools[id], kbd };
-    // Not on this whiteboard (owner, 2026-10-20): laser, sticky note and
-    // frame. Gone from the toolbar, its overflow menu and the keys (K, N,
-    // F); shapes of those kinds already on a page stay as they are.
-    delete tools.laser;
-    delete tools.note;
-    delete tools.frame;
-    tools.board = boardToolItem();
-    tools.map = mapToolItem();
+    // Not on this whiteboard (owner, 2026-10-20 and 2026-10-22): no button,
+    // menu item or key (toolbarLayout.ts). Shapes of those kinds already on
+    // a page stay as they are.
+    for (const id of REMOVED) delete tools[id];
+    if (tools.embed) tools.embed = { ...tools.embed, icon: "link" };
+    // Markup replaces the laser pointer; its tool comes in a later step,
+    // the ⋮ menu shows it greyed out until then.
+    tools.markup = { id: "markup", label: "tool.markup" as never, icon: "tool-highlight", onSelect: () => {} };
+    tools.board = boardToolItem(editor);
+    tools.map = mapToolItem(editor);
     return tools;
   },
   // Shift+0 and the menu's "Reset zoom": back to 100% (tldraw's own
   // toggles to its fit when already there).
   actions(editor, actions) {
+    // No tool lock (owner, 2026-10-22): not in the preferences, no Q key.
+    delete actions["toggle-tool-lock"];
     if (actions["reset-zoom"]) actions["reset-zoom"] = { ...actions["reset-zoom"], onSelect: () => zoomTo100(editor) };
     // Ctrl+ / Ctrl- step 10% at once, as the buttons do: tldraw animates
     // them, and a key pressed again mid-animation stepped from the old
@@ -143,48 +130,8 @@ const overrides: TLUiOverrides = {
     if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y", onSelect: () => pageRedo(editor) };
     return actions;
   },
-  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map" } },
+  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map", "tool.markup": "Markup" } },
 };
-
-function useWindowWidth() {
-  const [w, setW] = useState(window.innerWidth);
-  useEffect(() => {
-    const on = () => setW(window.innerWidth);
-    window.addEventListener("resize", on);
-    return () => window.removeEventListener("resize", on);
-  }, []);
-  return w;
-}
-
-/** The toolbar along the top, as in Excalidraw, in Excalidraw's order, then
-    the Board and Map buttons (`src/boards/`, `src/maps/`); no bigger than
-    Excalidraw's (toolbarFit.ts). Lasso and highlighter are in its overflow
-    menu. */
-function TopToolbar() {
-  const width = useWindowWidth();
-  return (
-    <div className="gauntlet-top-toolbar">
-      <DefaultToolbar maxItems={toolbarItems(width)}>
-        <SelectToolbarItem />
-        <HandToolbarItem />
-        <RectangleToolbarItem />
-        <DiamondToolbarItem />
-        <EllipseToolbarItem />
-        <ArrowToolbarItem />
-        <LineToolbarItem />
-        <DrawToolbarItem />
-        <TextToolbarItem />
-        <AssetToolbarItem />
-        <EraserToolbarItem />
-        <ToolbarItem tool="board" />
-        <ToolbarItem tool="map" />
-        {/* In the overflow menu ("more"), keys unchanged. */}
-        <ToolbarItem tool="lasso" />
-        <HighlightToolbarItem />
-      </DefaultToolbar>
-    </div>
-  );
-}
 
 /** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards
     and Linkkit maps as whiteboard objects (`src/boards/`, `src/maps/`). */
@@ -225,7 +172,7 @@ const components: TLComponents = {
   StylePanel: null,
   HelperButtons: UnderMenu,
   Toolbar: null,
-  TopPanel: TopToolbar,
+  TopPanel: Toolbar,
   NavigationPanel: ZoomUndo,
   HelpMenu: null,
   Background: SheetBackground,

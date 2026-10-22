@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { box, seedBoard, whiteboardSaved } from "./helpers";
+import { box, seedBoard, whiteboardSaved, openBoardList } from "./helpers";
 
 /**
  * Boardkit boards on the whiteboard (whiteboard phase 2). Fresh, empty
@@ -47,7 +47,7 @@ async function openWhiteboard(page: Page) {
 
 /** Puts board `id` on the page with the toolbar's Board button. */
 async function placeBoard(page: Page, id: string) {
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
   await expect(page.getByTestId("board-picker")).toHaveCount(0);
   const board = boardEl(page);
@@ -254,35 +254,26 @@ test("box select and lasso pick the board like any other shape", async ({ page, 
   expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([s.id]);
 });
 
-test("the Board button is on the toolbar's row at any window width (in its overflow menu when narrow), clear of the main menu", async ({ page, context }) => {
+test("the board list (main menu → Add existing board…) opens under the Board button, inside the window, and places the board", async ({ page, context }) => {
   const id = await seedBoard(context);
   for (const width of [1600, 1000, 760]) {
     await page.setViewportSize({ width, height: 800 });
     await openWhiteboard(page);
-    const tools = await box(page.locator(".gauntlet-top-toolbar .tlui-main-toolbar__tools").first());
+    const tools = await box(page.getByTestId("toolbar"));
     const menu = await box(page.getByTestId("main-menu.button"));
     // One row, inside the window, right of the main menu.
     expect(tools.height).toBeLessThan(60);
     expect(tools.x).toBeGreaterThan(menu.x + menu.width);
     expect(tools.x + tools.width).toBeLessThanOrEqual(width);
-    // On the row, or in the overflow menu (tldraw keeps hidden copies of
-    // the tools for measuring).
-    let button = page.getByTestId("tools.board").filter({ visible: true });
-    if ((await button.count()) === 0) {
-      expect(width).toBeLessThan(1000);
-      await page.getByTestId("tools.more-button").click();
-      button = page.getByTestId("tools.more.board");
-    }
-    const b = await box(button);
-    expect(Math.abs(b.y + b.height / 2 - (tools.y + tools.height / 2)) < 4 || b.y > tools.y + tools.height).toBe(true);
-    await button.click();
-    // The list opens under the button, inside the window.
+    await expect(page.getByTestId("tools.board")).toBeVisible();
+    await openBoardList(page);
+    // The list opens under the toolbar, inside the window.
     const list = await box(page.getByTestId("board-picker"));
     expect(list.y).toBeGreaterThan(tools.y + tools.height - 4);
     expect(list.x).toBeGreaterThanOrEqual(0);
     expect(list.x + list.width).toBeLessThanOrEqual(width);
     await page.getByTestId("board-picker").locator(`[data-board="${id}"]`).click();
-    // The new board is on the page, selected.
+    // The board is on the page, selected.
     await expect.poll(() => page.evaluate(() => (window as any).editor.getSelectedShapes().map((s: any) => s.type))).toEqual(["boardkit-board"]);
     await expect(boardEl(page)).toBeVisible();
     await expect(page.getByTestId("board-picker")).toHaveCount(0);

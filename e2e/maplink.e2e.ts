@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
-import { box, seedBoard, seedMap } from "./helpers";
+import { box, seedBoard, seedMap, openBoardList, openMapList } from "./helpers";
 
 /**
  * Linked boards made visible and one click away (hand-test round items 8
@@ -71,7 +71,7 @@ const boardShapes = (page: Page) =>
 
 async function placeBoard(page: Page, boardId: string): Promise<BoardWidget> {
   const before = (await boardShapes(page)).map((s) => s.id);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   await page.getByTestId("board-picker").locator(`[data-board="${boardId}"]`).click();
   let made: BoardWidget | undefined;
   await expect
@@ -113,13 +113,13 @@ test("the pickers mark linked boards (map icon, “+ map”) and linked maps (�
   const plainBoard = await seedBoard(context);
   const plainMap = await seedMap(context, "On its own");
   await openWhiteboard(page);
-  await page.getByTestId("tools.board").click();
+  await openBoardList(page);
   const boards = page.getByTestId("board-picker");
   await expect(boards.locator(`[data-board="${boardId}"]`).getByTestId("linked-map-badge")).toHaveText("+ map");
   await expect(boards.locator(`[data-board="${boardId}"] svg`)).toHaveCount(1);
   await expect(boards.locator(`[data-board="${plainBoard}"]`).getByTestId("linked-map-badge")).toHaveCount(0);
   await page.keyboard.press("Escape");
-  await page.getByTestId("tools.map").click();
+  await openMapList(page);
   const maps = page.getByTestId("map-picker");
   await expect(maps.locator(`[data-map="${mapId}"]`).getByTestId("linked-board-badge")).toHaveText("+ board");
   await expect(maps.locator(`[data-map="${plainMap}"]`).getByTestId("linked-board-badge")).toHaveCount(0);
