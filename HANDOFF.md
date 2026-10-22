@@ -17,7 +17,6 @@ Finished work goes to docs/HISTORY.md.
   (DECISIONS; src/whiteboard/hoverResize.ts `moveCursor`,
   e2e/movecursor.e2e.ts, 8 tests).
 - Owner's hand test of the hand-test round PASSED (2026-10-22, HISTORY).
-  Item 8's existing-map picker dropped (DECISIONS, IDEAS).
 - Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
@@ -36,8 +35,9 @@ Finished work goes to docs/HISTORY.md.
 
 - TOOLBAR REWORK (owner, 2026-10-22; request word for word in
   docs/TOOLBAR-REWORK.md): 4 steps, STOP after each for the owner's OK.
-  Step 1 DONE, live run passed (DECISIONS; e2e/toolbar.e2e.ts). Next:
-  step 2 when the owner says go. Markup greyed out in ⋮ until step 4.
+  Steps 1-2 DONE (DECISIONS; e2e/toolbar.e2e.ts; screenshots/ from the
+  e2e and scripts/excalidraw-shots.mjs). Next: step 3 when the owner
+  says go. Markup greyed out in ⋮ until step 4.
 - Live runs: no bypass secret exists (DECISIONS 2026-10-22); after a
   push, `node scripts/wait-deploy.mjs`. A 403 stops the run: tell the owner.
 - Phase 4 NOT started (owner: don't start it).

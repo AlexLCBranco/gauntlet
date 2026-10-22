@@ -37,7 +37,7 @@ import { keepUnlinksUndoable } from "../boards/mapLink";
 import { MapEditingBar, mapEditing } from "../maps/mapEditing";
 import { hoverResize } from "./hoverResize";
 import { Toolbar } from "./Toolbar";
-import { REMOVED } from "./toolbarLayout";
+import { KEYS, REMOVED } from "./toolbarLayout";
 import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
 import { undoSkipsSelection } from "./undoSkipsSelection";
 import { unsavedJournal } from "./unsavedJournal";
@@ -77,27 +77,16 @@ const lassoIcon = (
   </div>
 );
 
-// Excalidraw's keys where they don't clash with tldraw's: 1–0 pick the
-// tools in Excalidraw's order, D is the diamond and P the pen.
+// Each tool's keys come from toolbarLayout.ts (KEYS): Excalidraw's where
+// they don't clash with tldraw's, as the toolbar's hints show them.
 const overrides: TLUiOverrides = {
   tools(editor, tools) {
     tools.lasso = {
       id: "lasso",
       label: "tool.lasso" as never,
       icon: lassoIcon,
-      kbd: "w",
       onSelect: () => editor.setCurrentTool("lasso"),
     };
-    const keys: Record<string, string> = {
-      select: "v,1",
-      rectangle: "r,2",
-      arrow: "a,5",
-      line: "l,6",
-      draw: "p,7,b,x",
-      text: "t,8",
-      asset: "cmd+u,ctrl+u,9",
-    };
-    for (const [id, kbd] of Object.entries(keys)) if (tools[id]) tools[id] = { ...tools[id], kbd };
     // Not on this whiteboard (owner, 2026-10-20 and 2026-10-22): no button,
     // menu item or key (toolbarLayout.ts). Shapes of those kinds already on
     // a page stay as they are.
@@ -108,6 +97,7 @@ const overrides: TLUiOverrides = {
     tools.markup = { id: "markup", label: "tool.markup" as never, icon: "tool-highlight", onSelect: () => {} };
     tools.board = boardToolItem(editor);
     tools.map = mapToolItem(editor);
+    for (const [id, { kbd }] of Object.entries(KEYS)) if (tools[id]) tools[id] = { ...tools[id], kbd };
     return tools;
   },
   // Shift+0 and the menu's "Reset zoom": back to 100% (tldraw's own
@@ -115,6 +105,9 @@ const overrides: TLUiOverrides = {
   actions(editor, actions) {
     // No tool lock (owner, 2026-10-22): not in the preferences, no Q key.
     delete actions["toggle-tool-lock"];
+    // tldraw never registers the image tool's own keys (it listens to this
+    // action's instead), so Insert image's keys (9 and Ctrl+U) go here too.
+    if (actions["insert-media"]) actions["insert-media"] = { ...actions["insert-media"], kbd: KEYS.asset.kbd };
     if (actions["reset-zoom"]) actions["reset-zoom"] = { ...actions["reset-zoom"], onSelect: () => zoomTo100(editor) };
     // Ctrl+ / Ctrl- step 10% at once, as the buttons do: tldraw animates
     // them, and a key pressed again mid-animation stepped from the old

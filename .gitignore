@@ -5,3 +5,6 @@ playwright-report
 
 .vercel
 .env*
+
+# Toolbar screenshots (e2e/toolbar.e2e.ts, scripts/excalidraw-shots.mjs)
+screenshots

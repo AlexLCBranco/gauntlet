@@ -1,0 +1,194 @@
+/* The toolbar (Toolbar.tsx), dark only, with Excalidraw's own values
+   (github.com/excalidraw/excalidraw, commit 1d4dc2c, packages/excalidraw/;
+   checked against excalidraw.com's computed styles, 2026-10-22). Each
+   value says where it comes from:
+     theme.scss     css/theme.scss (.excalidraw and &.theme--dark)
+     styles.scss    css/styles.scss
+     Island.scss    components/Island.scss
+     Stack.scss     components/Stack.scss
+     ToolIcon.scss  components/ToolIcon.scss
+     variables      css/variables.module.scss (toolbarButtonColorStates)
+     Toolbar.*      components/Toolbar.scss and Toolbar.tsx
+     Dropdown       components/dropdownMenu/DropdownMenu.scss (and
+                    DropdownMenuContent.tsx) */
+
+.gauntlet-top-toolbar {
+  --space-factor: 0.25rem; /* theme.scss */
+  --lg-button-size: 2.25rem; /* theme.scss */
+  --lg-icon-size: 1rem; /* theme.scss */
+  --border-radius-md: 0.375rem; /* theme.scss */
+  --border-radius-lg: 0.5rem; /* theme.scss */
+  --island-bg-color: #232329; /* theme.scss, dark */
+  --shadow-island: 0px 0px 1px 0px rgba(0, 0, 0, 0.17), 0px 0px 3px 0px rgba(0, 0, 0, 0.08), 0px 7px 14px 0px rgba(0, 0, 0, 0.05); /* theme.scss (same in dark) */
+  --color-on-surface: #e3e3e8; /* theme.scss, dark; = --icon-fill-color */
+  --color-surface-high: #2e2d39; /* theme.scss, dark; = --button-hover-bg and --default-border-color */
+  --color-surface-primary-container: #403e6a; /* theme.scss, dark */
+  --color-on-primary-container: #e0dfff; /* theme.scss, dark */
+  --color-brand-active: #d0ccff; /* theme.scss, dark; = --button-active-border */
+  --color-primary-light: #4f4d6f; /* theme.scss, dark */
+  --color-primary-darker: #b2aeff; /* theme.scss, dark */
+  --keybinding-color: #7a7a7a; /* theme.scss, dark: --color-gray-60 */
+  --ui-font: Assistant, system-ui, BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; /* styles.scss */
+
+  pointer-events: all;
+  position: fixed;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  font-family: var(--ui-font);
+}
+/* theme.scss: bigger buttons on screens wider than 1920 px. */
+@media screen and (min-device-width: 1921px) {
+  .gauntlet-top-toolbar {
+    --lg-button-size: 2.375rem;
+    --lg-icon-size: 1.25rem;
+  }
+}
+
+/* The bar: Excalidraw's Island with padding={1}, a Stack.Row with gap={1}
+   (Toolbar.tsx; Island.scss, Stack.scss). */
+.gk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space-factor) * 1);
+  padding: calc(var(--space-factor) * 1);
+  background-color: var(--island-bg-color);
+  box-shadow: var(--shadow-island);
+  border-radius: var(--border-radius-lg);
+  box-sizing: border-box;
+}
+
+/* A tool: ToolIcon.scss (.App-toolbar-container .ToolIcon__icon) and its
+   colour states (variables, toolbarButtonColorStates). */
+.gk-tool {
+  position: relative;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-on-surface);
+  cursor: pointer;
+  border-radius: var(--border-radius-lg);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.gk-tool__icon {
+  box-sizing: border-box;
+  width: var(--lg-button-size);
+  height: var(--lg-button-size);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--border-radius-lg);
+  color: var(--color-on-surface);
+}
+.gk-tool__icon svg {
+  position: relative;
+  width: var(--lg-icon-size);
+  height: var(--lg-icon-size);
+  color: var(--color-on-surface);
+}
+.gk-tool__icon:hover { background: var(--color-surface-high); }
+.gk-tool__icon:active { background: var(--color-surface-high); border: 1px solid var(--color-brand-active); }
+.gk-tool__icon:active svg { color: var(--color-on-primary-container); }
+.gk-tool[aria-pressed="true"] .gk-tool__icon { background: var(--color-surface-primary-container); }
+.gk-tool[aria-pressed="true"] .gk-tool__icon svg { color: var(--color-on-primary-container); }
+.gk-tool:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-brand-active); }
+/* The key in the corner: ToolIcon.scss (.ToolIcon__keybinding). */
+.gk-tool__kbd {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 0.625rem;
+  color: var(--keybinding-color);
+  font-family: var(--ui-font);
+  user-select: none;
+  pointer-events: none;
+}
+.gk-tool[aria-pressed="true"] .gk-tool__kbd { color: var(--color-on-primary-container); }
+
+/* The separator: Toolbar.scss (.App-toolbar__divider), with the 0.25rem
+   margin Toolbar.tsx gives the one before "More tools". */
+.gk-toolbar-sep {
+  width: 1px;
+  height: 1.5rem;
+  align-self: center;
+  margin-left: 0.25rem;
+  background-color: var(--color-surface-high);
+}
+
+/* ⋮ "More tools": Toolbar.scss (.App-toolbar__extra-tools-trigger) over
+   Dropdown's .dropdown-menu-button: transparent, also on hover. */
+.gk-more-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: var(--lg-button-size);
+  height: var(--lg-button-size);
+  padding: 0.625rem;
+  margin: 0;
+  border: 0;
+  border-radius: var(--border-radius-lg);
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--color-on-surface);
+  cursor: pointer;
+}
+.gk-more-button svg { width: var(--lg-icon-size); height: var(--lg-icon-size); }
+.gk-more-button:hover { background-color: transparent; }
+.gk-more-button:active { background-color: var(--color-surface-high); box-shadow: 0 0 0 1px var(--color-brand-active) inset; }
+.gk-more-button[aria-pressed="true"],
+.gk-more-button[aria-pressed="true"]:hover { background: var(--color-surface-primary-container); color: var(--color-on-primary-container); }
+
+/* The menu: Toolbar.scss (.App-toolbar__extra-tools-dropdown), Dropdown
+   (.dropdown-menu, .dropdown-menu-container: an Island with padding={2}). */
+.gk-more {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.375rem;
+  min-width: 11.875rem;
+  max-width: 20rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: calc(var(--space-factor) * 2);
+  background-color: var(--island-bg-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-island), 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+/* An entry: Dropdown (.dropdown-menu-item-base, .dropdown-menu-item). */
+.gk-more-item {
+  display: flex;
+  align-items: center;
+  column-gap: 0.625rem;
+  width: 100%;
+  height: 2rem;
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+  flex: 1 0 auto;
+  border: none;
+  border-radius: var(--border-radius-md);
+  background-color: transparent;
+  color: var(--color-on-surface);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+}
+@media screen and (min-width: 1921px) {
+  .gk-more-item { height: 2.25rem; }
+}
+.gk-more-item:hover { background-color: var(--color-surface-high); }
+.gk-more-item:active { background-color: var(--color-surface-high); box-shadow: 0 0 0 1px var(--color-brand-active); }
+.gk-more-item[aria-pressed="true"] { background: var(--color-primary-light); }
+.gk-more-item[aria-pressed="true"] svg { color: var(--color-primary-darker); }
+.gk-more-item:disabled { cursor: not-allowed; opacity: 0.5; pointer-events: none; }
+.gk-more-item__icon svg { width: 1rem; height: 1rem; display: block; }
+.gk-more-item__text { display: flex; align-items: center; width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; gap: 0.75rem; }
+.gk-more-item__shortcut { margin-inline-start: auto; opacity: 0.5; }

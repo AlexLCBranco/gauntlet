@@ -715,6 +715,21 @@ Changes to the plan, newest last. Each says what and why.
   use 2 browsers at once; a 403 from the site stops the run (the rest
   skipped), never retried. boardkit-load.mjs and drag-feel.mjs follow the
   same bypass rule.
+- 2026-10-22 — Toolbar rework, step 2 (owner): the bar and the ⋮ menu
+  look as Excalidraw's, dark only, with its own values copied from its
+  source (commit 1d4dc2c; each value's file named in
+  src/whiteboard/toolbar.css) and checked on excalidraw.com: 36 px
+  buttons, 16 px icons, 4 px padding and gap, 8 px corners, #232329
+  island and its shadow, selected #403e6a / #e0dfff, hover #2e2d39, key
+  hint 10 px #7a7a7a 2 px from the bottom, 3 px from the right; menu 8 px
+  padding, 32 px entries, keys on the right at half opacity. Excalidraw's
+  icons (MIT) for its tools; Board, Map, Markup drawn in its style.
+  Keys (toolbarLayout.ts KEYS, also the hints): V R A L as before; ours,
+  none clashing: B Board (Draw keeps P, X, 7), M Map, I Web embed, W
+  Lasso; 9 Insert image now really works (tldraw ignored the image
+  tool's keys; it was dead before). Markup's K comes with its tool.
+  Excalidraw's UI font (Assistant) isn't loaded: the same font list falls
+  back to system-ui.
 
 IDEAS
 
