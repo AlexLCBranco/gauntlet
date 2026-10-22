@@ -46,3 +46,28 @@
 .gm-map {
   width: max-content;
 }
+
+/* The map being edited (mapEditing.tsx): outlined, everything else dimmed. */
+.gm-scaled[data-editing] .gm-map,
+.gb-map[data-editing] {
+  outline: 2px solid #4f7cff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* What's going on, at the top of the screen under the toolbar. */
+.gm-editing-bar {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #232329;
+  box-shadow: 0 0 0 1px #4f7cff, 0 2px 8px rgb(0 0 0 / 0.35);
+  color: #e3e3e8;
+  font: 13px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}

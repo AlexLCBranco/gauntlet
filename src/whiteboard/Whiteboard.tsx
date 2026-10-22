@@ -48,6 +48,7 @@ import { shapeUtils as styleShapeUtils } from "../style/shapeUtils";
 import { applyNextMeta, StylePanel } from "../style/StylePanel";
 import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
+import { MapEditingBar, mapEditing } from "../maps/mapEditing";
 import { hoverResize } from "./hoverResize";
 import { toolbarItems } from "./toolbarFit";
 import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
@@ -206,6 +207,7 @@ function InFront() {
       <BoardPicker />
       <MapPicker />
       <ImportNotice />
+      <MapEditingBar />
     </>
   );
 }
@@ -253,6 +255,8 @@ function setUp(editor: Editor) {
   const stopWall = edgeWall(editor);
   // Resize an unselected item from its edge or corner, as in Excalidraw.
   const stopHoverResize = hoverResize(editor);
+  // Editing a map: the whole page is its space (src/maps/mapEditing.tsx).
+  const stopMapEditing = mapEditing(editor);
   const stopNext = applyNextMeta(editor);
   const stopFilled = keepFilled(editor);
   const stopUndo = undoSkipsSelection(editor);
@@ -273,6 +277,7 @@ function setUp(editor: Editor) {
     stopInside();
     stopWall();
     stopHoverResize();
+    stopMapEditing();
     stopNext();
     stopFilled();
   };

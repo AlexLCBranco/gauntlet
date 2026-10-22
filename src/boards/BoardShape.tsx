@@ -15,7 +15,8 @@ import {
 
 import { useLinkedMap } from "../maps/linkedMap";
 import type { PageRect } from "../maps/linkkit";
-import { MapView } from "../maps/MapView";
+import { useEditedMap } from "../maps/mapEditing";
+import { MapView, type MapShift } from "../maps/MapView";
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta } from "../pages/sheet";
 import { portalEventsHandled } from "../whiteboard/widgetEvents";
@@ -153,20 +154,24 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   // box further left or up): the widget moves by as much, so the boxes stay
   // where they are on the whiteboard (as a map widget does, maps/MapShape).
   const onMapContent = useCallback(
-    (box: PageRect) => {
+    (box: PageRect, shift: MapShift) => {
       const current = editor.getShape<BoardShape>(shape.id);
       if (!current) return;
       const crop = current.meta?.crop as { x: number; y: number } | undefined;
-      if (crop?.x === box.left && crop?.y === box.top) return;
+      const left = box.left - shift.x;
+      const top = box.top - shift.y;
+      if (crop?.x === left && crop?.y === top) return;
       const s = current.props.scale || 1;
-      const move = crop && current.props.scale > 0 ? { x: current.x + (box.left - crop.x) * s, y: current.y + (box.top - crop.y) * s } : {};
+      const move = crop && current.props.scale > 0 ? { x: current.x + (left - crop.x) * s, y: current.y + (top - crop.y) * s } : {};
       editor.run(
-        () => editor.updateShape<BoardShape>({ id: shape.id, type: BOARD_TYPE, ...move, meta: { ...current.meta, crop: { x: box.left, y: box.top } } }),
+        () => editor.updateShape<BoardShape>({ id: shape.id, type: BOARD_TYPE, ...move, meta: { ...current.meta, crop: { x: left, y: top } } }),
         { history: "ignore" },
       );
     },
     [editor, shape.id],
   );
+  // While its map is edited, the whole page is the map's (maps/mapEditing.tsx).
+  useEditedMap(mapEditing && linkedMap ? { shapeId: shape.id, mapId: linkedMap } : null);
 
   // Keep the box the size of the content (fit.ts). Not an undo step.
   useLayoutEffect(() => {
@@ -343,8 +348,8 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         <div className="gb-views">
           {view !== "map" && <WhiteboardBoard boardId={boardId} editing={listEditing} active={selected || editing} />}
           {view !== "list" && linkedMap && (
-            <div ref={mapHalf} className="gb-map">
-              <MapView mapId={linkedMap} editing={mapEditing} onContent={onMapContent} room={view === "both" ? BOTH_ROOM : undefined} />
+            <div ref={mapHalf} className="gb-map" data-editing={mapEditing ? "" : undefined}>
+              <MapView mapId={linkedMap} editing={mapEditing} onContent={onMapContent} />
             </div>
           )}
         </div>
@@ -352,10 +357,6 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     </HTMLContainer>
   );
 }
-
-/** In Both, the map's paper while it is edited reaches only part of the
-    way back towards the list beside it (boards.css: .gb-views' gap). */
-const BOTH_ROOM = { left: 24, top: 120, right: 120, bottom: 120 };
 
 /** The control a press started editing on (see above), by its markers. */
 type PressedControl = { readonly add: string | null; readonly control: string | null; readonly listId: string | null };

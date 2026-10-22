@@ -29,13 +29,21 @@ export function testBrowsers(processes) {
 /** Every running process: { pid, name, cmd }. */
 export function processes() {
   if (process.platform === "win32") {
-    const ps = spawnSync(
-      "powershell",
-      ["-NoProfile", "-Command", "Get-CimInstance Win32_Process | Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress"],
-      { encoding: "utf-8", windowsHide: true, maxBuffer: 64 * 1024 * 1024 },
-    );
-    const rows = JSON.parse(ps.stdout || "[]");
-    return (Array.isArray(rows) ? rows : [rows]).map((r) => ({ pid: r.ProcessId, name: r.Name, cmd: r.CommandLine ?? "" }));
+    // Once in a while the list doesn't read as JSON (a process that came
+    // and went with an odd command line, 2026-10-22): asked again.
+    for (let tries = 1; ; tries++) {
+      const ps = spawnSync(
+        "powershell",
+        ["-NoProfile", "-Command", "Get-CimInstance Win32_Process | Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress"],
+        { encoding: "utf-8", windowsHide: true, maxBuffer: 64 * 1024 * 1024 },
+      );
+      try {
+        const rows = JSON.parse(ps.stdout || "[]");
+        return (Array.isArray(rows) ? rows : [rows]).map((r) => ({ pid: r.ProcessId, name: r.Name, cmd: r.CommandLine ?? "" }));
+      } catch (e) {
+        if (tries >= 3) throw e;
+      }
+    }
   }
   const ps = spawnSync("ps", ["-eo", "pid=,comm=,args="], { encoding: "utf-8" });
   return ps.stdout

@@ -4,16 +4,17 @@ import { useEditor, type Editor } from "tldraw";
 import { portalEventsHandled } from "../whiteboard/widgetEvents";
 import { mapTakesEscape, WhiteboardMap, type PageRect } from "./linkkit";
 
-/** The paper shown round the boxes while the map is edited, side by side
-    (Linkkit's own amount if not given). */
-type Room = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number };
+/** How far Linkkit moved every box right and down so one could go left of
+    or above its page's corner on the whiteboard (its map's `shift`). A
+    widget keeps its boxes in place by the part shown less this. */
+export type MapShift = { readonly x: number; readonly y: number };
 
 /**
  * A Linkkit map inside a widget (a map placed on its own, or a board's
  * linked map in its Map or Both view): Linkkit's own drawing, and, while
  * it is edited, what happens inside it is Linkkit's, not the whiteboard's.
  */
-export function MapView({ mapId, editing, onContent, room }: { mapId: string; editing: boolean; onContent?: (box: PageRect) => void; room?: Room }) {
+export function MapView({ mapId, editing, onContent }: { mapId: string; editing: boolean; onContent?: (box: PageRect, shift: MapShift) => void }) {
   const editor = useEditor();
   const box = useRef<HTMLDivElement>(null);
   useEditingEvents(editor, box, editing);
@@ -29,7 +30,7 @@ export function MapView({ mapId, editing, onContent, room }: { mapId: string; ed
         if (editing || !e.currentTarget.contains(e.target as Node)) e.stopPropagation();
       }}
     >
-      <WhiteboardMap mapId={mapId} editing={editing} onContent={onContent} room={room} />
+      <WhiteboardMap mapId={mapId} editing={editing} onContent={onContent} />
     </div>
   );
 }

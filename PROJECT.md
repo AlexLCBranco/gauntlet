@@ -399,7 +399,8 @@ Changes to the plan, newest last. Each says what and why.
 - 2026-10-21 — Phase 3 (owner). A map always fits its widget: no zoom or
   scrolling inside it; you make it bigger or smaller by scaling the widget.
   Linkkit's own zoom controls are hidden on the whiteboard.
-- 2026-10-21 — Phase 3, how a map widget is built (agent's decisions,
+- (band and empty-map parts replaced by 2026-10-21, map editing on the
+  whole page) 2026-10-21 — Phase 3, how a map widget is built (agent's decisions,
   within the owner's above). A map is drawn by Linkkit's own components
   (Linkkit's new `src/app/whiteboard/` entry, as Boardkit's), reading and
   writing Linkkit's own records: an edit shows in /linkkit and back. Its
@@ -562,6 +563,29 @@ Changes to the plan, newest last. Each says what and why.
   unchanged: against a deployed site, a global setup (e2e/global-setup.ts)
   first waits until /boardkit and /linkkit work (up to 2 min, says how
   long and what the page showed), and failing tests keep a screenshot.
+- 2026-10-21 — No dot grid behind maps (owner, hand-test round item 6):
+  gone in map widgets (shown and edited) and in /linkkit (Linkkit
+  v0.0.111); positions and snapping unchanged.
+- 2026-10-21 — Map editing: the whole page is the map's space, and it's
+  obvious you're editing one (owner, hand-test round item 7, a first
+  version to try; replaces the 120 px band of the phase 3 widget entry).
+  While a map widget, or a board's linked map, is edited
+  (src/maps/mapEditing.tsx, Linkkit v0.0.111): a double-click anywhere
+  on empty page space adds a box to it there, or at the nearest spot that
+  overlaps no box; the widget grows to it in any direction and the other
+  boxes stay where they are on the page (past the map's own page corner
+  Linkkit shifts everything and keeps how far, `LinkMap.shift`; the
+  widget's crop counts it, so undo keeps them in place too). A box drags
+  anywhere; dragged over another it may overlap. Everything else on the
+  page is dimmed (25%), the map is outlined, and a fixed label under the
+  toolbar says "Editing map “<name>” — double-click anywhere to add a box
+  · Esc to finish". Editing ends with Escape, a click on another item
+  (selects it, even one with text, which tldraw would otherwise start
+  editing), or one click on empty space once 500 ms pass without a second
+  click (Windows' double-click time), so double-clicking empty space
+  always adds a box. The name sits above the map, never on it (the band
+  pulled the map up over it). An empty map is 260 x 48, its hint "Double-
+  click anywhere to add a box", centred.
 
 IDEAS
 

@@ -17,7 +17,8 @@ import { pageBox } from "../pages/keepFilled";
 import { insideDelta } from "../pages/sheet";
 import type { PageRect } from "./linkkit";
 import { MapName } from "./MapName";
-import { MapView } from "./MapView";
+import { useEditedMap } from "./mapEditing";
+import { MapView, type MapShift } from "./MapView";
 import "./maps.css";
 
 export const MAP_TYPE = "linkkit-map";
@@ -33,9 +34,10 @@ declare module "tldraw" {
       /** How much the map is scaled; 0 until first drawn. */
       scale: number;
       /** Where on Linkkit's page the part shown starts (its boxes' top-left
-          corner, less a margin), as last drawn: when the boxes reach
-          further left or up, the widget grows that way and its content
-          stays where it is on the whiteboard. -1 until first drawn. */
+          corner, less a margin), less the map's shift (MapView.tsx), as
+          last drawn: when the boxes reach further left or up, the widget
+          grows that way and its content stays where it is on the
+          whiteboard. Both -1 until first drawn. */
       cropX: number;
       cropY: number;
     };
@@ -127,21 +129,27 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
 
   // The part of Linkkit's page shown moved its top-left corner (a box
   // further left or up, or the left-most one moved in): the widget moves by
-  // as much, so the boxes stay where they are on the whiteboard.
+  // as much, so the boxes stay where they are on the whiteboard. Where
+  // Linkkit moved every box (its shift, for a box past its page's corner),
+  // the boxes stayed where they were: that part is left out.
   const onContent = useCallback(
-    (box: PageRect) => {
+    (box: PageRect, shift: MapShift) => {
       const current = editor.getShape<MapShape>(shape.id);
       if (!current) return;
       const p = current.props;
-      if (box.left === p.cropX && box.top === p.cropY) return;
+      const left = box.left - shift.x;
+      const top = box.top - shift.y;
+      if (left === p.cropX && top === p.cropY) return;
       const s = p.scale || 1;
-      const move = p.cropX < 0 ? {} : { x: current.x + (box.left - p.cropX) * s, y: current.y + (box.top - p.cropY) * s };
-      editor.run(() => editor.updateShape<MapShape>({ id: shape.id, type: MAP_TYPE, ...move, props: { cropX: box.left, cropY: box.top } }), {
+      const move = p.cropX === -1 && p.cropY === -1 ? {} : { x: current.x + (left - p.cropX) * s, y: current.y + (top - p.cropY) * s };
+      editor.run(() => editor.updateShape<MapShape>({ id: shape.id, type: MAP_TYPE, ...move, props: { cropX: left, cropY: top } }), {
         history: "ignore",
       });
     },
     [editor, shape.id],
   );
+  // While edited, the whole page is the map's (mapEditing.tsx).
+  useEditedMap(editing ? { shapeId: shape.id, mapId } : null);
 
   return (
     <HTMLContainer id={shape.id} style={{ pointerEvents: editing ? "all" : "none", overflow: "visible" }}>
@@ -149,6 +157,7 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
         ref={content}
         className="gm-scaled"
         data-active={active || editing ? "" : undefined}
+        data-editing={editing ? "" : undefined}
         style={{ transform: `scale(${scale || 1})`, visibility: scale ? "visible" : "hidden" }}
       >
         <MapName shapeId={shape.id} mapId={mapId} shown={scale > 0} />
