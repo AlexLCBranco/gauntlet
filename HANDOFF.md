@@ -23,7 +23,7 @@ Finished work goes to docs/HISTORY.md.
 ## Waiting for the owner
 
 - Item 4 (Alt+Tab tiles): the 41 Edge Run entries are removed (backup in
-  Documentsedge-run-entries-2026-10-22.reg). After the owner's next
+  Documents/edge-run-entries-2026-10-22.reg). After the owner's next
   reboot: are the Linkkit/Boardkit tiles gone from Alt+Tab?
 - Hand test of items 1-9 (feel): dark-mode import, toolbar, edge resize,
   map editing on the whole page, Add map view / Unlink map.
