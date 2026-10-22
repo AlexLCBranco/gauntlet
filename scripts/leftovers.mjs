@@ -13,7 +13,7 @@
 //   node scripts/leftovers.mjs --kill   # stop them, remove stale profile folders
 
 import { spawnSync } from "node:child_process";
-import { readdirSync, rmSync, statSync } from "node:fs";
+import { readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
