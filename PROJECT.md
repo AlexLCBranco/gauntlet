@@ -610,6 +610,8 @@ Changes to the plan, newest last. Each says what and why.
   Backup of the whole Run key before: Documents/edge-run-entries-2026-10-22.reg
   (double-click it to put them back). Edge may add one again for its own
   profile if its "Startup boost" is on; that one is Edge's, not ours.
+  After the owner's reboot the Alt+Tab tiles were gone (owner, 2026-10-22):
+  those Edge launches at sign-in were what brought them back.
 
 IDEAS
 

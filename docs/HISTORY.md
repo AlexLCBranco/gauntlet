@@ -1202,6 +1202,8 @@ Decisions in PROJECT.md (one entry per item).
 - 4, the Alt+Tab tiles are not windows (none with those titles exists);
   41 Edge auto-launch Run entries and an Explorer restart left to the
   owner; leftovers.mjs also checks windows and stale profile folders.
+  Owner removed the Run entries (2026-10-22); after a reboot the tiles
+  were gone.
 - 5, the 27 live failures were tests 1-27 in a row at the run's start;
   /boardkit measured fast (max 1.9 s at 8 at once, 143 visits); live runs
   now wait for /boardkit and /linkkit first (e2e/global-setup.ts).
