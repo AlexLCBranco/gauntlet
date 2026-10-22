@@ -22,8 +22,9 @@ Finished work goes to docs/HISTORY.md.
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
 - Last results (2026-10-22, map fixes): unit 94 + 8 scripts, Linkkit
-  979; full local gauntlet 194 (hover p95 16.9 ms), Linkkit 18; live: see
-  below; no test browser left.
+  979; full local gauntlet 194 (hover p95 16.9 ms), Linkkit 18; live
+  gauntlet 186 + 8 skipped (hover p95 17.1 ms, clickaway passed), Linkkit
+  18; no test browser left.
 
 ## Waiting for the owner
 
