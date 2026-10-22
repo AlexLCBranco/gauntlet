@@ -607,7 +607,7 @@ Changes to the plan, newest last. Each says what and why.
   switch takes its own presses (ViewSwitch.tsx); nothing changed.
 - 2026-10-22 — Owner: the 41 `MicrosoftEdgeAutoLaunch_*` entries in
   HKCU…CurrentVersionRun are removed (each started Edge at sign-in).
-  Backup of the whole Run key before: Documentsedge-run-entries-2026-10-22.reg
+  Backup of the whole Run key before: Documents/edge-run-entries-2026-10-22.reg
   (double-click it to put them back). Edge may add one again for its own
   profile if its "Startup boost" is on; that one is Edge's, not ours.
 
