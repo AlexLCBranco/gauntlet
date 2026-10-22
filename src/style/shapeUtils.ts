@@ -11,8 +11,10 @@ import {
   type TLTextShape,
 } from "tldraw";
 
-import { metaHex, withAlpha } from "./colors";
+import { shownHex, withAlpha } from "./colors";
 import { fillColorOf, metaFontPx, metaNumber } from "./styleMeta";
+
+type Mode = "dark" | "light";
 
 /** Which shade of a colour tldraw fills with, per fill style (tldraw's own
     table, which it doesn't export). */
@@ -38,11 +40,11 @@ function remeasureOnFontStep<S extends TLGeoShape | TLTextShape>(prev: S, next: 
 
 /** Exact (fixed or custom) colours and sizes kept in meta, as tldraw's
     display values (colors.ts, styleMeta.ts). */
-function exact(meta: Record<string, unknown>) {
+function exact(meta: Record<string, unknown>, mode: Mode) {
   const out: { strokeColor?: string; strokeWidth?: number; labelColor?: string; labelFontSize?: number; labelLineHeight?: number } = {};
-  const stroke = metaHex(meta, "strokeHex");
+  const stroke = shownHex(meta, "strokeHex", mode);
   if (stroke) out.strokeColor = stroke;
-  const text = metaHex(meta, "textHex");
+  const text = shownHex(meta, "textHex", mode);
   if (text) out.labelColor = text;
   const width = metaNumber(meta, "strokePx");
   if (width !== null) out.strokeWidth = width;
@@ -55,8 +57,8 @@ function exact(meta: Record<string, unknown>) {
 
 /** A fixed or custom background, per fill style: solid as is, tint
     see-through, hatch and lines drawn in it. */
-function exactFill(meta: Record<string, unknown>, fill: TLDefaultFillStyle) {
-  const hex = metaHex(meta, "fillHex");
+function exactFill(meta: Record<string, unknown>, fill: TLDefaultFillStyle, mode: Mode) {
+  const hex = shownHex(meta, "fillHex", mode);
   if (!hex || fill === "none") return {};
   return { fillColor: fill === "solid" ? withAlpha(hex, 0.35) : hex, patternFillFallbackColor: withAlpha(hex, 0.35) };
 }
@@ -66,7 +68,7 @@ const GeoWithMeta = GeoShapeUtil.configure({
   // none): on a dark fill it showed as a light rim round the letters.
   showTextOutline: false,
   getCustomDisplayValues(_editor, shape, theme, mode) {
-    const out: Record<string, unknown> = exact(shape.meta);
+    const out: Record<string, unknown> = exact(shape.meta, mode);
     const { fill, color } = shape.props;
     if (shape.meta.fillColor && fill !== "none" && fill !== "semi") {
       const colors = theme.colors[mode];
@@ -74,7 +76,7 @@ const GeoWithMeta = GeoShapeUtil.configure({
       out.fillColor = getColorValue(colors, name, FILL_SHADE[fill]);
       out.patternFillFallbackColor = getColorValue(colors, name, "semi");
     }
-    Object.assign(out, exactFill(shape.meta, fill === "semi" ? "fill" : fill));
+    Object.assign(out, exactFill(shape.meta, fill === "semi" ? "fill" : fill, mode));
     const round = metaNumber(shape.meta, "roundPx");
     if (round !== null) out.strokeRoundness = round;
     const pad = metaNumber(shape.meta, "labelPad");
@@ -94,12 +96,12 @@ class GeoUtil extends GeoWithMeta {
 }
 
 const TextWithMeta = TextShapeUtil.configure({
-  getCustomDisplayValues(_editor, shape) {
+  getCustomDisplayValues(_editor, shape, _theme, mode) {
     const out: { fontSize?: number; color?: string; lineHeight?: number } = {};
     const px = metaFontPx(shape.meta);
     if (px) out.fontSize = px;
     // A text's one colour is its "stroke" in the panel (tldraw's way).
-    const color = metaHex(shape.meta, "textHex") ?? metaHex(shape.meta, "strokeHex");
+    const color = shownHex(shape.meta, "textHex", mode) ?? shownHex(shape.meta, "strokeHex", mode);
     if (color) out.color = color;
     const lh = metaNumber(shape.meta, "lineHeight");
     if (lh) out.lineHeight = lh;
@@ -121,32 +123,32 @@ export const shapeUtils = [
   GeoUtil,
   TextUtil,
   NoteShapeUtil.configure({
-    getCustomDisplayValues(_editor, shape) {
+    getCustomDisplayValues(_editor, shape, _theme, mode) {
       const out: { labelFontSize?: number; labelColor?: string; noteBackgroundColor?: string } = {};
       const px = metaFontPx(shape.meta);
       if (px) out.labelFontSize = px;
-      const text = metaHex(shape.meta, "textHex");
+      const text = shownHex(shape.meta, "textHex", mode);
       if (text) out.labelColor = text;
       // A note's "stroke" colour is its paper (tldraw's way).
-      const paper = metaHex(shape.meta, "strokeHex");
+      const paper = shownHex(shape.meta, "strokeHex", mode);
       if (paper) out.noteBackgroundColor = paper;
       return out;
     },
   }),
   ArrowShapeUtil.configure({
-    getCustomDisplayValues(_editor, shape) {
-      return { ...exact(shape.meta), ...exactFill(shape.meta, shape.props.fill) };
+    getCustomDisplayValues(_editor, shape, _theme, mode) {
+      return { ...exact(shape.meta, mode), ...exactFill(shape.meta, shape.props.fill, mode) };
     },
   }),
   DrawShapeUtil.configure({
-    getCustomDisplayValues(_editor, shape) {
-      const { strokeColor, strokeWidth } = exact(shape.meta);
-      return { ...(strokeColor ? { strokeColor } : {}), ...(strokeWidth !== undefined ? { strokeWidth } : {}), ...exactFill(shape.meta, shape.props.fill) };
+    getCustomDisplayValues(_editor, shape, _theme, mode) {
+      const { strokeColor, strokeWidth } = exact(shape.meta, mode);
+      return { ...(strokeColor ? { strokeColor } : {}), ...(strokeWidth !== undefined ? { strokeWidth } : {}), ...exactFill(shape.meta, shape.props.fill, mode) };
     },
   }),
   LineShapeUtil.configure({
-    getCustomDisplayValues(_editor, shape) {
-      const { strokeColor, strokeWidth } = exact(shape.meta);
+    getCustomDisplayValues(_editor, shape, _theme, mode) {
+      const { strokeColor, strokeWidth } = exact(shape.meta, mode);
       return { ...(strokeColor ? { strokeColor } : {}), ...(strokeWidth !== undefined ? { strokeWidth } : {}) };
     },
   }),

@@ -500,6 +500,18 @@ Changes to the plan, newest last. Each says what and why.
   Enter, the floating bar's done button or a click away keeps the crop,
   as one undo step; Escape cancels the whole crop session.
 
+- 2026-10-21 — Imported Excalidraw colours follow Excalidraw's dark mode
+  (owner, hand-test round item 1). Excalidraw files store light-mode
+  colours; Excalidraw's dark mode draws each element's colour through
+  "invert(93%) hue-rotate(180deg)" (its applyDarkModeFilter, ported exactly
+  into src/style/colors.ts `excalidrawDark`), pictures untouched. Shapes
+  imported from Excalidraw (meta `excalidrawId`, so ones imported before
+  too) keep the stored colours in meta and are drawn through that
+  transform in dark mode, as stored in light mode. A colour the owner picks
+  on such a shape afterwards is his own (meta `ownHex` lists it): the same
+  in both modes, as every other exact colour (2026-10-21, dark and custom
+  colours).
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

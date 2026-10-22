@@ -100,10 +100,18 @@ function setColor(editor: Editor, key: ColorKey, picked: string, tldraw: () => v
       .filter((s) => COLOR_TYPES[key].has(s.type))
       // tldraw merges a meta update into the old meta: null (not a missing
       // key) is what clears an exact colour.
-      .map((s) => ({ id: s.id, type: s.type, meta: { ...s.meta, [key]: hex }, ...(hex && alsoProps ? { props: alsoProps(s) } : {}) }) as TLShapePartial);
+      .map((s) => ({ id: s.id, type: s.type, meta: { ...s.meta, [key]: hex, ...ownedHex(s.meta, key) }, ...(hex && alsoProps ? { props: alsoProps(s) } : {}) }) as TLShapePartial);
     if (updates.length > 0) editor.updateShapes(updates);
     setNextMeta(editor, { [key]: hex ?? undefined });
   });
+}
+
+/** A colour picked here on a shape imported from Excalidraw is the owner's
+    own: it no longer follows Excalidraw's dark mode (colors.ts shownHex). */
+function ownedHex(meta: TLShape["meta"], key: ColorKey) {
+  if (!meta.excalidrawId) return {};
+  const own = Array.isArray(meta.ownHex) ? (meta.ownHex as string[]) : [];
+  return own.includes(key) ? {} : { ownHex: [...own, key] };
 }
 
 /** A shape's colour in a row: its exact one, else tldraw's. */

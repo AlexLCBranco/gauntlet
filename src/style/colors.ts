@@ -73,3 +73,55 @@ export function hsvToHex(h: number, s: number, v: number): string {
   };
   return `#${[f(5), f(3), f(1)].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("")}`;
 }
+
+// Excalidraw's dark mode. Excalidraw keeps the light-mode colours in its
+// files and, in dark mode, draws each element's colour through
+// "invert(93%) hue-rotate(180deg)" (pictures untouched). Ported exactly
+// from Excalidraw's own applyDarkModeFilter (packages/common/src/colors.ts:
+// cssInvert, then cssHueRotate's matrix, each step rounded as there), so an
+// imported drawing looks in dark mode as it did in Excalidraw's.
+
+const EXCALIDRAW_INVERT = 0.93;
+
+function excalidrawHueRotate(red: number, green: number, blue: number, degrees: number): [number, number, number] {
+  const [r, g, b] = [red / 255, green / 255, blue / 255];
+  const a = (degrees * Math.PI) / 180;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const m = [
+    0.213 + c * 0.787 - s * 0.213,
+    0.715 - c * 0.715 - s * 0.715,
+    0.072 - c * 0.072 + s * 0.928,
+    0.213 - c * 0.213 + s * 0.143,
+    0.715 + c * 0.285 + s * 0.14,
+    0.072 - c * 0.072 - s * 0.283,
+    0.213 - c * 0.213 - s * 0.787,
+    0.715 - c * 0.715 + s * 0.715,
+    0.072 + c * 0.928 + s * 0.072,
+  ];
+  const out = (x: number) => Math.round(Math.max(0, Math.min(1, x)) * 255);
+  return [out(r * m[0] + g * m[1] + b * m[2]), out(r * m[3] + g * m[4] + b * m[5]), out(r * m[6] + g * m[7] + b * m[8])];
+}
+
+/** The colour Excalidraw's dark mode draws for a stored (light-mode)
+    "#rrggbb". */
+export function excalidrawDark(hex: string): string {
+  const n = normalizeHex(hex) ?? "#000000";
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const v = parseInt(n.slice(i, i + 2), 16);
+    return Math.round(Math.max(0, Math.min(255, v * (1 - EXCALIDRAW_INVERT) + (255 - v) * EXCALIDRAW_INVERT)));
+  });
+  return `#${excalidrawHueRotate(r, g, b, 180).map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** The colour a shape's meta holds under `key`, as drawn in `mode`. A
+    colour that came from an Excalidraw import (the shape has
+    `excalidrawId` and the key isn't in `ownHex`, the colours picked here
+    since) follows Excalidraw's dark mode; every other exact colour is the
+    same in both modes. */
+export function shownHex(meta: Record<string, unknown> | undefined, key: ColorKey, mode: "dark" | "light"): string | null {
+  const hex = metaHex(meta, key);
+  if (!hex || mode !== "dark" || !meta?.excalidrawId) return hex;
+  const own = Array.isArray(meta.ownHex) ? meta.ownHex : [];
+  return own.includes(key) ? hex : excalidrawDark(hex);
+}

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 import { whiteboardSaved } from "./helpers";
-import { checkImported, imported, openWhiteboard, type ExcElement } from "./excalidrawChecks";
+import { checkBothModes, checkImported, imported, openWhiteboard, type ExcElement } from "./excalidrawChecks";
 
 /**
  * Excalidraw paste and import that keep everything (Excalidraw parity item
@@ -58,6 +58,20 @@ test("pasting a copied Excalidraw drawing keeps every element's place, size, col
   await page.reload();
   await page.waitForFunction(() => "editor" in window);
   await checkImported(page, sample.elements, await imported(page));
+});
+
+test("imported colours follow Excalidraw's dark mode: dark mode draws them as Excalidraw's does, light mode as stored, pictures untouched, also after a reload", async ({ page }) => {
+  await openWhiteboard(page);
+  await page.getByTestId("main-menu.button").click();
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("menuitem", { name: "Import Excalidraw file…" }).click();
+  await (await chooser).setFiles(FIXTURE.pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+  await expect(page.getByTestId("import-notice")).toBeVisible();
+  await checkBothModes(page, sample.elements);
+  await whiteboardSaved(page);
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  await checkBothModes(page, sample.elements);
 });
 
 test("a .excalidraw file opened from the main menu, or dropped on the whiteboard, is imported the same way", async ({ page }) => {

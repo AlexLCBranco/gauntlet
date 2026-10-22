@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { expect, test } from "@playwright/test";
 
-import { checkImported, imported, openWhiteboard, type ExcElement } from "./excalidrawChecks";
+import { checkBothModes, checkImported, imported, openWhiteboard, type ExcElement } from "./excalidrawChecks";
 
 /**
  * The owner's own Excalidraw drawing, imported (Excalidraw parity item 2).
@@ -31,4 +31,15 @@ test("the owner's Excalidraw drawing imports with every element's place, size, c
   const notConverted = page.getByTestId("import-not-converted");
   if (await notConverted.isVisible()) console.log(`not converted: ${await notConverted.innerText()}`);
   await checkImported(page, drawing.elements, await imported(page));
+});
+
+test("the owner's drawing in dark mode looks as in Excalidraw's dark mode: white boxes dark, blue text blue, pictures untouched; light mode shows the stored colours", async ({ page }) => {
+  const drawing = JSON.parse(readFileSync(FILE, "utf-8")) as { elements: ExcElement[] };
+  await openWhiteboard(page);
+  await page.getByTestId("main-menu.button").click();
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("menuitem", { name: "Import Excalidraw file…" }).click();
+  await (await chooser).setFiles(FILE);
+  await expect(page.getByTestId("import-notice")).toBeVisible();
+  await checkBothModes(page, drawing.elements);
 });
