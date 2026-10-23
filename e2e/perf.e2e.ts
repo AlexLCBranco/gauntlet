@@ -174,13 +174,23 @@ test("a big map (150 boxes, 100 arrows) stays smooth on the whiteboard: dragging
     for (let i = 1; i <= 120; i++) await page.mouse.move(b.x + 20 + Math.sin(i / 15) * 200, b.y + 10 + i);
     await page.mouse.up();
   });
-  const zoom = await measureFrames(page, async () => {
-    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
-    await page.keyboard.down("Control");
-    for (let i = 0; i < 20; i++) await page.mouse.wheel(0, i < 10 ? -120 : 120);
-    await page.keyboard.up("Control");
-  });
-  console.log(`big map: drag ${JSON.stringify(drag)}, zoom ${JSON.stringify(zoom)} (ms)`);
+  // Zooming is measured 5 times (each zooms in and back out, so every run
+  // is the same), and each measure's median over the runs is judged: one
+  // run alone went over the limit now and then from the machine's own
+  // noise (owner, 2026-10-22: less noisy, same limits).
+  const zooms = [];
+  for (let run = 0; run < 5; run++)
+    zooms.push(
+      await measureFrames(page, async () => {
+        await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+        await page.keyboard.down("Control");
+        for (let i = 0; i < 20; i++) await page.mouse.wheel(0, i < 10 ? -120 : 120);
+        await page.keyboard.up("Control");
+      }),
+    );
+  const mid = (xs: number[]) => [...xs].sort((p, q) => p - q)[Math.floor(xs.length / 2)];
+  const zoom = { median: mid(zooms.map((z) => z.median)), p95: mid(zooms.map((z) => z.p95)), longest: mid(zooms.map((z) => z.longest)) };
+  console.log(`big map: drag ${JSON.stringify(drag)}, zoom (median of 5) ${JSON.stringify(zoom)}, zoom p95 per run ${JSON.stringify(zooms.map((z) => z.p95))} (ms)`);
   // The big board's limits (see above).
   const REFRESH = 1000 / 60;
   for (const [m, p95] of [[drag, 4.5 * REFRESH], [zoom, 6.5 * REFRESH]] as const) {

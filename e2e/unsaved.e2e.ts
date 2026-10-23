@@ -139,6 +139,62 @@ test("a shape drawn right before a reload is still there", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+/** The selection tldraw has stored for this tab (IndexedDB), or null. */
+const storedSelection = (page: Page) =>
+  page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open("TLDRAW_DOCUMENT_v2gauntlet-whiteboard");
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    try {
+      const s = await new Promise<any>((resolve, reject) => {
+        const req = db.transaction("session_state").objectStore("session_state").get((window as any).TLDRAW_TAB_ID_v2 ?? "");
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const current = s?.snapshot?.currentPageId;
+      return (s?.snapshot?.pageStates ?? []).find((p: any) => p.pageId === current)?.selectedShapeIds ?? null;
+    } finally {
+      db.close();
+    }
+  });
+
+// The flaky Delete in the next test (owner, 2026-10-22): tldraw stores the
+// selection a moment after it changes, and a reload cut that off, so the
+// page came back with an older selection. The test's Escape, pressed
+// before the whiteboard had focus again, didn't clear it, and its click on
+// that (still selected) shape opened the shape's text instead of selecting
+// it: the Delete went into the text. Now a reload brings back the
+// selection as it was (src/pages/rememberPage.ts).
+test("a reload right after a click brings back that selection, not an older one: a click then Delete deletes", async ({ page }) => {
+  await open(page);
+  const a = await rect(page, 300, 200);
+  const b = await rect(page, 700, 200);
+  const c = await rect(page, 1100, 200);
+  await page.keyboard.press("Escape");
+  await whiteboardSaved(page);
+  for (let round = 0; round < 4; round++) {
+    // `a` selected and stored as such by tldraw...
+    await pick(page, a);
+    await expect.poll(() => storedSelection(page), { timeout: 10_000 }).toEqual([a]);
+    // ...then `b` picked and the page reloaded at once.
+    await pick(page, b);
+    await reload(page);
+    expect(await ed(page, (e) => e.getSelectedShapeIds()), `round ${round}: the selection after the reload`).toEqual([b]);
+    // A person's click on `c`, Delete straight after: `c` goes.
+    const p = await screen(page, await ed(page, (e, id: string) => e.getShapePageBounds(id).center, c));
+    await page.mouse.click(p.x, p.y);
+    await page.keyboard.press("Delete");
+    expect(await ed(page, (e) => e.getEditingShapeId()), `round ${round}: no text opened`).toBeNull();
+    expect(await shapeIds(page), `round ${round}: deleted`).not.toContain(c);
+    // Back for the next round.
+    await page.keyboard.press("Control+z");
+    await expect.poll(() => shapeIds(page)).toContain(c);
+    await page.keyboard.press("Escape");
+  }
+});
+
 test("a move, a style change and a delete right before a reload are kept", async ({ page }) => {
   await open(page);
   const a = await rect(page, 300, 200);

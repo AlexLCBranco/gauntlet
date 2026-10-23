@@ -757,6 +757,16 @@ Changes to the plan, newest last. Each says what and why.
   without moving anything on its own; moving tools for good on a
   resize would lose the arrangement, and clipping would break the
   promise (toolbarLayout.ts fitBar).
+- 2026-10-22 — The flaky Delete (unsaved.e2e.ts:142, owner: find out why)
+  was an app quirk, not a lost key: tldraw stores the selection 350 ms
+  after a change, and a reload cut that off, so the page came back with
+  an OLDER selection. A click on that still-selected shape then opened its
+  text (tldraw edits a selected shape's text on a click) and the Delete
+  went into it. Caught by logging focus and keys in a live run; 0 misses
+  in 360 plain click→Delete tries at any speed. Now the selection is kept
+  in the tab's sessionStorage at once, as the current page already was,
+  and put back on open (src/pages/rememberPage.ts). The big-map zoom
+  speed test judges the median of 5 runs (same limits).
 
 IDEAS
 

@@ -47,11 +47,11 @@ Finished work goes to docs/HISTORY.md.
 - Linkkit's tree layout lets long card names overlap their neighbours
   (a board's map, and Linkkit's own page): not changed.
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
-  resize); unsaved.e2e.ts:142 (Delete right after a click not taken, in live
-  full runs 2026-10-21 and 2026-10-22; passes alone; 5/5, 12/12 with 6).
-- Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms over
-  8 runs (limit 108, 1 run over; the board's is ~50). No DOM changes while
-  zooming: browser repaint. For the speed session; test kept as is.
+  resize). (unsaved.e2e.ts:142 was a stale selection after a reload:
+  fixed, DECISIONS 2026-10-22.)
+- Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms per
+  run (limit 108; the board's is ~50); the test now judges the median of
+  5 runs. Browser repaint, no DOM changes. For the speed session.
 - Linkkit's embed mode (`?embed=1`) has no e2e of its own any more (its
   embed.e2e.ts only tested it inside the deleted canvas); realdata.e2e.ts
   and Linkkit's readonly.e2e.ts still open maps that way.
