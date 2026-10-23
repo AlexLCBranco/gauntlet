@@ -20,8 +20,8 @@ Finished work goes to docs/HISTORY.md.
 - Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
-- Last results (2026-10-22, toolbar step 4): unit 105 + 17 scripts, full
-  local gauntlet 229; live 221 + 8 skipped, 0 failed.
+- Last results (2026-10-22, toolbar step 4): full local gauntlet 229;
+  live 221 + 8 skipped. 2026-10-23: unit 105 + 19 scripts.
 
 ## Waiting for the owner
 
@@ -34,12 +34,13 @@ Finished work goes to docs/HISTORY.md.
 ## Half-done
 
 - TOOLBAR REWORK (owner, 2026-10-22; request word for word in
-  docs/TOOLBAR-REWORK.md): 4 steps, STOP after each for the owner's OK.
-  Steps 1-4 DONE (DECISIONS; e2e/toolbar, tools, embed, markup .e2e.ts;
-  screenshots/ from the e2e and scripts/excalidraw-shots.mjs). All four
-  steps done: waiting for the owner's hand check.
+  docs/TOOLBAR-REWORK.md): steps 1-4 DONE (DECISIONS; e2e/toolbar, tools,
+  embed, markup .e2e.ts); waiting for the owner's hand check.
 - Live runs: no bypass secret exists (DECISIONS 2026-10-22); after a
   push, `node scripts/wait-deploy.mjs`. A 403 stops the run: tell the owner.
+- LINKS ROUND (owner, 2026-10-23): step 1 (leftover hidden windows of a
+  finished run count, DECISIONS) DONE, waiting for the owner's OK. Step 2
+  (links on every object) not started.
 - Phase 4 NOT started (owner: don't start it).
 
 ## Broken / known wrong
@@ -47,8 +48,7 @@ Finished work goes to docs/HISTORY.md.
 - Linkkit's tree layout lets long card names overlap their neighbours
   (a board's map, and Linkkit's own page): not changed.
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
-  resize). (unsaved.e2e.ts:142 was a stale selection after a reload:
-  fixed, DECISIONS 2026-10-22.)
+  resize).
 - Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms per
   run (limit 108; the board's is ~50); the test now judges the median of
   5 runs. Browser repaint, no DOM changes. For the speed session.

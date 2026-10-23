@@ -793,6 +793,15 @@ Changes to the plan, newest last. Each says what and why.
   red markup arrows and lines (straightened too); any other tool leaves
   it, marks stay; cleared on leaving the page or a reload; "Clear markup"
   and "Keep marks" (into red drawings, one undo) under the toolbar.
+- 2026-10-23 — Leftover windows, hidden ones too (owner, links round
+  step 1): ignoring hidden windows hid a headless browser left behind.
+  Now every window titled Linkkit/Boardkit/Gauntlet of a test browser
+  counts, hidden or not, unless its run is still going: the node process
+  that launched the browser (first non-browser up the parent chain) still
+  lives and is older than it (a reused pid doesn't count)
+  (scripts/leftovers.mjs `finishedRun`, `leftoverWindows`). Tests: an
+  orphaned headless Edge's hidden window is reported; one held by the
+  running test is seen but not reported.
 
 IDEAS
 
