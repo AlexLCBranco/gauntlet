@@ -26,3 +26,19 @@ test("the window check runs and finds no test-browser window titled Linkkit, Boa
   const test = new Set(testBrowsers(processes()).map((p) => p.pid));
   assert.deepEqual(appWindows().filter((w) => test.has(w.pid)), []);
 });
+
+test("a running headless test browser's hidden window isn't counted: only windows on screen are (it failed while tests ran, 2026-10-22)", async () => {
+  const { appWindows } = await import("./leftovers.mjs");
+  const { chromium } = await import("@playwright/test");
+  const browser = await chromium.launch({ channel: "msedge", headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent("<title>Gauntlet</title>");
+    // Headless Edge keeps a hidden top-level window titled after the page;
+    // give it a moment to be named.
+    await page.waitForTimeout(1000);
+    assert.deepEqual(appWindows(), []);
+  } finally {
+    await browser.close();
+  }
+});

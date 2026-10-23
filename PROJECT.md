@@ -767,6 +767,13 @@ Changes to the plan, newest last. Each says what and why.
   in the tab's sessionStorage at once, as the current page already was,
   and put back on open (src/pages/rememberPage.ts). The big-map zoom
   speed test judges the median of 5 runs (same limits).
+- 2026-10-22 — The script test that failed once (owner: find out which):
+  the leftover-windows check (scripts/leftovers.mjs). It ran while an e2e
+  run was going (started in parallel by the agent) and caught a real but
+  HIDDEN window, "Gauntlet - <profile> - Microsoft Edge", that a headless
+  test browser keeps while it runs; IsWindowVisible false in 60 samples.
+  6 of 10 runs failed that way. Now only windows on screen count; a test
+  launches a headless Edge on a page titled Gauntlet and expects none.
 
 IDEAS
 

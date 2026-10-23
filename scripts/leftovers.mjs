@@ -72,8 +72,11 @@ function tempProfiles(running) {
   return staleProfiles(names, running).map((n) => path.join(tmpdir(), n));
 }
 
-/** Top-level windows titled Linkkit, Boardkit or Gauntlet, with their
-    process: { hwnd, pid, title }. Windows only. */
+/** Top-level windows on screen titled Linkkit, Boardkit or Gauntlet, with
+    their process: { hwnd, pid, title }. Windows only. Hidden windows don't
+    count: a headless test browser keeps one, titled after its page, for as
+    long as it runs, and it never shows (the check failed when run during
+    an e2e run, 2026-10-22). */
 export function appWindows() {
   if (process.platform !== "win32") return [];
   const script = `
@@ -84,7 +87,8 @@ public class LW {
   [DllImport("user32.dll")] static extern bool EnumWindows(P f, IntPtr l);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
-  public static List<string> All() { var o = new List<string>(); EnumWindows((h, l) => { var b = new StringBuilder(512); GetWindowText(h, b, 512); uint p; GetWindowThreadProcessId(h, out p); if (b.Length > 0) o.Add(h.ToInt64() + "\t" + p + "\t" + b); return true; }, IntPtr.Zero); return o; }
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+  public static List<string> All() { var o = new List<string>(); EnumWindows((h, l) => { var b = new StringBuilder(512); GetWindowText(h, b, 512); uint p; GetWindowThreadProcessId(h, out p); if (b.Length > 0 && IsWindowVisible(h)) o.Add(h.ToInt64() + "\t" + p + "\t" + b); return true; }, IntPtr.Zero); return o; }
 }
 "@
 [LW]::All()`;
