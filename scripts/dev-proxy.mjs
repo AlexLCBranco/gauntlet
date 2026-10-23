@@ -22,6 +22,8 @@ import https from "node:https";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { handleUnfurl } from "../api/_lib/unfurl.js";
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** `vercel.json`'s rewrites. */
@@ -157,6 +159,12 @@ export function start({ port = Number(process.env.PORT ?? 3000), targets = local
     if (to) {
       res.writeHead(307, { location: to });
       res.end();
+      return;
+    }
+    // The site's own function (api/unfurl.js on Vercel). Local addresses
+    // allowed here: the tests' own pages are on localhost.
+    if (pathname === "/api/unfurl") {
+      handleUnfurl(req, res, { allowPrivate: true });
       return;
     }
     const file = staticFile(root, pathname);

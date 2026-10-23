@@ -6,6 +6,7 @@ import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
 import { forward, localTargets, readRedirects, readRewrites, redirect, rewrite, toLocal } from "./scripts/dev-proxy.mjs";
+import { handleUnfurl } from "./api/_lib/unfurl.js";
 
 /**
  * Dev server: the whiteboard at `/`, and `/boardkit` and `/linkkit`
@@ -33,6 +34,8 @@ function apps(mode: string): Plugin {
           res.end();
           return;
         }
+        // The site's own function (api/unfurl.js on Vercel).
+        if (pathname === "/api/unfurl") return void handleUnfurl(req, res, { allowPrivate: true });
         const dest = rewrite(rewrites, pathname, search);
         if (!dest) return next();
         forward(req, res, targets ? toLocal(dest, targets) : dest);

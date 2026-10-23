@@ -10,6 +10,8 @@ import "tldraw/tldraw.css";
 
 import { BoardPicker, boardToolItem } from "../boards/AddBoard";
 import { BoardShapeUtil } from "../boards/BoardShape";
+import { WebEmbedDialog } from "../embed/WebEmbedDialog";
+import { WebEmbedShapeUtil, webEmbeds } from "../embed/WebEmbedShape";
 import { ImportNotice } from "../import/excalidraw/ImportNotice";
 import { ourExcalidrawImport } from "../import/excalidraw/importExcalidraw";
 import { takeBackEmptyNewBoards } from "../boards/emptyNewBoards";
@@ -82,7 +84,7 @@ const lassoIcon = (
 // Each tool's keys come from toolbarLayout.ts (KEYS): Excalidraw's where
 // they don't clash with tldraw's, as the toolbar's hints show them.
 const overrides: TLUiOverrides = {
-  tools(editor, tools) {
+  tools(editor, tools, helpers) {
     tools.lasso = {
       id: "lasso",
       label: "tool.lasso" as never,
@@ -93,7 +95,8 @@ const overrides: TLUiOverrides = {
     // menu item or key (toolbarLayout.ts). Shapes of those kinds already on
     // a page stay as they are.
     for (const id of REMOVED) delete tools[id];
-    if (tools.embed) tools.embed = { ...tools.embed, icon: "link" };
+    // Our own web embed (src/embed/): a preview first, the site on a click.
+    if (tools.embed) tools.embed = { ...tools.embed, icon: "link", onSelect: () => helpers.addDialog({ component: WebEmbedDialog }) };
     // Markup replaces the laser pointer; its tool comes in a later step,
     // the ⋮ menu shows it greyed out until then.
     tools.markup = { id: "markup", label: "tool.markup" as never, icon: "tool-highlight", onSelect: () => {} };
@@ -130,7 +133,7 @@ const overrides: TLUiOverrides = {
 
 /** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards
     and Linkkit maps as whiteboard objects (`src/boards/`, `src/maps/`). */
-const shapeUtils = [...styleShapeUtils, BoardShapeUtil, MapShapeUtil];
+const shapeUtils = [...styleShapeUtils, BoardShapeUtil, MapShapeUtil, WebEmbedShapeUtil];
 
 /** Under the main menu (top left): the style panel, as in Excalidraw. */
 function UnderMenu() {
@@ -201,6 +204,8 @@ function setUp(editor: Editor) {
   const stopHoverResize = hoverResize(editor);
   // Lines and arrows drawn nearly level or upright come out straight.
   const stopStraight = straightLines(editor);
+  // Pasting a web address makes a web embed (src/embed/).
+  const stopEmbeds = webEmbeds(editor);
   // Editing a map: the whole page is its space (src/maps/mapEditing.tsx).
   const stopMapEditing = mapEditing(editor);
   // "Unlink map" on a board widget is one undo step (src/boards/mapLink.tsx).
@@ -226,6 +231,7 @@ function setUp(editor: Editor) {
     stopWall();
     stopHoverResize();
     stopStraight();
+    stopEmbeds();
     stopMapEditing();
     stopUnlinks();
     stopNext();
