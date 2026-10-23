@@ -774,6 +774,25 @@ Changes to the plan, newest last. Each says what and why.
   test browser keeps while it runs; IsWindowVisible false in 60 samples.
   6 of 10 runs failed that way. Now only windows on screen count; a test
   launches a headless Edge on a page titled Gauntlet and expects none.
+- 2026-10-22 — Toolbar rework, step 4 (owner). (1) Lines and arrows
+  drawn within 5° of horizontal or vertical come out exactly straight, no
+  key (src/whiteboard/straightLines.ts; ends attached to a shape are left
+  alone); Shift keeps tldraw's 15° steps. (2) Panning: no hand tool; the
+  bounded page already pans only when bigger than the window, clamped;
+  e2e now proves a page that fits never moves (wheel, Shift+wheel,
+  Space/middle/right drag, keys). (3) Group and Ungroup at the top of the
+  right-click menu (src/whiteboard/ContextMenu.tsx). (4) Web embeds
+  (src/embed/): a pasted address, or ⋮ Web embed (I), makes a preview
+  card (title, picture, site) from this site's own /api/unfurl (a Vercel
+  function, api/unfurl.js; the local proxy and dev server answer it too;
+  private addresses refused on Vercel); "Load site" loads the live page;
+  a site whose headers refuse frames gets "Open in new tab"; a reload or
+  leaving the page puts it back to the preview; other pages' embeds are
+  never drawn, so never load. (5) Markup (K, src/markup/): red marks kept
+  in memory only, never in tldraw's store; while it's on, A and L draw
+  red markup arrows and lines (straightened too); any other tool leaves
+  it, marks stay; cleared on leaving the page or a reload; "Clear markup"
+  and "Keep marks" (into red drawings, one undo) under the toolbar.
 
 IDEAS
 
