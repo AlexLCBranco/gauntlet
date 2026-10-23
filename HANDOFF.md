@@ -20,8 +20,8 @@ Finished work goes to docs/HISTORY.md.
 - Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
-- Last results (2026-10-22, toolbar step 3): unit 98 + 12 scripts, full
-  local gauntlet 205; live 197 + 8 skipped (hover p95 16.8 ms).
+- Last results (2026-10-22, ghost fix + full bar): unit 101 + 12 scripts,
+  full local gauntlet 215; live 206 + 8 skipped, 1 known flaky (below).
 
 ## Waiting for the owner
 
@@ -47,8 +47,8 @@ Finished work goes to docs/HISTORY.md.
 - Linkkit's tree layout lets long card names overlap their neighbours
   (a board's map, and Linkkit's own page): not changed.
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
-  resize); unsaved.e2e.ts:142 (Delete right after a click not taken, once
-  in a live full run 2026-10-21; 5/5 alone, 12/12 with 6 workers).
+  resize); unsaved.e2e.ts:142 (Delete right after a click not taken, in live
+  full runs 2026-10-21 and 2026-10-22; passes alone; 5/5, 12/12 with 6).
 - Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms over
   8 runs (limit 108, 1 run over; the board's is ~50). No DOM changes while
   zooming: browser repaint. For the speed session; test kept as is.
