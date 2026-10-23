@@ -20,8 +20,8 @@ Finished work goes to docs/HISTORY.md.
 - Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
 - Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
-- Last results (2026-10-22, ghost fix + full bar): unit 101 + 12 scripts,
-  full local gauntlet 215; live 206 + 8 skipped, 1 known flaky (below).
+- Last results (2026-10-22, selection fix + perf median): unit 101 + 12
+  scripts, full local gauntlet 216; live 208 + 8 skipped, 0 failed.
 
 ## Waiting for the owner
 
