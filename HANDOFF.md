@@ -21,7 +21,7 @@ Finished work goes to docs/HISTORY.md.
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
 - Pinned: Boardkit v0.0.105 (`5a6850a`), Linkkit v0.0.113 (`f8b63cf`).
 - Last results (2026-10-23, links step 2): unit 110 + 19 scripts, local
-  gauntlet 239, Linkkit 18; live: see below.
+  gauntlet 239, Linkkit 18; live 231 + 8 skipped, 0 failed.
 
 ## Waiting for the owner
 
@@ -29,7 +29,6 @@ Finished work goes to docs/HISTORY.md.
   dragged far out, a board's Map and Both views.
 - Phase 3 hand test (feel only): placing and scaling a map, editing it in
   place, the List | Map | Both switch, one undo. Then "go to phase 4".
-- Earlier hand test (phase 2.5 feel items), if not done yet.
 
 ## Half-done
 
