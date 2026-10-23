@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BAR, DEFAULT_LAYOUT, KEYS, LABELS, MORE, moveTool, normalizeLayout, REMOVED, sameLayout, SEPARATOR, tooltip } from "./toolbarLayout";
+import { BAR, barWidth, DEFAULT_LAYOUT, fitBar, KEYS, LABELS, MORE, moveTool, normalizeLayout, REMOVED, sameLayout, SEPARATOR, tooltip, visibleBar } from "./toolbarLayout";
 
 describe("toolbar layout", () => {
   const onBar = BAR.filter((id) => id !== SEPARATOR);
@@ -71,5 +71,30 @@ describe("arranging the toolbar (step 3)", () => {
     const all = [...fixed.bar, ...fixed.more];
     expect(new Set(all).size).toBe(all.length);
     expect(sameLayout(normalizeLayout({ bar: [...D.bar], more: [...D.more] }), D)).toBe(true);
+  });
+});
+
+describe("the bar never overflows", () => {
+  const ALL = ["select", "rectangle", "arrow", "line", SEPARATOR, "board", "map", "asset", "embed", "lasso", "markup", "text", "draw"];
+
+  it("measures as toolbar.css draws it: the default bar is 293 px, everything pinned 533 px", () => {
+    expect(barWidth(visibleBar(BAR))).toBe(293);
+    expect(barWidth(visibleBar(ALL))).toBe(533);
+  });
+
+  it("the separator shows only between two tools", () => {
+    expect(visibleBar(["select", SEPARATOR])).toEqual(["select"]);
+    expect(visibleBar([SEPARATOR, "select", "map"])).toEqual(["select", "map"]);
+    expect(visibleBar(["select", SEPARATOR, "map"])).toEqual(["select", SEPARATOR, "map"]);
+  });
+
+  it("with room, everything shows; short of room, the last pinned tools wait in the menu, in bar order; Select always stays", () => {
+    expect(fitBar(ALL, 533)).toEqual({ shown: ALL, spilled: [] });
+    const narrow = fitBar(ALL, 500);
+    expect(narrow.spilled).toEqual(["draw"]);
+    expect(barWidth(narrow.shown)).toBeLessThanOrEqual(500);
+    const tiny = fitBar(ALL, 10);
+    expect(tiny.shown).toEqual(["select"]);
+    expect(tiny.spilled).toEqual(ALL.filter((id) => id !== "select" && id !== SEPARATOR));
   });
 });

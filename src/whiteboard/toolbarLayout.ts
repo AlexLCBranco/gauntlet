@@ -138,3 +138,43 @@ export function normalizeLayout(raw: unknown): Layout {
   for (const id of MORE) if (!seen.has(id)) more.push(id);
   return { bar, more };
 }
+
+/** The bar's measures (toolbar.css): a button (and ⋮), the gap between
+    items, the padding at each end, a separator with its margin. */
+export interface BarSizes {
+  readonly button: number;
+  readonly gap: number;
+  readonly padding: number;
+  readonly separator: number;
+}
+export const BAR_SIZES: BarSizes = { button: 36, gap: 4, padding: 4, separator: 5 };
+
+/** The bar as shown: the separator only between two tools. */
+export function visibleBar(bar: readonly string[]): string[] {
+  return bar.filter((id, i) => id !== SEPARATOR || (i > 0 && i < bar.length - 1));
+}
+
+/** The bar's width with these items shown, and ⋮ after them. */
+export function barWidth(shown: readonly string[], s: BarSizes = BAR_SIZES): number {
+  const items = [...shown.map((id) => (id === SEPARATOR ? s.separator : s.button)), s.button];
+  return 2 * s.padding + items.reduce((a, b) => a + b, 0) + (items.length - 1) * s.gap;
+}
+
+/**
+ * Never wider than `room` (owner, 2026-10-22: the bar never overflows):
+ * what the bar shows, and the pinned tools that don't fit now, from its
+ * end (Select always stays). Those show in the ⋮ menu while the window is
+ * this narrow; the layout itself doesn't change, so a wider window brings
+ * them back.
+ */
+export function fitBar(bar: readonly string[], room: number, s: BarSizes = BAR_SIZES): { shown: string[]; spilled: string[] } {
+  let shown = visibleBar(bar);
+  const spilled: string[] = [];
+  while (barWidth(shown, s) > room) {
+    const i = shown.findLastIndex((id) => !FIXED_ON_BAR.has(id));
+    if (i < 0) break;
+    spilled.unshift(shown[i]);
+    shown = visibleBar(shown.filter((_, j) => j !== i));
+  }
+  return { shown, spilled };
+}

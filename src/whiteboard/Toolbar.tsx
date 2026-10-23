@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { TldrawUiIcon, useEditor, useIsToolSelected, useTools, useTranslation, useValue, type TLUiToolItem } from "tldraw";
 
 import { dotsIcon, resetIcon, TOOL_ICONS } from "./toolbarIcons";
-import { DEFAULT_LAYOUT, FIXED_ON_BAR, KEYS, LABELS, moveTool, SEPARATOR, tooltip, type Place } from "./toolbarLayout";
+import { BAR_SIZES, barWidth, DEFAULT_LAYOUT, fitBar, FIXED_ON_BAR, KEYS, LABELS, moveTool, SEPARATOR, tooltip, type BarSizes, type Place } from "./toolbarLayout";
 import { setToolbarLayout, toolbarLayout } from "./toolbarStore";
 import "./toolbar.css";
 
@@ -111,7 +112,15 @@ const DRAG_START = 4;
  * Over ⋮ the menu opens. Select and the separator stay on the bar.
  * Escape, or a drop anywhere else, changes nothing.
  */
-function useToolDrag(bar: React.RefObject<HTMLDivElement | null>, menu: React.RefObject<HTMLDivElement | null>, openMenu: () => void) {
+function useToolDrag(
+  bar: React.RefObject<HTMLDivElement | null>,
+  menu: React.RefObject<HTMLDivElement | null>,
+  openMenu: () => void,
+  /** Whether `id`, not on the bar now, would fit on it. */
+  fits: (id: string) => boolean,
+  /** A drop on the bar was refused: no room. */
+  onFull: () => void,
+) {
   const [state, setState] = useState<{ id: string; x: number; y: number; target: Target | null } | null>(null);
   const swallow = useRef(false);
   /** A drag is on (the menu's Escape leaves it to the drag). */
@@ -136,6 +145,11 @@ function useToolDrag(bar: React.RefObject<HTMLDivElement | null>, menu: React.Re
     }
     const barBox = inside(bar.current, 12);
     if (barBox) {
+      // A full bar takes no more (owner, 2026-10-22: it never overflows).
+      if (!fits(id)) {
+        onFull();
+        return null;
+      }
       const others = items(bar.current);
       const index = others.filter((el) => {
         const r = el.getBoundingClientRect();
@@ -207,6 +221,25 @@ function useToolDrag(bar: React.RefObject<HTMLDivElement | null>, menu: React.Re
   return { state, active, drag: { onPointerDown, swallowClick, id: state?.id ?? null } as Dragging };
 }
 
+/** The room the bar has at this window width: the window, less the main
+    menu's corner on each side (the bar is centred), and the bar's
+    measures as drawn (a button is 38 px on screens past 1920 px). */
+function useBarRoom(moreButton: React.RefObject<HTMLButtonElement | null>): { room: number; sizes: BarSizes } {
+  const measure = () => {
+    const menuRight = document.querySelector('[data-testid="main-menu.button"]')?.getBoundingClientRect().right ?? 40;
+    const button = moreButton.current?.getBoundingClientRect().width || BAR_SIZES.button;
+    return { room: window.innerWidth - 2 * (menuRight + 8), sizes: { ...BAR_SIZES, button } };
+  };
+  const [state, setState] = useState(measure);
+  useEffect(() => {
+    const on = () => setState(measure());
+    on();
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return state;
+}
+
 /**
  * The toolbar along the top, centred, as in Excalidraw: the owner's
  * arrangement of the tools (toolbarLayout.ts, toolbarStore.ts), at every
@@ -222,8 +255,22 @@ export function Toolbar() {
   const root = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+  const moreButton = useRef<HTMLButtonElement>(null);
   const current = useValue("current tool", () => editor.getCurrentToolId(), [editor]);
-  const { state, active, drag } = useToolDrag(bar, menu, () => setOpen(true));
+  // Never wider than the window allows: pinned tools that don't fit now
+  // wait in the menu (fitBar), and a pin that wouldn't fit is refused.
+  const { room, sizes } = useBarRoom(moreButton);
+  const { shown, spilled } = fitBar(layout.bar, room, sizes);
+  const inMenu = [...spilled, ...layout.more];
+  const [full, setFull] = useState(false);
+  const fullTimer = useRef(0);
+  const onFull = () => {
+    setFull(true);
+    clearTimeout(fullTimer.current);
+    fullTimer.current = window.setTimeout(() => setFull(false), 2500);
+  };
+  const fits = (id: string) => shown.includes(id) || barWidth([...shown, id], sizes) <= room;
+  const { state, active, drag } = useToolDrag(bar, menu, () => setOpen(true), fits, onFull);
 
   useEffect(() => {
     if (!open) return;
@@ -240,14 +287,12 @@ export function Toolbar() {
     };
   }, [open, active]);
 
-  // The separator shows only between two tools.
-  const last = layout.bar.length - 1;
   return (
     <div className="gauntlet-top-toolbar" ref={root} onPointerDown={(e) => e.stopPropagation()} data-dragging={state ? "" : undefined}>
       <div className="gk-toolbar" role="toolbar" data-testid="toolbar" ref={bar}>
-        {layout.bar.map((id, i) =>
+        {shown.map((id) =>
           id === SEPARATOR ? (
-            i > 0 && i < last && <div key={SEPARATOR} className="gk-toolbar-sep" role="separator" data-value={SEPARATOR} />
+            <div key={SEPARATOR} className="gk-toolbar-sep" role="separator" data-value={SEPARATOR} />
           ) : (
             tools[id] && <ToolButton key={id} item={tools[id]} drag={drag} />
           ),
@@ -255,12 +300,13 @@ export function Toolbar() {
         <button
           type="button"
           className="gk-more-button"
+          ref={moreButton}
           data-testid="tools.more-button"
           aria-label="More tools"
           title="More tools"
           aria-expanded={open}
           // Lit while a tool from the menu is on.
-          aria-pressed={layout.more.includes(current)}
+          aria-pressed={inMenu.includes(current)}
           onClick={() => setOpen((o) => !o)}
         >
           {dotsIcon}
@@ -268,7 +314,7 @@ export function Toolbar() {
       </div>
       {open && (
         <div className="gk-more" role="menu" data-testid="tools.more" ref={menu}>
-          {layout.more.map((id) =>
+          {inMenu.map((id) =>
             tools[id] ? (
               // A wrapper takes the press, so even a greyed-out entry drags.
               <div key={id} className="gk-more-slot" data-value={id} onPointerDown={(e) => drag.onPointerDown(e, id)}>
@@ -276,7 +322,7 @@ export function Toolbar() {
               </div>
             ) : null,
           )}
-          {layout.more.length === 0 && <div className="gk-more-empty">Drag tools here to unpin them</div>}
+          {inMenu.length === 0 && <div className="gk-more-empty">Drag tools here to unpin them</div>}
           <div className="gk-more-divider" role="separator" />
           <button
             type="button"
@@ -293,14 +339,25 @@ export function Toolbar() {
           </button>
         </div>
       )}
-      {state && (
-        <>
-          <div className="gk-drag-ghost" style={{ left: state.x, top: state.y }} data-testid="toolbar-drag-ghost">
-            {TOOL_ICONS[state.id]}
-          </div>
-          {state.target && <div className="gk-drop-mark" style={state.target.mark} data-testid="toolbar-drop-mark" />}
-        </>
+      {full && (
+        <div className="gk-toolbar-note" role="status" data-testid="toolbar-full">
+          No room on the bar at this window width
+        </div>
       )}
+      {state &&
+        // On the page's body: the toolbar (centred with a transform) and
+        // tldraw's layout (contain: strict) would make position: fixed
+        // relative to themselves, and the icon would show far from the
+        // pointer (owner's bug, 2026-10-22).
+        createPortal(
+          <div className="gk-drag-layer">
+            <div className="gk-drag-ghost" style={{ left: state.x, top: state.y }} data-testid="toolbar-drag-ghost">
+              {TOOL_ICONS[state.id]}
+            </div>
+            {state.target && <div className="gk-drop-mark" style={state.target.mark} data-testid="toolbar-drop-mark" />}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

@@ -743,6 +743,20 @@ Changes to the plan, newest last. Each says what and why.
   other open tabs. "Reset toolbar to default" is last in the ⋮ menu,
   under Excalidraw's menu separator (src/whiteboard/toolbarLayout.ts,
   toolbarStore.ts, Toolbar.tsx useToolDrag).
+- 2026-10-22 — Owner, after step 3. (1) The dragged icon showed far from
+  the pointer: our toolbar's centring transform (and tldraw's layout,
+  contain: strict) made position: fixed relative to them. The icon and
+  the drop line now render on the page's body. (2) The bar never
+  overflows: everything pinned is 533 px, which fits from about 630 px
+  windows (640 included). Agent's choice: a pin that wouldn't fit at the
+  current width is refused, with "No room on the bar at this window
+  width" under the bar for 2.5 s; if the window is later narrower than
+  the owner's bar, its last pinned tools (never Select) show in the ⋮
+  menu until it's wide enough again, and the stored layout doesn't
+  change. Why: refusing keeps the promise at the moment of the drag
+  without moving anything on its own; moving tools for good on a
+  resize would lose the arrangement, and clipping would break the
+  promise (toolbarLayout.ts fitBar).
 
 IDEAS
 

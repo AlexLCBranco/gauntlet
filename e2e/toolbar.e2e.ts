@@ -513,6 +513,132 @@ test("\"Reset toolbar to default\", last in the ⋮ menu, brings back the defaul
   expect(await menuOrder(page)).toEqual(MORE);
 });
 
+// The dragged tool's icon follows the pointer, and the drop line sits on the
+// bar, at any window size and display scaling (owner's bug, 2026-10-22: the
+// icon showed far from the cursor; a transformed ancestor made
+// position: fixed relative to the toolbar, not the window).
+for (const scale of [1, 1.25, 1.5]) {
+  test.describe(`display scaling ${scale * 100}%`, () => {
+    test.use({ deviceScaleFactor: scale });
+    for (const size of [
+      { width: 640, height: 480 },
+      { width: 1920, height: 1080 },
+    ]) {
+      test(`at ${size.width} x ${size.height}, the dragged icon stays under the pointer, from the ⋮ menu and from the bar`, async ({ page }) => {
+        await page.setViewportSize(size);
+        await open(page);
+        const ghostNearPointer = async (x: number, y: number) => {
+          const g = (await page.getByTestId("toolbar-drag-ghost").boundingBox())!;
+          expect(Math.abs(g.x + g.width / 2 - x), `ghost x at ${x},${y}`).toBeLessThanOrEqual(3);
+          expect(Math.abs(g.y + g.height / 2 - y), `ghost y at ${x},${y}`).toBeLessThanOrEqual(3);
+        };
+        const check = async (from: string) => {
+          const a = await centre(page, from);
+          await page.mouse.move(a.x, a.y);
+          await page.mouse.down();
+          const bar = (await page.getByTestId("toolbar").boundingBox())!;
+          const stops = [
+            { x: a.x + 30, y: a.y + 40 },
+            { x: size.width / 2, y: size.height / 2 },
+            { x: bar.x + 20, y: bar.y + bar.height / 2 },
+          ];
+          for (const p of stops) {
+            await page.mouse.move(p.x, p.y, { steps: 6 });
+            await ghostNearPointer(p.x, p.y);
+          }
+          // Over the bar, the drop line is on the bar.
+          const mark = (await page.getByTestId("toolbar-drop-mark").boundingBox())!;
+          expect(mark.y, "drop line inside the bar").toBeGreaterThanOrEqual(bar.y);
+          expect(mark.y + mark.height).toBeLessThanOrEqual(bar.y + bar.height);
+          expect(mark.x).toBeGreaterThanOrEqual(bar.x - 4);
+          expect(mark.x).toBeLessThanOrEqual(bar.x + bar.width + 4);
+          await page.keyboard.press("Escape");
+          await page.mouse.up();
+        };
+        await page.getByTestId("tools.more-button").click();
+        await check('[data-testid="tools.more.asset"]');
+        await check('[data-testid="tools.rectangle"]');
+      });
+    }
+  });
+}
+
+// The bar never overflows, whatever is pinned (owner, 2026-10-22).
+const EVERYTHING = { bar: ["select", "rectangle", "arrow", "line", "|", "board", "map", "asset", "embed", "lasso", "markup", "text", "draw"], more: [] as string[] };
+const withLayout = (page: Page, layout: unknown) => page.addInitScript((l) => localStorage.setItem("gauntlet:toolbar", JSON.stringify(l)), layout);
+
+/** Nothing on the bar clipped, scrolled or wrapped, all inside the window and clear of the main menu. */
+async function barIsWhole(page: Page, width: number) {
+  const bar = (await page.getByTestId("toolbar").boundingBox())!;
+  const menuButton = (await page.getByTestId("main-menu.button").boundingBox())!;
+  expect(bar.x, "clear of the main menu").toBeGreaterThan(menuButton.x + menuButton.width);
+  expect(bar.x + bar.width).toBeLessThanOrEqual(width);
+  const scroll = await page.getByTestId("toolbar").evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight, overflow: getComputedStyle(el).overflow }));
+  expect(scroll.sw, "no horizontal scroll").toBeLessThanOrEqual(scroll.cw);
+  expect(scroll.sh, "no vertical scroll").toBeLessThanOrEqual(scroll.ch);
+  const boxes = await page.getByTestId("toolbar").locator("button").evaluateAll((bs) => bs.map((b) => b.getBoundingClientRect().toJSON() as DOMRect));
+  expect(new Set(boxes.map((b) => Math.round(b.top))).size, "one row").toBe(1);
+  for (const b of boxes) {
+    expect(b.left).toBeGreaterThanOrEqual(bar.x);
+    expect(b.right).toBeLessThanOrEqual(bar.x + bar.width + 0.5);
+  }
+}
+
+for (const size of [
+  { width: 640, height: 480 },
+  { width: 1920, height: 1080 },
+]) {
+  test(`at ${size.width} x ${size.height} with every tool pinned, all of them are on the bar, nothing clipped, scrolled or wrapped`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await withLayout(page, EVERYTHING);
+    await open(page);
+    expect(await barOrder(page)).toEqual([...EVERYTHING.bar, "more"]);
+    await barIsWhole(page, size.width);
+    // The menu has no tools left, only "Reset toolbar to default".
+    await page.getByTestId("tools.more-button").click();
+    expect(await menuOrder(page)).toEqual([]);
+    await expect(page.getByTestId("tools.more.reset")).toBeVisible();
+  });
+}
+
+test("narrower than everything pinned: the last ones wait in the ⋮ menu, the stored layout stays, and a wider window brings them back", async ({ page }) => {
+  await page.setViewportSize({ width: 560, height: 480 });
+  await withLayout(page, EVERYTHING);
+  await open(page);
+  await barIsWhole(page, 560);
+  const onBar = await barOrder(page);
+  expect(onBar.length).toBeLessThan(EVERYTHING.bar.length + 1);
+  await page.getByTestId("tools.more-button").click();
+  const waiting = await menuOrder(page);
+  // Exactly the ones the bar can't show, in bar order, Select never among them.
+  expect([...onBar.filter((id) => id !== "more" && id !== "|"), ...waiting]).toEqual(EVERYTHING.bar.filter((id) => id !== "|"));
+  expect(waiting).not.toContain("select");
+  expect(JSON.parse((await stored(page))!)).toEqual(EVERYTHING);
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 1000, height: 480 });
+  await expect.poll(() => barOrder(page)).toEqual([...EVERYTHING.bar, "more"]);
+});
+
+test("a full bar refuses another pin, with a short message; the layout doesn't change", async ({ page }) => {
+  // At 600 px everything but Lasso fits; Lasso too wouldn't.
+  await page.setViewportSize({ width: 600, height: 480 });
+  const allButLasso = { bar: EVERYTHING.bar.filter((id) => id !== "lasso"), more: ["lasso"] };
+  await withLayout(page, allButLasso);
+  await open(page);
+  expect(await barOrder(page)).toEqual([...allButLasso.bar, "more"]);
+  await page.getByTestId("tools.more-button").click();
+  await dragTo(page, '[data-testid="tools.more.lasso"]', await before(page, "arrow"), async () => {
+    await expect(page.getByTestId("toolbar-full")).toHaveText("No room on the bar at this window width");
+    await expect(page.getByTestId("toolbar-drop-mark")).toHaveCount(0);
+  });
+  expect(await barOrder(page)).toEqual([...allButLasso.bar, "more"]);
+  expect(await menuOrder(page)).toEqual(["lasso"]);
+  expect(JSON.parse((await stored(page))!)).toEqual(allButLasso);
+  await barIsWhole(page, 600);
+  // The message goes away by itself.
+  await expect(page.getByTestId("toolbar-full")).toHaveCount(0, { timeout: 5000 });
+});
+
 test("screenshots of the bar and the open ⋮ menu, to compare with Excalidraw's (screenshots/)", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 800 });
   await open(page);

@@ -24,7 +24,8 @@
   font-display: swap;
 }
 
-.gauntlet-top-toolbar {
+.gauntlet-top-toolbar,
+.gk-drag-layer {
   --space-factor: 0.25rem; /* theme.scss */
   --lg-button-size: 2.25rem; /* theme.scss */
   --lg-icon-size: 1rem; /* theme.scss */
@@ -41,7 +42,8 @@
   --color-primary-darker: #b2aeff; /* theme.scss, dark */
   --keybinding-color: #7a7a7a; /* theme.scss, dark: --color-gray-60 */
   --ui-font: Assistant, system-ui, BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; /* styles.scss */
-
+}
+.gauntlet-top-toolbar {
   pointer-events: all;
   position: fixed;
   top: 6px;
@@ -52,7 +54,8 @@
 }
 /* theme.scss: bigger buttons on screens wider than 1920 px. */
 @media screen and (min-device-width: 1921px) {
-  .gauntlet-top-toolbar {
+  .gauntlet-top-toolbar,
+  .gk-drag-layer {
     --lg-button-size: 2.375rem;
     --lg-icon-size: 1.25rem;
   }
@@ -212,6 +215,7 @@
 .gauntlet-top-toolbar { user-select: none; }
 .gauntlet-top-toolbar[data-dragging], .gauntlet-top-toolbar[data-dragging] * { cursor: grabbing !important; }
 [data-dragging="true"] { opacity: 0.4; }
+.gk-drag-layer { position: fixed; inset: 0; z-index: 400; pointer-events: none; cursor: grabbing; }
 .gk-drag-ghost {
   position: fixed;
   z-index: 400;
@@ -234,3 +238,19 @@
 /* Above "Reset toolbar to default": dropdownMenu/DropdownMenuSeparator.tsx
    (1 px, --default-border-color, 6 px above and below). */
 .gk-more-divider { height: 1px; margin: 6px 0; flex: 0 0 auto; background-color: var(--color-surface-high); }
+
+/* "No room on the bar": under the bar, a small island (Island.scss). */
+.gk-toolbar-note {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-on-surface);
+  background-color: var(--island-bg-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-island);
+  pointer-events: none;
+}
