@@ -23,6 +23,8 @@ import { takeBackEmptyNewMaps } from "../maps/emptyNewMaps";
 import { MapParts } from "../maps/linkkit";
 import { MapShapeUtil } from "../maps/MapShape";
 import { LassoTool } from "../lasso/LassoTool";
+import { markup, MARKUP_TOOL, MarkupTool, startMarkup } from "../markup/markup";
+import { MarkupLayer } from "../markup/MarkupLayer";
 import { edgeWall } from "../pages/edgeWall";
 import { zoomSteps } from "../pages/camera";
 import { keepFilled, showPageStart, zoomTo100 } from "../pages/keepFilled";
@@ -97,9 +99,13 @@ const overrides: TLUiOverrides = {
     for (const id of REMOVED) delete tools[id];
     // Our own web embed (src/embed/): a preview first, the site on a click.
     if (tools.embed) tools.embed = { ...tools.embed, icon: "link", onSelect: () => helpers.addDialog({ component: WebEmbedDialog }) };
-    // Markup replaces the laser pointer; its tool comes in a later step,
-    // the ⋮ menu shows it greyed out until then.
-    tools.markup = { id: "markup", label: "tool.markup" as never, icon: "tool-highlight", onSelect: () => {} };
+    // Markup replaces the laser pointer (src/markup/). While it's on, Arrow
+    // and Line draw red markup arrows and lines instead.
+    tools.markup = { id: "markup", label: "tool.markup" as never, icon: "tool-highlight", onSelect: () => startMarkup(editor, "pen") };
+    for (const id of ["arrow", "line"] as const) {
+      const own = tools[id];
+      if (own) tools[id] = { ...own, onSelect: (source) => (editor.getCurrentToolId() === MARKUP_TOOL ? startMarkup(editor, id) : own.onSelect(source)) };
+    }
     tools.board = boardToolItem(editor);
     tools.map = mapToolItem(editor);
     for (const [id, { kbd }] of Object.entries(KEYS)) if (tools[id]) tools[id] = { ...tools[id], kbd };
@@ -149,6 +155,7 @@ function InFront() {
   return (
     <>
       <LassoOverlay />
+      <MarkupLayer />
       <DragOutline />
       <BoardPicker />
       <MapPicker />
@@ -206,6 +213,8 @@ function setUp(editor: Editor) {
   const stopStraight = straightLines(editor);
   // Pasting a web address makes a web embed (src/embed/).
   const stopEmbeds = webEmbeds(editor);
+  // Red marks, never saved; cleared on leaving the page (src/markup/).
+  const stopMarkup = markup(editor);
   // Editing a map: the whole page is its space (src/maps/mapEditing.tsx).
   const stopMapEditing = mapEditing(editor);
   // "Unlink map" on a board widget is one undo step (src/boards/mapLink.tsx).
@@ -232,6 +241,7 @@ function setUp(editor: Editor) {
     stopHoverResize();
     stopStraight();
     stopEmbeds();
+    stopMarkup();
     stopMapEditing();
     stopUnlinks();
     stopNext();
@@ -246,7 +256,7 @@ export function Whiteboard() {
         persistenceKey={PERSISTENCE_KEY}
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY || undefined}
         shapeUtils={shapeUtils}
-        tools={[LassoTool]}
+        tools={[LassoTool, MarkupTool]}
         overrides={overrides}
         components={components}
         cameraOptions={camera}

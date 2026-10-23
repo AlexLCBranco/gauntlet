@@ -5,6 +5,16 @@ import { TldrawUiIcon, useEditor, useIsToolSelected, useTools, useTranslation, u
 import { dotsIcon, resetIcon, TOOL_ICONS } from "./toolbarIcons";
 import { BAR_SIZES, barWidth, DEFAULT_LAYOUT, fitBar, FIXED_ON_BAR, KEYS, LABELS, moveTool, SEPARATOR, tooltip, type BarSizes, type Place } from "./toolbarLayout";
 import { setToolbarLayout, toolbarLayout } from "./toolbarStore";
+import { MARKUP_TOOL, markupKind } from "../markup/markup";
+
+/** Lit: the tool is on, or (Markup drawing arrows or lines) it's the kind
+    Markup draws now. */
+function useLit(item: TLUiToolItem) {
+  const editor = useEditor();
+  const selected = useIsToolSelected(item);
+  const markupDraws = useValue("markup draws", () => (editor.getCurrentToolId() === MARKUP_TOOL ? markupKind.get() : null), [editor]);
+  return selected || markupDraws === item.id;
+}
 import "./toolbar.css";
 
 /** A tool's name (toolbarLayout.ts), else tldraw's own label. */
@@ -34,7 +44,7 @@ interface Dragging {
 /** A button on the bar, as Excalidraw's ToolIcon: the icon, and the key
     that picks it in the bottom-right corner. */
 function ToolButton({ item, drag }: { item: TLUiToolItem; drag: Dragging }) {
-  const selected = useIsToolSelected(item);
+  const selected = useLit(item);
   const label = useLabel()(item);
   const hint = KEYS[item.id]?.hint;
   return (
@@ -62,7 +72,7 @@ function ToolButton({ item, drag }: { item: TLUiToolItem; drag: Dragging }) {
 /** The ⋮ "More tools" menu's entry for a tool, as Excalidraw's dropdown
     item: icon, name, its key on the right. */
 function MoreItem({ item, drag, onDone }: { item: TLUiToolItem; drag: Dragging; onDone: () => void }) {
-  const selected = useIsToolSelected(item);
+  const selected = useLit(item);
   const label = useLabel()(item);
   const hint = KEYS[item.id]?.hint;
   return (
@@ -76,9 +86,6 @@ function MoreItem({ item, drag, onDone }: { item: TLUiToolItem; drag: Dragging; 
       aria-pressed={selected}
       aria-keyshortcuts={hint}
       title={tooltip(item.id)}
-      // Markup's tool comes in step 4 of the toolbar rework (it can still
-      // be dragged: the press goes to the wrapper).
-      disabled={item.id === "markup"}
       onPointerDown={(e) => drag.onPointerDown(e, item.id)}
       onClick={() => {
         if (drag.swallowClick()) return;

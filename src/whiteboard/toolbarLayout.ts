@@ -31,8 +31,8 @@ export const LABELS: Readonly<Record<string, string>> = {
  * toolbar shows: as Excalidraw (components/Tools.tsx), the letter, else the
  * number, in the button's corner and on the right of the ⋮ menu's entry.
  * Excalidraw's keys where it has them; ours, picked so nothing clashes:
- * B board (it was a second key for Draw), M map, I web embed, W lasso.
- * Markup (K) has no key until its tool exists (step 4): no hint either.
+ * B board (it was a second key for Draw), M map, I web embed, W lasso,
+ * K markup (Excalidraw's laser key; Markup replaces the laser).
  */
 export const KEYS: Readonly<Record<string, { kbd: string; hint: string }>> = {
   select: { kbd: "v,1", hint: "V" },
@@ -44,6 +44,7 @@ export const KEYS: Readonly<Record<string, { kbd: string; hint: string }>> = {
   asset: { kbd: "cmd+u,ctrl+u,9", hint: "9" },
   embed: { kbd: "i", hint: "I" },
   lasso: { kbd: "w", hint: "W" },
+  markup: { kbd: "k", hint: "K" },
   text: { kbd: "t,8", hint: "T" },
   draw: { kbd: "p,7,x", hint: "P" },
 };

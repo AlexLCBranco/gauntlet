@@ -17,8 +17,8 @@ describe("toolbar layout", () => {
     for (const id of REMOVED) expect(all).not.toContain(id);
   });
 
-  it("every tool but Markup has keys; no key is used twice; each hint is one of its tool's keys", () => {
-    for (const id of [...onBar, ...MORE]) expect(Boolean(KEYS[id]), id).toBe(id !== "markup");
+  it("every tool has keys; no key is used twice; each hint is one of its tool's keys", () => {
+    for (const id of [...onBar, ...MORE]) expect(Boolean(KEYS[id]), id).toBe(true);
     const all = Object.values(KEYS).flatMap((k) => k.kbd.split(","));
     expect(new Set(all).size).toBe(all.length);
     for (const [id, k] of Object.entries(KEYS)) expect(k.kbd.split(","), id).toContain(k.hint.toLowerCase());
@@ -31,7 +31,7 @@ describe("toolbar layout", () => {
     expect(tooltip("rectangle")).toBe("Rectangle — R or 2");
     expect(tooltip("asset")).toBe("Insert image — 9");
     expect(tooltip("draw")).toBe("Draw — P or 7 or X");
-    expect(tooltip("markup")).toBe("Markup");
+    expect(tooltip("markup")).toBe("Markup — K");
   });
 });
 

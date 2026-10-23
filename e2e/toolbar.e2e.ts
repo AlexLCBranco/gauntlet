@@ -90,9 +90,10 @@ test("the ⋮ menu holds Insert image, Web embed, Lasso selection, Markup, Text,
   await expect(page.locator(".tlui-dialog__content")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator(".tlui-dialog__content")).toHaveCount(0);
-  // Markup is greyed out until its tool is built (step 4).
+  // Markup turns on the Markup tool.
   await more.click();
-  await expect(page.getByTestId("tools.more.markup")).toBeDisabled();
+  await page.getByTestId("tools.more.markup").click();
+  expect(await tool(page)).toBe("markup");
 });
 
 test("the bar's tools pick their tool and light up", async ({ page }) => {
@@ -174,7 +175,8 @@ test("removed tools appear nowhere: not on the bar, the ⋮ menu, the main menu 
   await nowhere("the bar while drawing");
   await page.keyboard.press("v");
   // Their keys (and the tool lock's Q) do nothing.
-  for (const key of ["h", "d", "o", "e", "Shift+D", "k", "n", "f", "3", "4", "0", "q"]) {
+  // (K, the laser's, is Markup's now: e2e/markup.e2e.ts.)
+  for (const key of ["h", "d", "o", "e", "Shift+D", "n", "f", "3", "4", "0", "q"]) {
     await page.keyboard.press(key);
     expect(await tool(page), `key ${key}`).toBe("select");
   }
@@ -267,11 +269,11 @@ test("the ⋮ menu looks as Excalidraw's: 32 px entries with 16 px icons, names,
     color: "rgb(227, 227, 232)",
   });
   expect(await css(page, '[data-testid="tools.more.lasso"] .gk-more-item__shortcut', ["opacity"])).toEqual({ opacity: "0.5" });
-  // Keys on the right, only where the key works (Markup: none yet).
+  // Keys on the right (each one works: the next test).
   const keys = await page
     .locator('[data-testid="tools.more"] .gk-more-item[data-value]')
     .evaluateAll((els) => els.map((e) => e.querySelector(".gk-more-item__shortcut")?.textContent ?? ""));
-  expect(keys).toEqual(["9", "I", "W", "", "T", "P"]);
+  expect(keys).toEqual(["9", "I", "W", "K", "T", "P"]);
 });
 
 test("every key hint shown works: it picks its tool (Board and Map make one), and the tooltip says it", async ({ page }) => {
@@ -314,6 +316,7 @@ test("every key hint shown works: it picks its tool (Board and Map make one), an
   // The ⋮ menu's keys.
   for (const [key, id] of [
     ["w", "lasso"],
+    ["k", "markup"],
     ["t", "text"],
     ["p", "draw"],
   ]) {
