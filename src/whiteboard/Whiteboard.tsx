@@ -31,6 +31,7 @@ import { SHEET } from "../pages/sheet";
 import { SheetBackground } from "../pages/SheetBackground";
 import { shapeUtils as styleShapeUtils } from "../style/shapeUtils";
 import { applyNextMeta, StylePanel } from "../style/StylePanel";
+import { ContextMenu } from "./ContextMenu";
 import { DragOutline } from "./DragOutline";
 import { MainMenu } from "./MainMenu";
 import { keepUnlinksUndoable } from "../boards/mapLink";
@@ -159,6 +160,7 @@ function InFront() {
     right (PageArrows). */
 const components: TLComponents = {
   MainMenu,
+  ContextMenu,
   // The page list opens from "2 / 4" at the bottom right (PageArrows).
   PageMenu: null,
   QuickActions: null,

@@ -185,3 +185,29 @@ test("a page bigger than the window pans with the wheel and Space+drag, and neve
   const p = await pageBox(page);
   expect(v.x + v.w).toBeCloseTo(p.x + p.w, 0);
 });
+
+test("Group and Ungroup are right there in the right-click menu (not only Ctrl+G, not in a submenu)", async ({ page }) => {
+  await open(page);
+  for (const x of [300, 600]) {
+    await page.keyboard.press("2");
+    await drag(page, { x, y: 300 }, { x: x + 150, y: 400 });
+  }
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Control+a");
+  await page.mouse.click(375, 350, { button: "right" });
+  const group = page.getByRole("menuitem", { name: /^Group / });
+  await expect(group).toBeVisible();
+  await group.click();
+  await expect.poll(() => ed(page, (e) => e.getCurrentPageShapes().map((s: any) => s.type).sort())).toEqual(["geo", "geo", "group"]);
+  // The group selected: Ungroup, right there too.
+  await page.mouse.click(375, 350, { button: "right" });
+  const ungroup = page.getByRole("menuitem", { name: /^Ungroup / });
+  await expect(ungroup).toBeVisible();
+  await ungroup.click();
+  await expect.poll(() => ed(page, (e) => e.getCurrentPageShapes().map((s: any) => s.type))).toEqual(["geo", "geo"]);
+  // One shape alone: no Group.
+  await page.keyboard.press("Escape");
+  await page.mouse.click(375, 350);
+  await page.mouse.click(375, 350, { button: "right" });
+  await expect(page.getByRole("menuitem", { name: /^Group / })).toHaveCount(0);
+});
