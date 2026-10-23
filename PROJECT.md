@@ -802,6 +802,37 @@ Changes to the plan, newest last. Each says what and why.
   (scripts/leftovers.mjs `finishedRun`, `leftoverWindows`). Tests: an
   orphaned headless Edge's hidden window is reported; one held by the
   running test is seen but not reported.
+- 2026-10-23 — Links on everything (owner, links round step 2). Every
+  object can hold a web link, set and used the same way everywhere:
+  whiteboard items (rectangles, text, arrows, lines, pictures, web embed
+  cards, groups, map widgets: the shape's `meta.url`), boards, lists and
+  cards (Boardkit's record `url`, so /boardkit shows them too; Boardkit
+  v0.0.105) and map boxes (Linkkit's `url`; Linkkit v0.0.113; a linked
+  map's card and list boxes share the item's link). Right-click → "Add
+  link…" / "Edit link…" / "Remove link" (on the whiteboard the menu says
+  what it acts on: "Add link to card…" for the card under the pointer in a
+  board only shown); Ctrl+K on the selected item (on the whiteboard; in
+  Boardkit a focused card or list header, the board's name or one picked
+  card, else Ctrl+K still searches; in Linkkit one selected box). A small
+  field takes the link: only http and https, a bare address gets https://,
+  a host must have a dot (or be localhost or an IP), anything else is
+  refused with a short message (the same rule in all three:
+  `src/links/url.ts`, Boardkit's and Linkkit's `domain/url.ts`). Opening:
+  a click on the item still only selects it; the link opens only from its
+  icon (or a link in its text), always in a new tab, noopener. Icons:
+  whiteboard items get a screen-sized icon just above the top-right corner,
+  clear of the resize and rotate handles (src/links/LinkBadges.tsx); a
+  card's and list's icon sits after its title, a box's on its bottom-right
+  corner. A board or map only shown ignores the pointer, so presses on its
+  icons and text links are found by where they are drawn
+  (src/links/opener.ts). Pasting an address while typing in a text, card or
+  box makes a link in that text (tldraw's text: TipTap's autolink; Boardkit
+  and Linkkit titles now show addresses as links); on empty page it is
+  still a web embed. tldraw's own link prop (a rectangle imported from
+  Excalidraw) shows through the same icon; editing it moves it to
+  `meta.url`. Agent's choices: a card's right-click (it used to toggle its
+  thots) is now a menu whose first item is "Show / Hide thots"; a stored
+  non-web link (a hand-edited `javascript:`) is dropped on load.
 
 IDEAS
 

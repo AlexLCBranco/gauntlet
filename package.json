@@ -14,8 +14,8 @@
   "dependencies": {
     "@tldraw/tlschema": "5.5.2",
     "@tldraw/utils": "5.5.2",
-    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/e8f694ea4354433042f16e5991f0ac0dd1786b7f",
-    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/dc8f8e034229295994908dc11907d60da6496f31",
+    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/5a6850af69b741f49781be6984de8ec0df71a823",
+    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/f8b63cf5ca0ec7bffcfaf52dcedf6366f468c1dd",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "shadcn": "file:src/boards/vendor/shadcn",

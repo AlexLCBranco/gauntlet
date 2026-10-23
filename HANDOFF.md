@@ -19,9 +19,9 @@ Finished work goes to docs/HISTORY.md.
 - Owner's hand test of the hand-test round PASSED (2026-10-22, HISTORY).
 - Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
   done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
-- Pinned: Boardkit v0.0.104 (`e8f694e`), Linkkit v0.0.112 (`dc8f8e0`).
-- Last results (2026-10-22, toolbar step 4): full local gauntlet 229;
-  live 221 + 8 skipped. 2026-10-23: unit 105 + 19 scripts.
+- Pinned: Boardkit v0.0.105 (`5a6850a`), Linkkit v0.0.113 (`f8b63cf`).
+- Last results (2026-10-23, links step 2): unit 110 + 19 scripts, local
+  gauntlet 239, Linkkit 18; live: see below.
 
 ## Waiting for the owner
 
@@ -38,9 +38,10 @@ Finished work goes to docs/HISTORY.md.
   embed, markup .e2e.ts); waiting for the owner's hand check.
 - Live runs: no bypass secret exists (DECISIONS 2026-10-22); after a
   push, `node scripts/wait-deploy.mjs`. A 403 stops the run: tell the owner.
-- LINKS ROUND (owner, 2026-10-23): step 1 (leftover hidden windows of a
-  finished run count, DECISIONS) DONE, waiting for the owner's OK. Step 2
-  (links on every object) not started.
+- LINKS ROUND (owner, 2026-10-23): step 1 (leftover hidden windows) and
+  step 2 (links on everything: src/links/, e2e/links.e2e.ts; Boardkit
+  v0.0.105, Linkkit v0.0.113; DECISIONS) DONE. Waiting for the owner's
+  hand check (feel of the icons and the link field).
 - Phase 4 NOT started (owner: don't start it).
 
 ## Broken / known wrong

@@ -25,5 +25,7 @@ export {
   onKeyChanged,
   onWroteHere,
   flushMap,
+  setWhiteboardBoxUrl,
+  whiteboardBoxUrl,
   type PageRect,
 } from "linkkit/src/app/whiteboard";

@@ -17,6 +17,11 @@ import { ourExcalidrawImport } from "../import/excalidraw/importExcalidraw";
 import { takeBackEmptyNewBoards } from "../boards/emptyNewBoards";
 import { BoardkitParts } from "../boards/BoardkitParts";
 import { LassoOverlay } from "../lasso/LassoOverlay";
+import { LinkBadges } from "../links/LinkBadges";
+import { LINK_TRANSLATIONS } from "../links/LinkMenuItems";
+import { LinkPrompt } from "../links/LinkPrompt";
+import { linkOpener } from "../links/opener";
+import { editSelectedLink } from "../links/targets";
 import { MapPicker, mapToolItem } from "../maps/AddMap";
 import { appsTogether } from "../maps/appsTogether";
 import { takeBackEmptyNewMaps } from "../maps/emptyNewMaps";
@@ -132,9 +137,12 @@ const overrides: TLUiOverrides = {
     // (pageUndo.ts). Ctrl+Y redoes too, as in Excalidraw on Windows.
     if (actions.undo) actions.undo = { ...actions.undo, onSelect: () => pageUndo(editor) };
     if (actions.redo) actions.redo = { ...actions.redo, kbd: "cmd+shift+z,ctrl+shift+z,ctrl+y", onSelect: () => pageRedo(editor) };
+    // Ctrl+K: the selected item's link, on every kind of item (src/links/),
+    // not only tldraw's shapes that have a link of their own.
+    if (actions["edit-link"]) actions["edit-link"] = { ...actions["edit-link"], kbd: "cmd+k,ctrl+k", onSelect: () => editSelectedLink(editor) };
     return actions;
   },
-  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map", "tool.markup": "Markup" } },
+  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map", "tool.markup": "Markup", ...LINK_TRANSLATIONS } },
 };
 
 /** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards
@@ -161,6 +169,9 @@ function InFront() {
       <MapPicker />
       <ImportNotice />
       <MapEditingBar />
+      {/* Each linked item's link icon, and the link field (src/links/). */}
+      <LinkBadges />
+      <LinkPrompt />
     </>
   );
 }
@@ -213,6 +224,8 @@ function setUp(editor: Editor) {
   const stopStraight = straightLines(editor);
   // Pasting a web address makes a web embed (src/embed/).
   const stopEmbeds = webEmbeds(editor);
+  // Links in boards and maps only shown, not edited, open on a click (src/links/).
+  const stopLinks = linkOpener(editor);
   // Red marks, never saved; cleared on leaving the page (src/markup/).
   const stopMarkup = markup(editor);
   // Editing a map: the whole page is its space (src/maps/mapEditing.tsx).
@@ -241,6 +254,7 @@ function setUp(editor: Editor) {
     stopHoverResize();
     stopStraight();
     stopEmbeds();
+    stopLinks();
     stopMarkup();
     stopMapEditing();
     stopUnlinks();

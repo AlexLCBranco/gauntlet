@@ -1,0 +1,98 @@
+/* Links on whiteboard items (src/links/): the link icon each linked item
+   shows, and the link field. Dark, in the toolbar's island colours
+   (src/whiteboard/toolbar.css), as the web embed card. */
+
+/* The icon: screen-sized, just above the item's top-right corner, clear of
+   its resize and rotate handles (LinkBadges.tsx). */
+.gk-link-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid #2e2d39;
+  background: #232329;
+  color: #b8b8c2;
+  pointer-events: all;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.gk-link-badge:hover {
+  background: #403e6a;
+  border-color: #4f4d6f;
+  color: #e0dfff;
+}
+.gk-link-badge svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* tldraw's own link button inside a rectangle (from an imported link)
+   covers its content: ours, above the corner, shows that link instead. */
+.gauntlet-whiteboard .tl-hyperlink-button {
+  display: none;
+}
+
+/* The link field (LinkPrompt.tsx). */
+.gk-link-prompt {
+  position: fixed;
+  z-index: 400;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  margin: 0;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #2e2d39;
+  background: #232329;
+  color: #e3e3e8;
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.35);
+  font: 13px/1.3 Assistant, system-ui, "Segoe UI", sans-serif;
+  pointer-events: all;
+}
+.gk-link-prompt__heading {
+  margin: 0;
+  font-size: 12px;
+  color: #9a9aa4;
+  overflow-wrap: anywhere;
+}
+.gk-link-prompt__input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #3d3d48;
+  background: #1b1b1f;
+  color: inherit;
+  font: inherit;
+}
+.gk-link-prompt__input:focus {
+  outline: 2px solid #4f4d6f;
+  outline-offset: 0;
+}
+.gk-link-prompt__input[aria-invalid="true"] {
+  border-color: #e03131;
+}
+.gk-link-prompt__hint,
+.gk-link-prompt__error {
+  margin: 0;
+  font-size: 12px;
+}
+.gk-link-prompt__hint {
+  color: #7a7a7a;
+}
+.gk-link-prompt__error {
+  color: #ff8787;
+}

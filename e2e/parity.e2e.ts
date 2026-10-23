@@ -317,7 +317,7 @@ test("C4, L3, B1: rename a card and a list by clicking their titles; add a list"
   expect(r.board.lists[r.board.listOrder.at(-1)!].title).toBe("New list");
 });
 
-test("C7, C8, C10, C5, C6: card buttons → (move/copy to another board), ▤ thots, × delete; right-click toggles thots", async ({ page, context }) => {
+test("C7, C8, C10, C5, C6: card buttons → (move/copy to another board), ▤ thots, × delete; right-click menu toggles thots", async ({ page, context }) => {
   const { id, rec, withCards } = await setUp(page, context);
   const list = withCards[0];
   const [c1, c2] = rec.board.cardOrder[list];
@@ -332,8 +332,10 @@ test("C7, C8, C10, C5, C6: card buttons → (move/copy to another board), ▤ th
   // ⇄ flips to postgame.
   await cardEl(page, c1).getByRole("button", { name: "Switch between pregame and postgame thots", exact: true }).click();
   await expect(cardEl(page, c1).getByRole("button", { name: /Postgame thots/ })).toBeVisible();
-  // Right-click on the card closes them again (Boardkit's own gesture).
+  // Right-click on the card opens its menu (Boardkit v0.0.105: thots and
+  // link); its first item closes them again.
   await cardEl(page, c1).click({ button: "right", position: { x: 6, y: 6 } });
+  await page.getByRole("menuitem", { name: /Hide postgame thots/ }).click();
   await expect(cardEl(page, c1).getByRole("button", { name: /Postgame thots/ })).toHaveCount(0);
 
   // → offers this board's lists (no other board yet) and other boards.
