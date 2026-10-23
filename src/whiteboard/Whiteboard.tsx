@@ -36,6 +36,7 @@ import { MainMenu } from "./MainMenu";
 import { keepUnlinksUndoable } from "../boards/mapLink";
 import { MapEditingBar, mapEditing } from "../maps/mapEditing";
 import { hoverResize } from "./hoverResize";
+import { straightLines } from "./straightLines";
 import { Toolbar } from "./Toolbar";
 import { KEYS, REMOVED } from "./toolbarLayout";
 import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
@@ -196,6 +197,8 @@ function setUp(editor: Editor) {
   const stopWall = edgeWall(editor);
   // Resize an unselected item from its edge or corner, as in Excalidraw.
   const stopHoverResize = hoverResize(editor);
+  // Lines and arrows drawn nearly level or upright come out straight.
+  const stopStraight = straightLines(editor);
   // Editing a map: the whole page is its space (src/maps/mapEditing.tsx).
   const stopMapEditing = mapEditing(editor);
   // "Unlink map" on a board widget is one undo step (src/boards/mapLink.tsx).
@@ -220,6 +223,7 @@ function setUp(editor: Editor) {
     stopInside();
     stopWall();
     stopHoverResize();
+    stopStraight();
     stopMapEditing();
     stopUnlinks();
     stopNext();
