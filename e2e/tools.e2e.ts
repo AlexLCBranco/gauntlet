@@ -102,3 +102,86 @@ test("moving an end of an existing line to 2° off horizontal straightens it too
   const after = await ends(page);
   expect(after.b.y).toBe(after.a.y);
 });
+
+// Panning (no hand tool): only when the page is bigger than the window,
+// and never past its edges. A page that fits doesn't move at all.
+
+const camera = (page: Page) => ed(page, (e) => ({ ...e.getCamera() }) as { x: number; y: number; z: number });
+const pageBox = (page: Page) => ed(page, (e) => ({ ...e.getCameraOptions().constraints.bounds }) as { x: number; y: number; w: number; h: number });
+const viewBox = (page: Page) => ed(page, (e) => ({ ...e.getViewportPageBounds().toJson() }) as { x: number; y: number; w: number; h: number });
+
+/** Every way a person might move the view; `during` runs mid-gesture. */
+async function tryToPan(page: Page, during: () => Promise<void>) {
+  const c = { x: 700, y: 450 };
+  await page.mouse.move(c.x, c.y);
+  for (const [dx, dy] of [[0, 400], [0, -400], [400, 0], [-400, 0]]) await page.mouse.wheel(dx, dy);
+  await page.keyboard.down("Shift");
+  await page.mouse.wheel(0, 400);
+  await page.keyboard.up("Shift");
+  await page.waitForTimeout(100);
+  await during();
+  // Space + drag, middle-button drag, right-button drag: checked mid-drag too.
+  for (const how of ["space", "middle", "right"] as const) {
+    await page.mouse.move(c.x, c.y);
+    if (how === "space") await page.keyboard.down("Space");
+    await page.mouse.down({ button: how === "space" ? "left" : how });
+    await page.mouse.move(c.x - 300, c.y - 200, { steps: 8 });
+    await during();
+    await page.mouse.move(c.x + 300, c.y + 250, { steps: 8 });
+    await during();
+    await page.mouse.up({ button: how === "space" ? "left" : how });
+    if (how === "space") await page.keyboard.up("Space");
+    await page.keyboard.press("Escape");
+    await during();
+  }
+  for (const key of ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "PageUp", "Home", "End"]) await page.keyboard.press(key);
+  await during();
+}
+
+test("a page that fits the window can't be moved: wheel, Shift+wheel, Space+drag, middle- and right-button drag, keys", async ({ page }) => {
+  await open(page);
+  const start = await camera(page);
+  const box = await pageBox(page);
+  const view = await viewBox(page);
+  // It fits: the page is the window.
+  expect(box.w).toBeCloseTo(view.w, 0);
+  expect(box.h).toBeCloseTo(view.h, 0);
+  await tryToPan(page, async () => expect(await camera(page)).toEqual(start));
+  expect(await camera(page)).toEqual(start);
+});
+
+test("a page bigger than the window pans with the wheel and Space+drag, and never past its edges", async ({ page }) => {
+  await open(page);
+  // Zoomed to 200%: the page is twice the window.
+  await ed(page, (e) => void e.setCamera({ ...e.getCamera(), z: 2 }, { immediate: true }));
+  const inside = async () => {
+    const p = await pageBox(page);
+    const v = await viewBox(page);
+    expect(v.x).toBeGreaterThanOrEqual(p.x - 0.5);
+    expect(v.y).toBeGreaterThanOrEqual(p.y - 0.5);
+    expect(v.x + v.w).toBeLessThanOrEqual(p.x + p.w + 0.5);
+    expect(v.y + v.h).toBeLessThanOrEqual(p.y + p.h + 0.5);
+  };
+  await inside();
+  const before = await camera(page);
+  // The wheel moves it.
+  await page.mouse.move(700, 450);
+  await page.mouse.wheel(0, 300);
+  await expect.poll(async () => (await camera(page)).y).not.toBe(before.y);
+  // Far past each edge: it stops there, inside, also mid-drag.
+  for (let i = 0; i < 10; i++) await page.mouse.wheel(3000, 3000);
+  await inside();
+  await page.keyboard.down("Space");
+  await page.mouse.down();
+  await page.mouse.move(2000, 2000, { steps: 10 });
+  await inside();
+  await page.mouse.move(-2000, -2000, { steps: 10 });
+  await inside();
+  await page.mouse.up();
+  await page.keyboard.up("Space");
+  await inside();
+  // Space+drag moved it back to the top left corner.
+  const v = await viewBox(page);
+  const p = await pageBox(page);
+  expect(v.x + v.w).toBeCloseTo(p.x + p.w, 0);
+});
