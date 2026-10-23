@@ -29,6 +29,7 @@ Finished work goes to docs/HISTORY.md.
   dragged far out, a board's Map and Both views.
 - Phase 3 hand test (feel only): placing and scaling a map, editing it in
   place, the List | Map | Both switch, one undo. Then "go to phase 4".
+- Earlier hand test (phase 2.5 feel items), if not done yet.
 
 ## Half-done
 
@@ -52,9 +53,8 @@ Finished work goes to docs/HISTORY.md.
 - Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms per
   run (limit 108; the board's is ~50); the test now judges the median of
   5 runs. Browser repaint, no DOM changes. For the speed session.
-- Linkkit's embed mode (`?embed=1`) has no e2e of its own any more (its
-  embed.e2e.ts only tested it inside the deleted canvas); realdata.e2e.ts
-  and Linkkit's readonly.e2e.ts still open maps that way.
+- Linkkit's embed mode (`?embed=1`) has no e2e of its own (only
+  realdata.e2e.ts and Linkkit's readonly.e2e.ts open maps that way).
 
 ## Deadlines
 
