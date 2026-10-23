@@ -14,7 +14,7 @@ const TIMEOUT_MS = 6000;
 export function isPrivateHost(hostname) {
   const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return true;
-  if (h === "::1" || h === "::" || /^f[cd][0-9a-f]{2}:/.test(h) || /^fe80:/.test(h)) return true;
+  if (h === "::1" || h === "::" || /^f[cd][0-9a-f]{2}:/.test(h) || h.startsWith("fe80:")) return true;
   const m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(h);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
