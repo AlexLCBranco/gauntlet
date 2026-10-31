@@ -852,7 +852,10 @@ Changes to the plan, newest last. Each says what and why.
   for local work); only `src/slate/calendarkit.ts` imports it, and only the
   lazy SlateWidget.tsx imports that, so a page without a Slate never loads
   it. Toolbar: "Slate" right after Map (key S), a click puts today's night
-  on the current page, selected, one undo step. The widget draws
+  on the current page, selected, one undo step. With every tool pinned
+  the bar is now 573 px (was 533): it fits windows from about 670 px (was
+  630); narrower, the 2026-10-22 rule applies (last pins wait in ⋮). The
+  widget draws
   calendarkit's copy layout (SlateCopy: cards 914 px wide, the width they
   have in calendarkit's 1920 px window, 24 px apart, nothing behind or
   between them; note boxes as static text with their PRE/LIVE/POST label;

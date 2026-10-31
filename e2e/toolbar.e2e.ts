@@ -2,13 +2,13 @@ import { expect, test, type Page } from "./test";
 
 /**
  * The toolbar (owner, 2026-10-22): Select, Rectangle, Arrow, Line, a
- * separator, Board, Map, then the ⋮ "More tools" button; the menu holds
+ * separator, Board, Map, Slate (2026-10-31), then the ⋮ "More tools" button; the menu holds
  * Insert image, Web embed, Lasso selection, Markup, Text, Draw. Always
  * exactly these on the bar, at every window size. The removed tools have
  * no button, menu item or key anywhere.
  */
 
-const BAR = ["select", "rectangle", "arrow", "line", "|", "board", "map", "more"];
+const BAR = ["select", "rectangle", "arrow", "line", "|", "board", "map", "slate", "more"];
 const MORE = ["asset", "embed", "lasso", "markup", "text", "draw"];
 const MORE_LABELS = ["Insert image", "Web embed", "Lasso selection", "Markup", "Text", "Draw"];
 const REMOVED = ["hand", "diamond", "ellipse", "eraser", "highlight", "laser", "note", "frame"];
@@ -294,6 +294,7 @@ test("every key hint shown works: it picks its tool (Board and Map make one), an
     ["line", "L"],
     ["board", "B"],
     ["map", "M"],
+    ["slate", "S"],
   ]);
   await expect(page.getByTestId("tools.rectangle")).toHaveAttribute("title", "Rectangle — R or 2");
   await expect(page.getByTestId("tools.board")).toHaveAttribute("title", "Board — B");
@@ -312,6 +313,10 @@ test("every key hint shown works: it picks its tool (Board and Map make one), an
   await page.keyboard.press("m");
   await expect.poll(() => shapeTypes(page)).toEqual(["boardkit-board", "linkkit-map"]);
   await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("s");
+  await expect.poll(() => shapeTypes(page)).toEqual(["boardkit-board", "linkkit-map", "calendarkit-slate"]);
+  await expect(page.getByTestId("tools.slate")).toHaveAttribute("title", "Slate — S");
   await page.keyboard.press("Escape");
   // The ⋮ menu's keys.
   for (const [key, id] of [
@@ -404,7 +409,7 @@ test("pin: a tool dragged from the open ⋮ menu onto the bar lands where it's d
     await expect(page.getByTestId("toolbar-drop-mark")).toBeVisible();
   });
   await expect(page.getByTestId("tools.more")).toBeVisible();
-  expect(await barOrder(page)).toEqual(["select", "rectangle", "lasso", "arrow", "line", "|", "board", "map", "more"]);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "lasso", "arrow", "line", "|", "board", "map", "slate", "more"]);
   expect(await menuOrder(page)).toEqual(["asset", "embed", "markup", "text", "draw"]);
   expect(await tool(page)).toBe("select");
   // On the bar it's a bar button: its key hint shows, and the key works.
@@ -415,7 +420,7 @@ test("pin: a tool dragged from the open ⋮ menu onto the bar lands where it's d
   await page.keyboard.press("v");
   await page.reload();
   await page.waitForFunction(() => "editor" in window);
-  expect(await barOrder(page)).toEqual(["select", "rectangle", "lasso", "arrow", "line", "|", "board", "map", "more"]);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "lasso", "arrow", "line", "|", "board", "map", "slate", "more"]);
 });
 
 test("unpin: a bar tool dropped into the open menu goes there; dropped on ⋮ while the menu is shut, the menu opens and takes it; both survive a reload", async ({ page }) => {
@@ -424,7 +429,7 @@ test("unpin: a bar tool dropped into the open menu goes there; dropped on ⋮ wh
   const first = (await page.getByTestId("tools.more.asset").boundingBox())!;
   await dragTo(page, '[data-testid="tools.line"]', { x: first.x + 40, y: first.y + 4 });
   expect(await menuOrder(page)).toEqual(["line", "asset", "embed", "lasso", "markup", "text", "draw"]);
-  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "map", "more"]);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "map", "slate", "more"]);
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("tools.more")).toHaveCount(0);
   // Onto ⋮ with the menu shut: it opens, and the tool goes to its end.
@@ -438,12 +443,14 @@ test("unpin: a bar tool dropped into the open menu goes there; dropped on ⋮ wh
   await page.mouse.move(box.x + 60, box.y + box.height - 50, { steps: 10 });
   await page.mouse.up();
   expect(await menuOrder(page)).toContain("map");
-  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "more"]);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "slate", "more"]);
   await page.reload();
   await page.waitForFunction(() => "editor" in window);
-  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "more"]);
-  // With Board gone too, the separator would be last: it isn't shown.
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "board", "slate", "more"]);
+  // With Board and Slate gone too, the separator would be last: it isn't shown.
   await dragTo(page, '[data-testid="tools.board"]', await centre(page, '[data-testid="tools.more-button"]'));
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "|", "slate", "more"]);
+  await dragTo(page, '[data-testid="tools.slate"]', await centre(page, '[data-testid="tools.more-button"]'));
   expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "more"]);
   // The drop on ⋮ opened the menu, and it stays open.
   await expect(page.getByTestId("tools.more")).toBeVisible();
@@ -454,16 +461,16 @@ test("unpin: a bar tool dropped into the open menu goes there; dropped on ⋮ wh
 test("reorder: tools move within the bar, and within the menu", async ({ page }) => {
   await open(page);
   await dragTo(page, '[data-testid="tools.map"]', await before(page, "select"));
-  expect(await barOrder(page)).toEqual(["map", "select", "rectangle", "arrow", "line", "|", "board", "more"]);
+  expect(await barOrder(page)).toEqual(["map", "select", "rectangle", "arrow", "line", "|", "board", "slate", "more"]);
   const end = (await page.getByTestId("tools.line").boundingBox())!;
   await dragTo(page, '[data-testid="tools.map"]', { x: end.x + end.width - 2, y: end.y + end.height / 2 });
-  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "line", "map", "|", "board", "more"]);
+  expect(await barOrder(page)).toEqual(["select", "rectangle", "arrow", "line", "map", "|", "board", "slate", "more"]);
   await page.getByTestId("tools.more-button").click();
   const top = (await page.getByTestId("tools.more.asset").boundingBox())!;
   await dragTo(page, '[data-testid="tools.more.draw"]', { x: top.x + 40, y: top.y + 4 });
   expect(await menuOrder(page)).toEqual(["draw", "asset", "embed", "lasso", "markup", "text"]);
   expect(JSON.parse((await stored(page))!)).toEqual({
-    bar: ["select", "rectangle", "arrow", "line", "map", "|", "board"],
+    bar: ["select", "rectangle", "arrow", "line", "map", "|", "board", "slate"],
     more: ["draw", "asset", "embed", "lasso", "markup", "text"],
   });
 });
@@ -567,7 +574,7 @@ for (const scale of [1, 1.25, 1.5]) {
 }
 
 // The bar never overflows, whatever is pinned (owner, 2026-10-22).
-const EVERYTHING = { bar: ["select", "rectangle", "arrow", "line", "|", "board", "map", "asset", "embed", "lasso", "markup", "text", "draw"], more: [] as string[] };
+const EVERYTHING = { bar: ["select", "rectangle", "arrow", "line", "|", "board", "map", "slate", "asset", "embed", "lasso", "markup", "text", "draw"], more: [] as string[] };
 const withLayout = (page: Page, layout: unknown) => page.addInitScript((l) => localStorage.setItem("gauntlet:toolbar", JSON.stringify(l)), layout);
 
 /** Nothing on the bar clipped, scrolled or wrapped, all inside the window and clear of the main menu. */
@@ -587,8 +594,10 @@ async function barIsWhole(page: Page, width: number) {
   }
 }
 
+// Everything pinned is 573 px since the Slate button (2026-10-31): it fits
+// from about 670 px windows (it was 533 px, from about 630).
 for (const size of [
-  { width: 640, height: 480 },
+  { width: 700, height: 480 },
   { width: 1920, height: 1080 },
 ]) {
   test(`at ${size.width} x ${size.height} with every tool pinned, all of them are on the bar, nothing clipped, scrolled or wrapped`, async ({ page }) => {
@@ -623,8 +632,8 @@ test("narrower than everything pinned: the last ones wait in the ⋮ menu, the s
 });
 
 test("a full bar refuses another pin, with a short message; the layout doesn't change", async ({ page }) => {
-  // At 600 px everything but Lasso fits; Lasso too wouldn't.
-  await page.setViewportSize({ width: 600, height: 480 });
+  // At 640 px everything but Lasso fits; Lasso too wouldn't.
+  await page.setViewportSize({ width: 640, height: 480 });
   const allButLasso = { bar: EVERYTHING.bar.filter((id) => id !== "lasso"), more: ["lasso"] };
   await withLayout(page, allButLasso);
   await open(page);
