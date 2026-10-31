@@ -1221,3 +1221,22 @@ visible, + adds a child), resizing a map from an edge, Add map view (the
 board gets List | Map | Both), switching List/Map/Both, "⋯" → Unlink map,
 Ctrl+Z relinks, the move cursor. Item 8's "link an existing map from a
 short list" dropped (DECISIONS 2026-10-22, IDEAS).
+
+## Slate widget step 2 (2026-10-31) — static widget, DONE
+
+Built: src/slate/ (SlateShape, AddSlate, lazy SlateWidget, calendarkit.ts),
+toolbar Slate (S), calendarkit pinned e125a19 (v1.28.1). DECISIONS
+2026-10-31 has the rules and the agent's choices.
+Slate step 2 results: unit 112 + 20 scripts; local gauntlet 250 (one flaky
+page-rename test once, 3/3 on rerun; toolbar e2e updated for Slate);
+live 242 passed, 8 skipped (local-only), 0 failed. New e2e fail on the
+build before (9/9).
+Numbers (live, 1600 x 1000): first insert 306 ms (code + schedule),
+2nd 40, 3rd 67. Page with 3 Slates (15 games) + a board vs without, median
+of 3 interleaved runs: zoom p95 43 vs 26 ms (limit 108), pan p95 18 vs 17,
+hover p95 18 vs 18, no long tasks. 30 pages each with a Slate opens in
+314 ms vs 323 without (cards drawn at 380). Bundle: main +2.2 KB
+(+0.6 KB gz); lazy chunk 23.3 KB JS (9.2 gz) + 36.2 KB CSS (7.7 gz).
+Visual vs calendarkit's copy: layout and text exact; 1.7% (its on-screen
+layout) / 2.4% (the copied PNG) of card pixels >32 levels apart (row
+edges at fractional pixels; held under 5%).
