@@ -13,6 +13,9 @@
     { "source": "/boardkit/:path+", "destination": "https://boardkit-iota.vercel.app/boardkit/:path+" },
     { "source": "/linkkit", "destination": "https://linkkit-lake.vercel.app/linkkit/" },
     { "source": "/linkkit/", "destination": "https://linkkit-lake.vercel.app/linkkit/" },
-    { "source": "/linkkit/:path+", "destination": "https://linkkit-lake.vercel.app/linkkit/:path+" }
+    { "source": "/linkkit/:path+", "destination": "https://linkkit-lake.vercel.app/linkkit/:path+" },
+    { "source": "/calendar", "destination": "https://calendarkit-brown.vercel.app/calendar/" },
+    { "source": "/calendar/", "destination": "https://calendarkit-brown.vercel.app/calendar/" },
+    { "source": "/calendar/:path+", "destination": "https://calendarkit-brown.vercel.app/calendar/:path+" }
   ]
 }

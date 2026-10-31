@@ -38,6 +38,8 @@ export function localTargets(env = process.env) {
   return {
     "https://linkkit-lake.vercel.app": env.LINKKIT_DEV ?? "http://localhost:5181",
     "https://boardkit-iota.vercel.app": env.BOARDKIT_DEV ?? "http://localhost:5173",
+    // calendarkit (gauntlet-home.vercel.app/calendar): its `npm run preview` (a build served under /calendar/)
+    "https://calendarkit-brown.vercel.app": env.CALENDARKIT_DEV ?? "http://localhost:4180",
   };
 }
 

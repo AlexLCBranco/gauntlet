@@ -23,7 +23,7 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { start } from "./dev-proxy.mjs";
+import { localTargets, start } from "./dev-proxy.mjs";
 import { killLeftovers } from "./leftovers.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -104,6 +104,8 @@ try {
     targets: {
       "https://linkkit-lake.vercel.app": `http://localhost:${apps[0].port}`,
       "https://boardkit-iota.vercel.app": `http://localhost:${apps[1].port}`,
+      // calendarkit: no e2e here uses /calendar; its own suite tests it (a request there goes to its preview, if running)
+      "https://calendarkit-brown.vercel.app": localTargets()["https://calendarkit-brown.vercel.app"],
     },
   });
   const site = `http://localhost:${proxyPort}`;

@@ -32,12 +32,17 @@ test("vercel.json's rewrites go to the local dev servers", () => {
   assert.equal(local("/boardkit"), "http://localhost:5173/boardkit/");
   assert.equal(local("/boardkit/"), "http://localhost:5173/boardkit/");
   assert.equal(local("/boardkit/assets/a.js"), "http://localhost:5173/boardkit/assets/a.js");
+  assert.equal(local("/calendar"), "http://localhost:4180/calendar/");
+  assert.equal(local("/calendar/"), "http://localhost:4180/calendar/");
+  assert.equal(local("/calendar/assets/index.js"), "http://localhost:4180/calendar/assets/index.js");
+  assert.equal(local("/calendar/data/schedule.json"), "http://localhost:4180/calendar/data/schedule.json");
   assert.equal(local("/elsewhere"), null);
 });
 
 test("the query string carries over, as on Vercel", () => {
   assert.equal(local("/linkkit/?embed=1&id=abc"), "http://localhost:5181/linkkit/?embed=1&id=abc");
   assert.equal(local("/boardkit?embed=1&id=b1"), "http://localhost:5173/boardkit/?embed=1&id=b1");
+  assert.equal(local("/calendar/?view=team&team=BOS"), "http://localhost:4180/calendar/?view=team&team=BOS");
 });
 
 test("a deployment with no local dev server is refused", () => {
@@ -52,6 +57,7 @@ test("serves the home page and forwards each app to its own server", async (t) =
     });
   const lk = await fake("linkkit");
   const bk = await fake("boardkit");
+  const ck = await fake("calendarkit");
   const root = mkdtempSync(path.join(os.tmpdir(), "gauntlet-dist-"));
   writeFileSync(path.join(root, "index.html"), "<!doctype html><html><body>whiteboard</body></html>");
   mkdirSync(path.join(root, "backup"));
@@ -62,9 +68,10 @@ test("serves the home page and forwards each app to its own server", async (t) =
     targets: {
       "https://linkkit-lake.vercel.app": `http://localhost:${lk.address().port}`,
       "https://boardkit-iota.vercel.app": `http://localhost:${bk.address().port}`,
+      "https://calendarkit-brown.vercel.app": `http://localhost:${ck.address().port}`,
     },
   });
-  t.after(() => [lk, bk, proxy].forEach((s) => s.close()));
+  t.after(() => [lk, bk, ck, proxy].forEach((s) => s.close()));
   const base = `http://localhost:${proxy.address().port}`;
   const get = async (p) => {
     const r = await fetch(base + p);
@@ -89,6 +96,8 @@ test("serves the home page and forwards each app to its own server", async (t) =
   assert.deepEqual(await get("/whiteboard"), [200, "<!doctype html><html><body>whiteboard</body></html>"]);
   assert.deepEqual(await get("/linkkit?embed=1&id=m1"), [200, "linkkit /linkkit/?embed=1&id=m1"]);
   assert.deepEqual(await get("/boardkit/assets/x.js"), [200, "boardkit /boardkit/assets/x.js"]);
+  assert.deepEqual(await get("/calendar?view=team&team=BOS"), [200, "calendarkit /calendar/?view=team&team=BOS"]);
+  assert.deepEqual(await get("/calendar/data/schedule.json"), [200, "calendarkit /calendar/data/schedule.json"]);
   assert.equal((await get("/nowhere"))[0], 404);
   assert.equal((await get("/scripts/dev-proxy.mjs"))[0], 404);
   assert.equal((await get("/.env"))[0], 404);
