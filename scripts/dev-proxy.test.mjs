@@ -102,3 +102,27 @@ test("serves the home page and forwards each app to its own server", async (t) =
   assert.equal((await get("/scripts/dev-proxy.mjs"))[0], 404);
   assert.equal((await get("/.env"))[0], 404);
 });
+
+test("an app server that drops a reply halfway doesn't stop the proxy", async (t) => {
+  // Headers sent, then the connection cut: the proxy's error handler wrote
+  // headers a second time and the whole proxy died (every later request
+  // of an e2e run failed).
+  const cut = http.createServer((req, res) => {
+    if (req.url.includes("cut")) {
+      res.writeHead(200, { "content-type": "text/plain" });
+      res.write("half");
+      setTimeout(() => res.socket.resetAndDestroy(), 20);
+    } else res.end("whole");
+  });
+  await new Promise((r) => cut.listen(0, r));
+  const port = `http://localhost:${cut.address().port}`;
+  const proxy = await start({
+    port: 0,
+    root: mkdtempSync(path.join(os.tmpdir(), "gauntlet-dist-")),
+    targets: { "https://linkkit-lake.vercel.app": port, "https://boardkit-iota.vercel.app": port, "https://calendarkit-brown.vercel.app": port },
+  });
+  t.after(() => [cut, proxy].forEach((s) => (s.closeAllConnections(), s.close())));
+  const base = `http://localhost:${proxy.address().port}`;
+  await fetch(`${base}/calendar/cut`).then((r) => r.text()).catch(() => "cut");
+  assert.equal(await (await fetch(`${base}/calendar/whole`)).text(), "whole");
+});

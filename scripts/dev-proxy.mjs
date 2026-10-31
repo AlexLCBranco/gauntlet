@@ -132,10 +132,13 @@ export function forward(req, res, target) {
     { method: req.method, headers: { ...req.headers, host: target.host } },
     (up) => {
       res.writeHead(up.statusCode ?? 502, up.headers);
+      up.on("error", (err) => res.destroy(err));
       up.pipe(res);
     },
   );
   upstream.on("error", (err) => {
+    // Cut off after its headers went out: only this answer is cut off too.
+    if (res.headersSent) return void res.destroy(err);
     res.writeHead(502, { "content-type": "text/plain" });
     res.end(`Server at ${target.origin} not reachable: ${err.message}`);
   });
