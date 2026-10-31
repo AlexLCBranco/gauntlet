@@ -1,11 +1,11 @@
 // Pure, no tldraw; tested in toolbarLayout.test.ts.
 
 /** The toolbar along the top (owner, 2026-10-22): drawing tools, a
-    separator, then the Board and Map widgets; the ⋮ "More tools" menu at
+    separator, then the Board, Map and Slate widgets; the ⋮ "More tools" menu at
     the right holds the rest. Always exactly these on the bar, at every
     window size: there is no overflow. */
 export const SEPARATOR = "|";
-export const BAR: readonly string[] = ["select", "rectangle", "arrow", "line", SEPARATOR, "board", "map"];
+export const BAR: readonly string[] = ["select", "rectangle", "arrow", "line", SEPARATOR, "board", "map", "slate"];
 export const MORE: readonly string[] = ["asset", "embed", "lasso", "markup", "text", "draw"];
 
 /** Each tool's name on the toolbar and in the ⋮ menu, as the owner named
@@ -17,6 +17,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   line: "Line",
   board: "Board",
   map: "Map",
+  slate: "Slate",
   asset: "Insert image",
   embed: "Web embed",
   lasso: "Lasso selection",
@@ -31,7 +32,7 @@ export const LABELS: Readonly<Record<string, string>> = {
  * toolbar shows: as Excalidraw (components/Tools.tsx), the letter, else the
  * number, in the button's corner and on the right of the ⋮ menu's entry.
  * Excalidraw's keys where it has them; ours, picked so nothing clashes:
- * B board (it was a second key for Draw), M map, I web embed, W lasso,
+ * B board (it was a second key for Draw), M map, S slate, I web embed, W lasso,
  * K markup (Excalidraw's laser key; Markup replaces the laser).
  */
 export const KEYS: Readonly<Record<string, { kbd: string; hint: string }>> = {
@@ -41,6 +42,7 @@ export const KEYS: Readonly<Record<string, { kbd: string; hint: string }>> = {
   line: { kbd: "l,6", hint: "L" },
   board: { kbd: "b", hint: "B" },
   map: { kbd: "m", hint: "M" },
+  slate: { kbd: "s", hint: "S" },
   asset: { kbd: "cmd+u,ctrl+u,9", hint: "9" },
   embed: { kbd: "i", hint: "I" },
   lasso: { kbd: "w", hint: "W" },

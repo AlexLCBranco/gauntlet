@@ -5,9 +5,10 @@
 //   node scripts/local-e2e.mjs linkkit e2e/held.e2e.ts        # some of Linkkit's
 //
 // Builds the canvas (`npm run build`, served from `dist/` as on Vercel),
-// starts Linkkit's and Boardkit's dev servers from their checkouts (whatever
-// branch each has checked out: check it out first), unless one already
-// listens on its port, then this repo's proxy (`dev-proxy.mjs`, the same
+// starts Linkkit's and Boardkit's dev servers and calendarkit's build
+// (`npm run build && npm run preview`, served under /calendar/ on 4180, for
+// the Slate widget) from their checkouts (whatever branch each has checked
+// out: check it out first), unless one already listens on its port, then this repo's proxy (`dev-proxy.mjs`, the same
 // rewrites as production), then Playwright in each repo with BRIDGE_SITE
 // pointing at the proxy. Stops what it started when the tests end, also
 // when they fail or the run is stopped (Ctrl+C), then checks that no test
@@ -15,15 +16,16 @@
 // stopped), and exits non-zero if any suite failed. Every browser runs
 // headless; `--headed` (passed on to Playwright) shows them.
 //
-// Folders and ports: LINKKIT_DIR, BOARDKIT_DIR, LINKKIT_PORT (5181),
-// BOARDKIT_PORT (5173), PORT (3000, the proxy).
+// Folders and ports: LINKKIT_DIR, BOARDKIT_DIR, CALENDARKIT_DIR,
+// LINKKIT_PORT (5181), BOARDKIT_PORT (5173), PORT (3000, the proxy);
+// calendarkit's preview is always on 4180 (its own `preview` script).
 
 import { spawn, spawnSync } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { localTargets, start } from "./dev-proxy.mjs";
+import { start } from "./dev-proxy.mjs";
 import { killLeftovers } from "./leftovers.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -31,6 +33,7 @@ const env = process.env;
 const apps = [
   { name: "Linkkit", dir: env.LINKKIT_DIR ?? path.resolve(ROOT, "../linkkit"), port: Number(env.LINKKIT_PORT ?? 5181) },
   { name: "Boardkit", dir: env.BOARDKIT_DIR ?? path.resolve(ROOT, "../Projects/boardkit"), port: Number(env.BOARDKIT_PORT ?? 5173) },
+  { name: "calendarkit", dir: env.CALENDARKIT_DIR ?? path.resolve(ROOT, "../calendarkit"), port: 4180, cmd: "npm run build && npm run preview", wait: 180_000 },
 ];
 const proxyPort = Number(env.PORT ?? 3000);
 
@@ -94,9 +97,9 @@ try {
       continue;
     }
     console.log(`${app.name}: starting its dev server on ${app.port} from ${app.dir} (${branch(app.dir)})`);
-    const child = spawn(`npm run dev -- --port ${app.port} --strictPort`, { cwd: app.dir, shell: true, stdio: "ignore", windowsHide: true });
+    const child = spawn(app.cmd ?? `npm run dev -- --port ${app.port} --strictPort`, { cwd: app.dir, shell: true, stdio: "ignore", windowsHide: true });
     started.push(child);
-    await waitFor(app.port);
+    await waitFor(app.port, app.wait);
   }
 
   proxy = await start({
@@ -104,8 +107,7 @@ try {
     targets: {
       "https://linkkit-lake.vercel.app": `http://localhost:${apps[0].port}`,
       "https://boardkit-iota.vercel.app": `http://localhost:${apps[1].port}`,
-      // calendarkit: no e2e here uses /calendar; its own suite tests it (a request there goes to its preview, if running)
-      "https://calendarkit-brown.vercel.app": localTargets()["https://calendarkit-brown.vercel.app"],
+      "https://calendarkit-brown.vercel.app": `http://localhost:${apps[2].port}`,
     },
   });
   const site = `http://localhost:${proxyPort}`;

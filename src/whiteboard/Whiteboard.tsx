@@ -27,6 +27,8 @@ import { appsTogether } from "../maps/appsTogether";
 import { takeBackEmptyNewMaps } from "../maps/emptyNewMaps";
 import { MapParts } from "../maps/linkkit";
 import { MapShapeUtil } from "../maps/MapShape";
+import { slateToolItem } from "../slate/AddSlate";
+import { SlateShapeUtil } from "../slate/SlateShape";
 import { LassoTool } from "../lasso/LassoTool";
 import { markup, MARKUP_TOOL, MarkupTool, startMarkup } from "../markup/markup";
 import { MarkupLayer } from "../markup/MarkupLayer";
@@ -113,6 +115,7 @@ const overrides: TLUiOverrides = {
     }
     tools.board = boardToolItem(editor);
     tools.map = mapToolItem(editor);
+    tools.slate = slateToolItem(editor);
     for (const [id, { kbd }] of Object.entries(KEYS)) if (tools[id]) tools[id] = { ...tools[id], kbd };
     return tools;
   },
@@ -142,12 +145,13 @@ const overrides: TLUiOverrides = {
     if (actions["edit-link"]) actions["edit-link"] = { ...actions["edit-link"], kbd: "cmd+k,ctrl+k", onSelect: () => editSelectedLink(editor) };
     return actions;
   },
-  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map", "tool.markup": "Markup", ...LINK_TRANSLATIONS } },
+  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map", "tool.slate": "Slate", "tool.markup": "Markup", ...LINK_TRANSLATIONS } },
 };
 
-/** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards
-    and Linkkit maps as whiteboard objects (`src/boards/`, `src/maps/`). */
-const shapeUtils = [...styleShapeUtils, BoardShapeUtil, MapShapeUtil, WebEmbedShapeUtil];
+/** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards,
+    Linkkit maps and calendarkit Slates as whiteboard objects (`src/boards/`,
+    `src/maps/`, `src/slate/`). */
+const shapeUtils = [...styleShapeUtils, BoardShapeUtil, MapShapeUtil, SlateShapeUtil, WebEmbedShapeUtil];
 
 /** Under the main menu (top left): the style panel, as in Excalidraw. */
 function UnderMenu() {

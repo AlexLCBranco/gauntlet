@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "./test";
 
-import { box, seedBoard, openBoardList, openMapList } from "./helpers";
+import { box, seedBoard, openBoardList, openMapList, whiteboardSaved } from "./helpers";
 
 /**
  * Speed checks. They measure frame times, so they run alone: Playwright
@@ -222,4 +222,198 @@ test("hovering over many items stays smooth (the resize cursor on unselected edg
   expect(m.median).toBeLessThan(1.5 * REFRESH);
   expect(m.p95).toBeLessThan(1.5 * REFRESH);
   expect(m.longest).toBeLessThan(100);
+});
+
+// ---- Slate widget (Slate widget step 2, src/slate/) ----
+
+/** The schedule's nights as `date -> game count` (regular season, Cup,
+    play-in, play-offs), read from what /calendar serves. */
+async function nightSizes(page: Page) {
+  return page.evaluate(async () => {
+    const raw = (await (await fetch("/calendar/data/schedule.json")).json()) as { leagueSchedule: { gameDates: { games: { gameId: string; gameDateEst: string }[] }[] } };
+    const n: Record<string, number> = {};
+    for (const d of raw.leagueSchedule.gameDates) for (const g of d.games) if (/^00[2456]/.test(g.gameId)) n[g.gameDateEst.slice(0, 10)] = (n[g.gameDateEst.slice(0, 10)] ?? 0) + 1;
+    return n;
+  });
+}
+
+/** Toolbar → Slate, from the click to the cards drawn (ms, in the page). */
+const timedInsert = (page: Page) =>
+  page.evaluate(async () => {
+    const before = document.querySelectorAll('[data-testid="slate-widget"]').length;
+    const t0 = performance.now();
+    (document.querySelector('[data-testid="tools.slate"]') as HTMLElement).click();
+    await new Promise<void>((done) => {
+      const check = () => {
+        const ws = [...document.querySelectorAll<HTMLElement>('[data-testid="slate-widget"]')];
+        if (ws.length > before && ws.every((w) => w.dataset.state === "ready" && getComputedStyle(w).visibility === "visible" && w.querySelector(".ck-slate-card"))) done();
+        else requestAnimationFrame(check);
+      };
+      check();
+    });
+    return performance.now() - t0;
+  });
+
+const mid = (xs: number[]) => [...xs].sort((p, q) => p - q)[Math.floor(xs.length / 2)]!;
+
+test("Slate widgets: a page with 3 of them (15-game nights) and a board zooms, pans and follows the pointer as smoothly as the same page without them; inserting is quick", async ({ page, context }) => {
+  test.setTimeout(300_000);
+  const id = await seedBoard(context);
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  // The clock runs from noon on a 15-game night (set before the page opens).
+  await page.goto("/calendar/data/schedule.json");
+  const sizes = await nightSizes(page);
+  const date = Object.keys(sizes).sort().find((d) => sizes[d] === 15)!;
+  await page.clock.install({ time: new Date(`${date}T15:00:00Z`) });
+  await openWhiteboard(page);
+
+  // First insert on a page that never had one: loads calendarkit's code and
+  // the schedule. Then two more: near-instant.
+  const first = await timedInsert(page);
+  const second = await timedInsert(page);
+  const third = await timedInsert(page);
+  // Side by side, each a third of the page wide (set up), and a board.
+  await page.evaluate(() => {
+    const editor = (window as any).editor;
+    const v = editor.getViewportPageBounds();
+    const ws = editor.getCurrentPageShapes().filter((s: any) => s.type === "calendarkit-slate");
+    ws.forEach((s: any, i: number) => {
+      const k = (v.w / 3 - 20) / (s.props.w / s.props.scale);
+      editor.updateShape({ id: s.id, type: s.type, x: v.x + 10 + i * (v.w / 3), y: v.y + 60, props: { scale: k, w: (s.props.w / s.props.scale) * k, h: (s.props.h / s.props.scale) * k } });
+    });
+    editor.selectNone();
+  });
+  await placeBoard(page, id);
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  await expect(page.locator(".ck-slate-card")).toHaveCount(45);
+  // The same page without the Slate widgets: a copy of it, Slates left out.
+  const pages = await page.evaluate(() => {
+    const editor = (window as any).editor;
+    const with_ = editor.getCurrentPageId();
+    editor.duplicatePage(with_);
+    const without = editor.getPages().at(-1).id;
+    editor.setCurrentPage(without);
+    editor.deleteShapes(editor.getCurrentPageShapes().filter((s: any) => s.type === "calendarkit-slate").map((s: any) => s.id));
+    editor.selectNone();
+    return { with: with_, without };
+  });
+
+  const REFRESH = 1000 / 60;
+  const runs: Record<"with" | "without", { zoom: any[]; pan: any[]; hover: any[] }> = { with: { zoom: [], pan: [], hover: [] }, without: { zoom: [], pan: [], hover: [] } };
+  for (let r = 0; r < 3; r++)
+    for (const v of ["with", "without"] as const) {
+      await page.evaluate((p) => {
+        const editor = (window as any).editor;
+        editor.setCurrentPage(p);
+        editor.selectNone();
+        editor.setCamera({ x: 0, y: 0, z: 1 });
+      }, pages[v]);
+      await page.waitForTimeout(400);
+      if (v === "with") await expect(page.locator(".ck-slate-card")).toHaveCount(45);
+      runs[v].zoom.push(
+        await measureFrames(page, async () => {
+          await page.mouse.move(800, 500);
+          await page.keyboard.down("Control");
+          for (let i = 0; i < 20; i++) await page.mouse.wheel(0, i < 10 ? -120 : 120);
+          await page.keyboard.up("Control");
+        }),
+      );
+      // Panning: zoomed in to 200%, the wheel moves the view.
+      await page.evaluate(() => void (window as any).editor.setCamera({ x: 0, y: 0, z: 2 }));
+      await page.waitForTimeout(200);
+      runs[v].pan.push(
+        await measureFrames(page, async () => {
+          for (let i = 0; i < 30; i++) await page.mouse.wheel(i % 10 < 5 ? 80 : -80, i < 15 ? 60 : -60);
+        }),
+      );
+      await page.evaluate(() => void (window as any).editor.setCamera({ x: 0, y: 0, z: 1 }));
+      await page.waitForTimeout(200);
+      // The pointer swept across the widgets (the hover and cursor checks).
+      runs[v].hover.push(
+        await measureFrames(page, async () => {
+          for (let k = 0; k < 2; k++) for (let i = 0; i <= 120; i++) await page.mouse.move(20 + i * 13, 80 + i * 6 + k * 30);
+        }),
+      );
+    }
+  const summary = (xs: any[]) => ({ median: mid(xs.map((x) => x.median)), p95: mid(xs.map((x) => x.p95)), longest: mid(xs.map((x) => x.longest)) });
+  const out = Object.fromEntries((["with", "without"] as const).map((v) => [v, { zoom: summary(runs[v].zoom), pan: summary(runs[v].pan), hover: summary(runs[v].hover) }]));
+  console.log(`slate page: inserts ${JSON.stringify({ first: Math.round(first), second: Math.round(second), third: Math.round(third) })} ms; frames (median of 3 interleaved runs, ms) ${JSON.stringify(out)}`);
+  test.info().annotations.push({ type: "slate perf", description: JSON.stringify({ first, second, third, ...out }) });
+
+  // The existing limits (big board above; hover test below), with the widgets.
+  const w = out.with!;
+  for (const [m, p95] of [[w.zoom, 6.5 * REFRESH], [w.pan, 4.5 * REFRESH]] as const) {
+    expect(m.median).toBeLessThan(2.5 * REFRESH);
+    expect(m.p95).toBeLessThan(p95);
+    expect(m.longest).toBeLessThan(250);
+  }
+  expect(w.hover.median).toBeLessThan(1.5 * REFRESH);
+  expect(w.hover.p95).toBeLessThan(1.5 * REFRESH);
+  expect(w.hover.longest).toBeLessThan(100);
+  // Inserting: a later one doesn't load anything again.
+  expect(second).toBeLessThan(1000);
+  expect(third).toBeLessThan(1000);
+  expect(first).toBeLessThan(10_000);
+});
+
+test("Slate widgets: a file with one on each of 30 pages opens about as fast as the same file without them", async ({ browser, baseURL }) => {
+  test.setTimeout(300_000);
+  // Two browsers: one whose whiteboard has 30 pages, each with a Slate
+  // widget (as inserted, set up by copying one), one with the same 30 pages
+  // and a rectangle on each instead.
+  const make = async (slates: boolean) => {
+    const ctx = await browser.newContext({ baseURL, viewport: { width: 1600, height: 1000 } });
+    const page = await ctx.newPage();
+    await page.goto("/calendar/data/schedule.json");
+    const sizes = await nightSizes(page);
+    const date = Object.keys(sizes).sort().find((d) => sizes[d] === 15)!;
+    await page.clock.install({ time: new Date(`${date}T15:00:00Z`) });
+    await openWhiteboard(page);
+    let props: unknown = null;
+    if (slates) {
+      await timedInsert(page);
+      props = await page.evaluate(() => (window as any).editor.getCurrentPageShapes().find((s: any) => s.type === "calendarkit-slate").props);
+    }
+    await page.evaluate((props) => {
+      const editor = (window as any).editor;
+      const first = editor.getCurrentPageId();
+      if (!props) editor.createShape({ type: "geo", x: 100, y: 100, props: { w: 300, h: 200 } });
+      for (let i = 2; i <= 30; i++) {
+        editor.createPage({ name: `Page ${i}` });
+        const p = editor.getPages().at(-1).id;
+        editor.setCurrentPage(p);
+        if (props) editor.createShape({ type: "calendarkit-slate", x: 0, y: 0, props });
+        else editor.createShape({ type: "geo", x: 100, y: 100, props: { w: 300, h: 200 } });
+      }
+      editor.setCurrentPage(first);
+    }, props);
+    await whiteboardSaved(page);
+    return { ctx, page };
+  };
+  const files = { with: await make(true), without: await make(false) };
+  /** Reload: time (wall clock, from here: the page's own clock is faked)
+      to the whiteboard drawn (its sheet), and, with Slates, to the first
+      page's cards. */
+  const open = async (page: Page) => {
+    const t0 = Date.now();
+    await page.reload();
+    await page.waitForFunction(() => "editor" in window && document.querySelector('[data-testid="sheet"]'), null, { polling: 16 });
+    const ready = Date.now() - t0;
+    await page.waitForFunction(() => {
+      const w = document.querySelector<HTMLElement>('[data-testid="slate-widget"]');
+      return !w || (w.dataset.state === "ready" && getComputedStyle(w).visibility === "visible");
+    }, null, { polling: 16 });
+    return { ready, cards: Date.now() - t0 };
+  };
+  const times: Record<"with" | "without", { ready: number; cards: number }[]> = { with: [], without: [] };
+  for (let r = 0; r < 4; r++) for (const v of ["with", "without"] as const) times[v].push(await open(files[v].page));
+  const result = Object.fromEntries((["with", "without"] as const).map((v) => [v, { ready: Math.round(mid(times[v].map((t) => t.ready))), cards: Math.round(mid(times[v].map((t) => t.cards))) }]));
+  console.log(`30 pages: open (median of 4 interleaved, ms from reload) ${JSON.stringify(result)}; runs ${JSON.stringify(times)}`);
+  test.info().annotations.push({ type: "30 pages", description: JSON.stringify(result) });
+  expect(await files.with.page.evaluate(() => (window as any).editor.getPages().length)).toBe(30);
+  // The whiteboard itself is ready no later than 25% after the file without
+  // Slates (other pages' widgets are never drawn).
+  expect(result.with!.ready).toBeLessThan(result.without!.ready * 1.25 + 100);
+  await files.with.ctx.close();
+  await files.without.ctx.close();
 });

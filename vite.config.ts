@@ -44,10 +44,27 @@ function apps(mode: string): Plugin {
   };
 }
 
+/**
+ * calendarkit's stylesheet names its font at "/fonts/…", its own site's
+ * root, rewritten by calendarkit's own build; on this site calendarkit is
+ * under /calendar/ (its PROJECT.md: "the font is /calendar/fonts/…"). The
+ * Slate widget (src/slate/) imports that stylesheet, so its font address
+ * is pointed there. Nothing is copied: the font stays calendarkit's. A
+ * PostCSS step, so it sees the files calendarkit's `@import`s pull in.
+ */
+const calendarkitFont = {
+  postcssPlugin: "calendarkit-font",
+  Declaration(decl: { prop: string; value: string; source?: { input?: { file?: string } } }) {
+    if (decl.prop === "src" && /[\\/]node_modules[\\/]calendarkit[\\/]/.test(decl.source?.input?.file ?? ""))
+      decl.value = decl.value.replaceAll("url('/fonts/", "url('/calendar/fonts/");
+  },
+};
+
 const BOARDKIT_SRC = fileURLToPath(new URL("./node_modules/boardkit/src/", import.meta.url));
 
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), apps(mode)],
+  css: { postcss: { plugins: [calendarkitFont] } },
   // Boardkit (an npm git dependency, `src/boards/`) is imported as source:
   // its own "@/..." imports point into it, and it is not pre-bundled.
   // Its stylesheet imports shadcn's: src/boards/vendor/shadcn, a local
@@ -55,10 +72,10 @@ export default defineConfig(({ mode }) => ({
   resolve: { alias: [{ find: /^@\//, replacement: BOARDKIT_SRC }] },
   // Linkkit is not pre-bundled either, so what it uses is named here (React
   // Flow ships CommonJS parts that must be pre-bundled).
-  optimizeDeps: { exclude: ["boardkit", "linkkit"], include: ["@xyflow/react", "html-to-image", "radix-ui", "lucide-react", "zustand"] },
-  // Watches Boardkit and Linkkit too, for `scripts/sync-boardkit.mjs` and
-  // `scripts/sync-linkkit.mjs`.
-  server: { port: 5180, watch: { ignored: ["!**/node_modules/boardkit/**", "!**/node_modules/linkkit/**"] } },
+  optimizeDeps: { exclude: ["boardkit", "linkkit", "calendarkit"], include: ["@xyflow/react", "html-to-image", "radix-ui", "lucide-react", "zustand"] },
+  // Watches Boardkit, Linkkit and calendarkit too, for
+  // `scripts/sync-boardkit.mjs`, `sync-linkkit.mjs` and `sync-calendarkit.mjs`.
+  server: { port: 5180, watch: { ignored: ["!**/node_modules/boardkit/**", "!**/node_modules/linkkit/**", "!**/node_modules/calendarkit/**"] } },
   // Two pages: the whiteboard at `/`, the backup page at `/backup/`.
   // tldraw alone is ~1.7 MB (515 kB gzipped), loaded only by the whiteboard.
   build: {

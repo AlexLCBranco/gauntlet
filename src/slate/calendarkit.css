@@ -1,0 +1,45 @@
+/* The widget: the cards at their natural size, scaled from the top-left
+   corner (as a board is), on nothing: no panel behind or between them. */
+.gs-slate.ck-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  transform-origin: 0 0;
+  background: none;
+}
+
+/* The widget's placeholder: the date and why there are no cards. */
+.gs-slate-msg {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border: 1px dashed var(--ck-border);
+  border-radius: 10px;
+  background: var(--ck-surface);
+  color: var(--ck-muted);
+  font-size: 16px;
+}
+.gs-slate-msg b {
+  color: var(--ck-text);
+  font-size: 18px;
+}
+.gs-slate-retry {
+  align-self: flex-start;
+  pointer-events: auto;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--ck-border);
+  border-radius: 7px;
+  background: var(--ck-surface-2);
+  color: var(--ck-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.gs-slate-retry:hover {
+  border-color: var(--ck-accent);
+}

@@ -7,7 +7,7 @@ import type { ReactElement, SVGProps } from "react";
 
 // The toolbar's icons, copied from Excalidraw's own
 // (packages/excalidraw/components/icons.tsx, commit 1d4dc2c), each with
-// its own stroke width as there. Board, Map and Markup have none in
+// its own stroke width as there. Board, Map, Slate and Markup have none in
 // Excalidraw: drawn here in the same style (20-unit box, 1.25 stroke).
 
 type Opts = SVGProps<SVGSVGElement> & { width: number; height: number };
@@ -137,6 +137,16 @@ const map = icon(
   modifiedTabler,
 );
 
+/** Slate: two game cards, each with its note box on the right. */
+const slate = icon(
+  <g strokeWidth="1.25">
+    <rect x="2.5" y="3.333" width="15" height="5.833" rx="1" />
+    <rect x="2.5" y="10.833" width="15" height="5.833" rx="1" />
+    <path d="M10.833 3.333v5.833M10.833 10.833v5.833" />
+  </g>,
+  modifiedTabler,
+);
+
 const markup = icon(
   <g strokeWidth="1.25">
     <path d="m11.667 4.167 4.166 4.166-6.666 6.667H5v-4.167l6.667-6.666Z" />
@@ -153,6 +163,7 @@ export const TOOL_ICONS: Readonly<Record<string, ReactElement>> = {
   line,
   board,
   map,
+  slate,
   asset: image,
   embed,
   lasso,

@@ -4,25 +4,18 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-10-22)
+## Current state (2026-10-31)
 
-- PHASE 3 DONE (docs/PHASE-3.md, all ticked; summary in docs/HISTORY.md).
-  STOPPED for the owner's report (PROJECT.md rule 3); phase 4 not started.
-- Hand-test fixes (owner, 2026-10-21) done; see docs/HISTORY.md.
-- EXCALIDRAW PARITY (owner, 2026-10-21) done, items 0-3 (summary in
-  docs/HISTORY.md, decisions in PROJECT.md): no leftover test windows
-  (scripts/leftovers.mjs), dark fixed + custom colours, our own Excalidraw
-  paste/drop/import (src/import/excalidraw/), Crop in the panel.
-- Move cursor over items, as in Excalidraw (owner, 2026-10-22): done
-  (DECISIONS; src/whiteboard/hoverResize.ts `moveCursor`,
-  e2e/movecursor.e2e.ts, 8 tests).
-- Owner's hand test of the hand-test round PASSED (2026-10-22, HISTORY).
-- Map fixes 1-4 from that hand test, hover speed and the clickaway hang:
-  done (DECISIONS 2026-10-22; e2e/mapfixes.e2e.ts; Linkkit v0.0.112).
-- Pinned: Boardkit v0.0.105 (`5a6850a`), Linkkit v0.0.113 (`f8b63cf`).
-- Last results (2026-10-23, links step 2): unit 110 + 19 scripts, local
-  gauntlet 239, Linkkit 18; live 231 + 8 skipped, 0 failed.
-
+- PHASE 3 DONE; phase 4 NOT started (owner: don't start it). Earlier rounds
+  (hand-test fixes, Excalidraw parity, move cursor, map fixes, toolbar
+  rework, links round): done, see docs/HISTORY.md and DECISIONS.
+- SLATE WIDGET (owner, 2026-10-31; separate track, steps 1-5, DECISIONS):
+  step 1 done in calendarkit; STEP 2 (static widget) DONE: src/slate/,
+  e2e/slate.e2e.ts (9), 2 Slate tests in perf.e2e.ts. STOPPED for the
+  owner's report. Step 3 not started (←/→ date, keys vs nudge, ↗, tooltips).
+- Pinned: Boardkit v0.0.105 (`5a6850a`), Linkkit v0.0.113 (`f8b63cf`),
+  calendarkit v1.28.1 (`e125a19`).
+- Last results: see "Slate step 2 results" in docs/HISTORY.md.
 ## Waiting for the owner
 
 - Feel of the map fixes: the dim while editing a map, the label, a dot
@@ -42,7 +35,6 @@ Finished work goes to docs/HISTORY.md.
   step 2 (links on everything: src/links/, e2e/links.e2e.ts; Boardkit
   v0.0.105, Linkkit v0.0.113; DECISIONS) DONE. Waiting for the owner's
   hand check (feel of the icons and the link field).
-- Phase 4 NOT started (owner: don't start it).
 
 ## Broken / known wrong
 
@@ -85,7 +77,7 @@ Finished work goes to docs/HISTORY.md.
   real-data test (`e2e/realdata.e2e.ts`, owner's backup file read at run
   time from Downloads) runs only on localhost.
 - Dev tips: `node scripts/sync-linkkit.mjs` copies ~/linkkit/src into
-  node_modules/linkkit (as sync-boardkit does). After `node scripts/sync-boardkit.mjs` restart the dev server
+  node_modules/linkkit (as sync-boardkit and sync-calendarkit do). After `node scripts/sync-boardkit.mjs` restart the dev server
   (and a browser that had the page open may keep the old Boardkit module
   cached: use a fresh profile). `local-e2e.mjs` joins its arguments into a
   shell line: use `file:line`. Never pipe test commands without pipefail;
@@ -97,4 +89,5 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
+- The owner's report on Slate step 2 (feel), then "go" for step 3.
 - The owner's phase 3 hand test, then the speed session, then phase 4.

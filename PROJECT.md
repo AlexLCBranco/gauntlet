@@ -833,6 +833,51 @@ Changes to the plan, newest last. Each says what and why.
   `meta.url`. Agent's choices: a card's right-click (it used to toggle its
   thots) is now a menu whose first item is "Show / Hide thots"; a stored
   non-web link (a hand-edited `javascript:`) is dropped on load.
+- 2026-10-31 — Slate widget (owner): calendarkit's Slate (one night of NBA
+  games as cards, game info + note box) becomes a live widget on the
+  whiteboard. A SEPARATE TRACK, "Slate widget, steps 1-5", not phase 4
+  (phase 4 stays not started): 1 (calendarkit, done) the Slate as a
+  self-contained part, calendarkit under /calendar; 2 static widget; 3 ←/→
+  change its date, arrow keys vs nudging, the ↗ icon and tooltips; 4 typing
+  notes, ⇄, notes in the backups; 5 final scores, card changes reaching the
+  widget, tests across both repos. Owner's rules: a widget is PINNED to a
+  date (inserting one uses today in America/Sao_Paulo; it never follows
+  "today" by itself; only step 3 changes it); it shows its date's games
+  from the live schedule (the shape stores the date and its size, never
+  the games); notes belong to the GAME (calendarkit's localStorage
+  `ck:notes:v1`, shared, same site).
+  Step 2 as built (src/slate/; agent's choices within the owner's):
+  calendarkit is a package pinned to a commit (codeload tarball, as
+  Boardkit and Linkkit; e125a19, v1.28.1; `scripts/sync-calendarkit.mjs`
+  for local work); only `src/slate/calendarkit.ts` imports it, and only the
+  lazy SlateWidget.tsx imports that, so a page without a Slate never loads
+  it. Toolbar: "Slate" right after Map (key S), a click puts today's night
+  on the current page, selected, one undo step. The widget draws
+  calendarkit's copy layout (SlateCopy: cards 914 px wide, the width they
+  have in calendarkit's 1920 px window, 24 px apart, nothing behind or
+  between them; note boxes as static text with their PRE/LIVE/POST label;
+  no ↗, no ⇄). Its columns follow the copies' "largest cards" rule for the
+  page, chosen once when inserted and kept (shape prop `cols`), so a note
+  growing a card never reflows the night under the drawings; the whole
+  night is fitted to the page then. Shape `calendarkit-slate`: date, w, h,
+  scale, cols. Scaled from the corners (and from an unselected edge) like a
+  board: CSS scale of real text. Tip-off times in America/Sao_Paulo.
+  Schedule fetched and parsed once per page, shared by every widget
+  (calendarkit's loadCalendarData); notes through calendarkit's one store
+  per page (one `storage` listener), read only. Can't load: the widget
+  keeps its place and size and shows the date, "Schedule unavailable" and
+  "Try again"; a date without games shows the date and "No games".
+  calendarkit's stylesheet names its font at "/fonts/…" (its own root);
+  a PostCSS step in vite.config.ts points it at /calendar/fonts/ (nothing
+  copied). The visual check against calendarkit's copy is exact for the
+  layout (every card's and note box's place and size, 0.01 px) and the
+  text, but NOT pixel for pixel as round 10 compared copies with copies:
+  a copy is drawn through html-to-image's SVG and the widget live on the
+  whiteboard, and card heights are fractional, so text and logo edges
+  rasterize differently on 1.7-2.4% of card pixels; those are held under
+  5%. Tooling: scripts/local-e2e.mjs now also serves calendarkit's build
+  (its `npm run preview`, port 4180) for /calendar; dev-proxy.mjs no longer
+  dies when an app server cuts a reply after its headers (it crashed a run).
 
 IDEAS
 

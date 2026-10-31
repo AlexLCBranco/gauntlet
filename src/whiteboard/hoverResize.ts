@@ -13,7 +13,7 @@ import { CORNER_PX, EDGE_PX, HANDLE_CURSOR, edgeHit, type ResizeHandle } from ".
 
 /** Items whose box is what you see: shapes and widgets. Lines, arrows and
     freehand strokes are resized from their selection only. */
-const RESIZED_BY_EDGE = new Set(["geo", "text", "image", "video", "boardkit-board", "linkkit-map", "note", "frame", "embed", "bookmark", "group"]);
+const RESIZED_BY_EDGE = new Set(["geo", "text", "image", "video", "boardkit-board", "linkkit-map", "calendarkit-slate", "note", "frame", "embed", "bookmark", "group"]);
 
 /** A press on these (a widget's own buttons and fields) is the control's,
     never a resize. */
@@ -57,7 +57,7 @@ function hitAt(editor: Editor, point: { x: number; y: number }): Hit | null {
 }
 
 /** Items with buttons and fields of their own (Boardkit's, Linkkit's). */
-const HAS_CONTROLS = new Set(["boardkit-board", "linkkit-map", "embed"]);
+const HAS_CONTROLS = new Set(["boardkit-board", "linkkit-map", "calendarkit-slate", "embed"]);
 
 /** Whether the pointer is on one of item `shape`'s own controls. Only an
     item that has any looks: the lookup asks the browser for its layout,
