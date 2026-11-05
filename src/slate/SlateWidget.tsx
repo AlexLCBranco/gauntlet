@@ -5,6 +5,7 @@ import { fitBoard } from "../boards/fit";
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta, SHEET } from "../pages/sheet";
 import {
+  liveOddsStore,
   loadCalendarData,
   localNotesStore,
   slateCopyColumns,
@@ -13,6 +14,8 @@ import {
   SlateCopy,
   SLATE_GRID_GAP,
   type CalendarData,
+  type DayOdds,
+  type SlateOdds,
   type SlateNotes,
 } from "./calendarkit";
 import { SLATE_TYPE, type SlateShape } from "./SlateShape";
@@ -63,6 +66,38 @@ const subscribeNotes = (fn: () => void) => notes.subscribe("*", fn);
     written (typing in the widget is step 4). */
 const readOnly = (): SlateNotes => ({ get: (id) => notes.get(id), set() {}, flush() {}, subscribe: () => () => {} });
 
+// The odds: calendarkit's own store (/calendar/api/odds, ESPN moneyline),
+// one per page: one request per date shown however many widgets show it,
+// refreshed every 10 min while a widget shows a night not yet over. No
+// answer (a failure, or calendarkit's `vite preview`) = no odds, the
+// cards keep their empty odds column.
+const odds: SlateOdds = liveOddsStore();
+const NO_ODDS = () => undefined;
+// calendarkit's store loads a night again each time a Slate starts showing
+// it while it isn't over (its own page shows one Slate): here every widget
+// showing a night shares one `show`, so one request per night, not per
+// widget; the last widget to stop showing it stops the refresh.
+const showing = new Map<string, { n: number; stop: () => void }>();
+function showOdds(date: string, allOver: boolean): () => void {
+  const key = `${date} ${allOver}`;
+  let s = showing.get(key);
+  if (!s) showing.set(key, (s = { n: 0, stop: odds.show(date, allOver) }));
+  s.n++;
+  return () => {
+    if (--s.n > 0) return;
+    s.stop();
+    showing.delete(key);
+  };
+}
+function useDayOdds(date: string, allOver: boolean | null): DayOdds | undefined {
+  const day = useSyncExternalStore(
+    useMemo(() => (fn: () => void) => odds.subscribe(date, fn), [date]),
+    allOver === null ? NO_ODDS : () => odds.get(date),
+  );
+  useEffect(() => (allOver === null ? undefined : showOdds(date, allOver)), [date, allOver]);
+  return day;
+}
+
 export default function SlateWidget({ shape }: { shape: SlateShape }) {
   const editor = useEditor();
   const d = useSyncExternalStore(subscribeData, () => data);
@@ -72,6 +107,9 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   const content = useRef<HTMLDivElement>(null);
   const { date, w, h, scale, cols } = shape.props;
   const games = d.status === "ready" ? slateGames(d.data, date) : null;
+  // null until the schedule is here, or on a night without games: nothing asked
+  const allOver = games?.length ? games.every((g) => g.status === "final") : null;
+  const dayOdds = useDayOdds(date, allOver);
 
   // Keep the box the size of the cards (boards/fit.ts). The first time
   // (cols 0), calendarkit's copies' rule picks the columns and the whole
@@ -100,7 +138,7 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
       style={{ transform: `scale(${z})`, visibility: scale && cols ? "visible" : "hidden" }}
     >
       {state === "ready" ? (
-        <SlateCopy data={(d as { data: CalendarData }).data} games={games!} cols={cols || 1} cardWidth={SLATE_CARD_WIDTH} timeZone={SLATE_TIME_ZONE} notes={store} />
+        <SlateCopy data={(d as { data: CalendarData }).data} games={games!} cols={cols || 1} cardWidth={SLATE_CARD_WIDTH} timeZone={SLATE_TIME_ZONE} notes={store} odds={dayOdds} />
       ) : state === "empty" ? (
         <Message date={date} text="No games" />
       ) : state === "failed" ? (

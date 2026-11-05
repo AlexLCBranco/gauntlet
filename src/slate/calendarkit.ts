@@ -8,6 +8,7 @@ import "./calendarkit.css";
 
 export {
   loadCalendarData,
+  liveOddsStore,
   localNotesStore,
   slateCopyColumns,
   slateGames,
@@ -15,6 +16,8 @@ export {
   SlateCopy,
   SLATE_COPY_GAP,
   type CalendarData,
+  type DayOdds,
+  type SlateOdds,
   type SlateNotes,
 } from "calendarkit/src/slate";
 export { SLATE_GRID_GAP } from "calendarkit/src/slate/layout";

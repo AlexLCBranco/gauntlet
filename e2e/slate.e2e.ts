@@ -20,7 +20,7 @@ test.use({ timezoneId: TZ });
 // ticks wait for the time to catch up), so only short moves forward later.
 
 type Slate = { id: string; x: number; y: number; date: string; w: number; h: number; scale: number; cols: number };
-type Night = { date: string; ids: string[] };
+type Night = { date: string; ids: string[]; keys: string[] };
 
 const slates = (page: Page) =>
   page.evaluate(() =>
@@ -34,14 +34,18 @@ const slates = (page: Page) =>
     game's id in tip-off order, as the feed has them. */
 async function nights(request: APIRequestContext): Promise<Night[]> {
   const raw = (await (await request.get("/calendar/data/schedule.json")).json()) as {
-    leagueSchedule: { gameDates: { games: { gameId: string; gameDateEst: string; gameDateTimeUTC: string }[] }[] };
+    leagueSchedule: { gameDates: { games: { gameId: string; gameDateEst: string; gameDateTimeUTC: string; awayTeam: { teamTricode: string }; homeTeam: { teamTricode: string } }[] }[] };
   };
-  const by: Record<string, { gameId: string; t: string }[]> = {};
+  const by: Record<string, { gameId: string; t: string; key: string }[]> = {};
   for (const d of raw.leagueSchedule.gameDates)
-    for (const g of d.games) if (/^00[2456]/.test(g.gameId)) (by[g.gameDateEst.slice(0, 10)] ??= []).push({ gameId: g.gameId, t: g.gameDateTimeUTC });
+    for (const g of d.games)
+      if (/^00[2456]/.test(g.gameId)) (by[g.gameDateEst.slice(0, 10)] ??= []).push({ gameId: g.gameId, t: g.gameDateTimeUTC, key: `${g.awayTeam.teamTricode}@${g.homeTeam.teamTricode}` });
   return Object.keys(by)
     .sort()
-    .map((date) => ({ date, ids: by[date]!.sort((a, b) => a.t.localeCompare(b.t)).map((g) => g.gameId) }));
+    .map((date) => {
+      const gs = by[date]!.sort((a, b) => a.t.localeCompare(b.t));
+      return { date, ids: gs.map((g) => g.gameId), keys: gs.map((g) => g.key) };
+    });
 }
 
 /** A night with `n` games (the first), else the night with the most. */
@@ -580,6 +584,8 @@ test("Slate: when the schedule can't load the widget keeps its place and size, s
   await expect(page.locator('[data-testid="slate-widget"][data-state="failed"]')).toHaveCount(2);
 
   fail = false;
+  // Nothing selected: the style panel (top left) would cover the button.
+  await page.evaluate(() => void (window as any).editor.selectNone());
   await w.getByTestId("slate-retry").click();
   await expect(page.locator('[data-testid="slate-widget"][data-state="ready"]')).toHaveCount(2);
   await expect(w.locator(".ck-slate-card")).toHaveCount(night.ids.length);
@@ -643,6 +649,13 @@ test("Slate: one schedule request for every widget on every page; no timers or r
   await insertSlate(page);
   expect(slateCode().length).toBeGreaterThan(0);
   expect(asked.filter((p) => p.endsWith("/calendar/data/schedule.json"))).toHaveLength(1);
+  // Odds: one request for the night per page shown (3 widgets on page 1,
+  // 1 on page 2: 2 requests, not 4), at most one 10-min refresh timer
+  // running for it (only while the night isn't over).
+  expect(asked.filter((p) => p.endsWith("/calendar/api/odds"))).toHaveLength(2);
+  const timers = (await page.evaluate(() => (window as any).__slateTimers)) as string[];
+  expect(timers.filter((t) => t === "setInterval").length).toBeLessThanOrEqual(1);
+  expect(timers.filter((t) => t === "requestAnimationFrame" || t === "requestIdleCallback")).toEqual([]);
 
   // At rest: nothing asked of the network, no timer or frame from the Slate's code.
   await page.evaluate(() => void (window as any).editor.selectNone());
@@ -655,4 +668,97 @@ test("Slate: one schedule request for every widget on every page; no timers or r
   expect(await page.evaluate(() => (window as any).__slateTimers)).toEqual([]);
   // One `storage` listener for the notes on the page, for all 4 widgets.
   expect(await page.evaluate(() => (window as any).__slateStorage)).toBe(1);
+});
+
+// ---- Edges round, item 0: the calendarkit pin moved to v1.40.1 (7c606c6) ----
+
+test("Slate pin: the calendarkit the whiteboard draws with is the one /calendar serves (same version)", async ({ request }) => {
+  const pinned = JSON.parse(await readFile("node_modules/calendarkit/package.json", "utf-8")).version as string;
+  const served = (await (await request.get("/calendar/version.json")).json()) as { version: string; commit: string };
+  // The live site serves calendarkit's main; locally scripts/local-e2e.mjs builds ../calendarkit.
+  expect(served.version, `whiteboard pins calendarkit ${pinned}, /calendar serves ${served.version} (${served.commit})`).toBe(pinned);
+});
+
+test("Slate: tight cards (calendarkit round 14): a 68 px strip, short info, the season-series chip; teams stay plain text (no team links before Slate step 3)", async ({ page, request }) => {
+  const night = nightWith(await nights(request), 5);
+  await openWhiteboard(page, noonOn(night.date));
+  const s = await insertSlate(page);
+  const w = widgetOf(page, s.id);
+  const card = w.locator(".ck-slate-card").first();
+  const info = await card.locator(".ck-slate-info").evaluate((e) => ({ h: (e as HTMLElement).offsetHeight, strip: (e.querySelector(".ck-slate-strip") as HTMLElement | null)?.offsetWidth ?? 0 }));
+  expect(info.strip).toBe(68);
+  expect(info.h).toBeLessThanOrEqual(62); // a 78 px card less 2 × (8 px padding + 1 px border); the old cards were 117 px
+  await expect(w.getByTestId("series-chip").first()).toBeVisible();
+  await expect(w.locator("a, [data-team-link]")).toHaveCount(0);
+});
+
+test("Slate: odds (calendarkit's /calendar/api/odds) show on the cards; one request per night however many widgets; none on failure, nothing breaks", async ({ page, request }) => {
+  const all = await nights(request);
+  const night = nightWith(all, 5);
+  const other = all.find((n) => n.date > night.date && n.ids.length > 0)!;
+  const asked: string[] = [];
+  let fail = false;
+  await page.route("**/calendar/api/odds*", (r) => {
+    const date = new URL(r.request().url()).searchParams.get("date")!;
+    asked.push(date);
+    if (fail) return r.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "down" }) });
+    const n = date === night.date ? night : other;
+    const games = Object.fromEntries(n.keys.map((k, i) => [k, { away: 2 + i / 10, home: 1.5 + i / 100, provider: "Test" }]));
+    return r.fulfill({ contentType: "application/json", body: JSON.stringify({ date, games }) });
+  });
+  await openWhiteboard(page, noonOn(night.date));
+  const a = await insertSlate(page);
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  const b = await insertSlate(page);
+  // A third on another night (set up: changing a widget's date is step 3).
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  const c = await insertSlate(page);
+  await page.evaluate(({ id, date }) => void (window as any).editor.updateShape({ id, type: "calendarkit-slate", props: { date } }), { id: c.id, date: other.date });
+  for (const id of [a.id, b.id, c.id]) await expect(widgetOf(page, id).getByTestId("slate-odds").first()).toHaveText("2.00");
+  await expect(widgetOf(page, a.id).getByTestId("slate-odds").nth(1)).toHaveText("1.50");
+  await page.waitForTimeout(500);
+  expect(asked.filter((d) => d === night.date)).toHaveLength(1);
+  expect(asked.filter((d) => d === other.date)).toHaveLength(1);
+
+  // The odds service down: after a reload the cards show, without odds.
+  fail = true;
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  await expect(widgetOf(page, a.id)).toHaveAttribute("data-state", "ready");
+  await expect(widgetOf(page, a.id).locator(".ck-slate-card")).toHaveCount(night.ids.length);
+  await expect.poll(() => asked.length).toBeGreaterThan(2);
+  await page.waitForTimeout(300);
+  expect(await widgetOf(page, a.id).getByTestId("slate-odds").allTextContents()).toEqual(Array(night.ids.length * 2).fill(""));
+});
+
+test("Slate: notes stored before the pin move (ck:notes:v1) show in the widget and survive calendarkit v1.40 untouched; a note typed in /calendar keeps the same format", async ({ page, context, request }) => {
+  const night = nightWith(await nights(request), 5);
+  const before = notesFor(night.ids) as Record<string, { pre: string; live: string; post: string; shown: string }>;
+  const raw = JSON.stringify(before);
+  await page.addInitScript((n) => {
+    if (!sessionStorage.getItem("seeded")) {
+      localStorage.setItem("ck:notes:v1", n);
+      sessionStorage.setItem("seeded", "1");
+    }
+  }, raw);
+  await openWhiteboard(page, noonOn(night.date));
+  const s = await insertSlate(page);
+  const note = (i: number) => widgetOf(page, s.id).locator(`[data-game-id="${night.ids[i]}"] [data-testid="note"]`);
+  await expect(note(0).getByTestId("note-text")).toHaveText(before[night.ids[0]!]!.pre);
+  await expect(note(1).getByTestId("note-slot")).toHaveText("LIVE");
+  await expect(note(2).getByTestId("note-slot")).toHaveText("POST");
+
+  const ck = await context.newPage();
+  await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), night.date);
+  await ck.goto("/calendar/?view=league&layout=slate");
+  await expect(ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[0]}"] [data-testid="note-text"]`)).toHaveValue(before[night.ids[0]!]!.pre);
+  // Opening calendarkit rewrote nothing.
+  expect(await ck.evaluate(() => localStorage.getItem("ck:notes:v1"))).toBe(raw);
+  const box4 = ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[3]}"]`);
+  await box4.getByTestId("note-text").fill("new one");
+  await box4.getByTestId("note-text").blur();
+  await expect(note(3).getByTestId("note-text")).toHaveText("new one");
+  const after = JSON.parse((await ck.evaluate(() => localStorage.getItem("ck:notes:v1")))!);
+  expect(after).toEqual({ ...before, [night.ids[3]!]: { pre: "new one", live: "", post: "", shown: "pre" } });
+  await ck.close();
 });
