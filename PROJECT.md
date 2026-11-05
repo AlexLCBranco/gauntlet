@@ -882,6 +882,62 @@ Changes to the plan, newest last. Each says what and why.
   (its `npm run preview`, port 4180) for /calendar; dev-proxy.mjs no longer
   dies when an app server cuts a reply after its headers (it crashed a run).
 
+- 2026-11-05 — Edges round (owner; request word for word in
+  docs/ROUND-EDGES.md). Item 0, calendarkit pin: v1.40.1 (7c606c6). The
+  widget gets the tight round-14 cards, the season-series chip and ESPN
+  moneyline odds (calendarkit's own odds store, /calendar/api/odds through
+  the /calendar rewrite); widgets showing the same night share one load,
+  so one request per night per page shown (calendarkit's store alone asked
+  again per widget). Note boxes stay (2 columns of 914 px cards in
+  calendarkit's window; its "3 columns" is with notes hidden); notes format
+  unchanged. Teams stay plain text (team links are Slate step 3). tsconfig
+  no longer sets erasableSyntaxOnly (calendarkit uses a parameter
+  property).
+- 2026-11-05 — Edges round item 1, page edges and packed pages
+  (src/pages/edges.ts). Causes found: (a) a selected item's resize zones
+  were 6 px either side of its border (3 on small items), so at the
+  window's edge half was off screen, and a press on the inner half that
+  landed on the item's own picture/text element was a move (tldraw checks
+  its handles first only on bare canvas); (b) the toolbar, main menu, page
+  arrows, zoom/undo, the style panel and tldraw's picture toolbar float
+  over the page and took the press; (c) our "resize an unselected item
+  from its edge" ran before tldraw's handle check, so a touching
+  neighbour's edge beat the selected item's handle, and among unselected
+  items a neighbour's outer zone beat the item the pointer was inside;
+  (d) tldraw's box test is strict (inside means past the border) and the
+  pointer can't pass the screen's last pixel; (e) no way to start a box on
+  an item. Now: selected zones are 8 px out and 8 px in (corners 11, at
+  most a fifth of the item), wholly inside on a border at the window's
+  edge; a selected item's handle wins over any element and any neighbour;
+  among unselected items the one the pointer is inside wins; corners reach
+  at most a quarter along a side. Floating controls dim while a
+  selection's handles lie under them and let a press through on a handle
+  zone (they work as always elsewhere). The tldraw watermark is never
+  moved, dimmed or made click-through: its hobby licence wants it
+  "visible, unobscured, and available to user-interaction"; a corner
+  zone it covers reaches past it instead. Box select and lasso: a pointer
+  within 8 px of a page edge counts as past it. Hold C (no tldraw use) and
+  drag to start a box anywhere, even on an item; the Select tooltip says
+  so.
+- 2026-11-05 — Edges round item 2, one clear save (src/backup/save.ts,
+  SaveStatus.tsx). One status in the page arrows' island (bottom right,
+  covers nothing new): Saved / Saving… / red Not saved / Click to
+  reconnect folder / Choose a save folder; hover says when and where. A few
+  seconds after any change (whiteboard, any app's storage, other tabs) the
+  whole site is written to the picked folder as one file,
+  gauntlet-save.json; the dated copies are the automatic backups
+  (gauntlet-auto-…, every 10 min when changed, plus one per Ctrl+S), kept
+  30 newest + one a day for 90 days (up to ~120 files: the last few hours
+  in 10-minute steps, and any day of the last 3 months). Ctrl+S saves at
+  once with a dated copy ("Saved to folder"). Boardkit's failing saves
+  show as Not saved. The status's Restore list shows every copy (folder
+  and browser), newest first, "Today 20:41 · 14 pages · 6 boards · 2
+  maps"; one click keeps a copy of now (listed "before a restore") and
+  restores through /backup/ (which no app holds open), then back to the
+  whiteboard. The folder banner no longer shows on the whiteboard (the
+  status says it); /backup/, browser backups and the apps' own exports
+  stay as they were.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

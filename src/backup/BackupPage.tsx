@@ -10,6 +10,7 @@ import {
   forgetFolder,
   lastFolderNote,
   pickFolder,
+  readFolderCopy,
   reconnectFolder,
   type FolderNote,
   type FolderState,
@@ -17,6 +18,7 @@ import {
 import { describe, fileName, readBackup, summarize, type BackupFile } from "./format";
 import { WARNING_TEXT } from "./policy";
 import { makeBackup, restoreBackup } from "./storage";
+import { PENDING_RESTORE } from "./restoreKey";
 
 /**
  * The backup page (/backup/): "Save a backup" downloads one file with
@@ -63,6 +65,33 @@ export function BackupPage() {
       (file) => setHere(describe(summarize(file))),
       () => setHere(null),
     );
+  // A restore picked in the whiteboard's Restore list (SaveStatus.tsx): it
+  // waits here, where no app holds the databases open. The copy of what was
+  // there before is already kept; done, back to the whiteboard.
+  useEffect(() => {
+    let pending: { source: "folder" | "browser"; key: string } | null = null;
+    try {
+      pending = JSON.parse(sessionStorage.getItem(PENDING_RESTORE) ?? "null");
+      sessionStorage.removeItem(PENDING_RESTORE);
+    } catch {
+      pending = null;
+    }
+    if (!pending) return;
+    setStatus({ kind: "busy", text: "Restoring…" });
+    void (async () => {
+      try {
+        const file =
+          pending.source === "folder"
+            ? readBackup(JSON.parse(await readFolderCopy(pending.key)))
+            : fileOf((await listAutoBackups()).find((b) => b.id === pending.key) ?? ({ json: "null" } as AutoBackup));
+        if (!file) throw new Error("That copy could not be read.");
+        await restoreBackup(file);
+        location.replace("/");
+      } catch (error) {
+        setStatus({ kind: "error", text: `The restore did not happen: ${error instanceof Error ? error.message : String(error)}` });
+      }
+    })();
+  }, []);
   useEffect(() => {
     void refreshHere();
     void refreshAutos();

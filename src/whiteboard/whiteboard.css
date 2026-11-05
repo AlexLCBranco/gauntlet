@@ -17,3 +17,12 @@ body { background: #101011; overflow: hidden; }
 .tl-canvas > .tl-html-layer {
   cursor: var(--tl-cursor-default);
 }
+
+/* Floating controls give way to a selection's handles (src/pages/edges.ts):
+   dimmed while a selected item's handle zone lies under them, and letting
+   the pointer through while it is on such a zone. Never tldraw's watermark. */
+[data-under-selection] { opacity: 0.35; transition: opacity 120ms; }
+[data-under-selection]:hover { opacity: 1; }
+[data-yield] { opacity: 0.15 !important; pointer-events: none !important; }
+[data-yield] * { pointer-events: none !important; }
+[data-yield-wrap] { pointer-events: none !important; }

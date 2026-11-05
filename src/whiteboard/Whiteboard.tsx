@@ -32,6 +32,9 @@ import { SlateShapeUtil } from "../slate/SlateShape";
 import { LassoTool } from "../lasso/LassoTool";
 import { markup, MARKUP_TOOL, MarkupTool, startMarkup } from "../markup/markup";
 import { MarkupLayer } from "../markup/MarkupLayer";
+import { markChanged, setAppSaveFailing } from "../backup/save";
+import { useSaveHealth } from "../boards/boardkit";
+import { brushPastEdges, controlsYield, EdgeSelectionForeground, trackBoxKey } from "../pages/edges";
 import { edgeWall } from "../pages/edgeWall";
 import { zoomSteps } from "../pages/camera";
 import { keepFilled, showPageStart, zoomTo100 } from "../pages/keepFilled";
@@ -151,6 +154,9 @@ const overrides: TLUiOverrides = {
 /** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards,
     Linkkit maps and calendarkit Slates as whiteboard objects (`src/boards/`,
     `src/maps/`, `src/slate/`). */
+/** tldraw's selection handles, with grab zones that work at the page's edge. */
+const overlayUtils = [EdgeSelectionForeground];
+
 const shapeUtils = [...styleShapeUtils, BoardShapeUtil, MapShapeUtil, SlateShapeUtil, WebEmbedShapeUtil];
 
 /** Under the main menu (top left): the style panel, as in Excalidraw. */
@@ -224,6 +230,17 @@ function setUp(editor: Editor) {
   const stopWall = edgeWall(editor);
   // Resize an unselected item from its edge or corner, as in Excalidraw.
   const stopHoverResize = hoverResize(editor);
+  // Page edges and packed pages (src/pages/edges.ts): box select reaches
+  // past an edge, the held C key starts a box on an item, the floating
+  // controls give way to a selection's handles.
+  const stopBrush = brushPastEdges(editor);
+  // The save status (src/backup/save.ts): the whiteboard's own edits, and
+  // Boardkit's save health (a board write failing is "Not saved").
+  const stopEdits = editor.store.listen(() => markChanged(), { source: "user", scope: "document" });
+  setAppSaveFailing(useSaveHealth.getState().failing.length > 0);
+  const stopHealth = useSaveHealth.subscribe((h) => setAppSaveFailing(h.failing.length > 0));
+  const stopBoxKey = trackBoxKey();
+  const stopYield = controlsYield(editor);
   // Lines and arrows drawn nearly level or upright come out straight.
   const stopStraight = straightLines(editor);
   // Pasting a web address makes a web embed (src/embed/).
@@ -256,6 +273,11 @@ function setUp(editor: Editor) {
     stopInside();
     stopWall();
     stopHoverResize();
+    stopBrush();
+    stopEdits();
+    stopHealth();
+    stopBoxKey();
+    stopYield();
     stopStraight();
     stopEmbeds();
     stopLinks();
@@ -274,6 +296,7 @@ export function Whiteboard() {
         persistenceKey={PERSISTENCE_KEY}
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY || undefined}
         shapeUtils={shapeUtils}
+        overlayUtils={overlayUtils}
         tools={[LassoTool, MarkupTool]}
         overrides={overrides}
         components={components}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { SaveStatus } from "../backup/SaveStatus";
 import { DefaultPageMenu, PageRecordType, useEditor, useValue, type Editor, type TLPageId } from "tldraw";
 
 import { showPageStart } from "./keepFilled";
@@ -132,6 +133,9 @@ export function PageArrows() {
 
   return (
     <div ref={ref} className="gauntlet-pages" aria-label="Pages" role="group">
+      {/* The one save status (src/backup/SaveStatus.tsx): here, so it covers
+          nothing more of the page's edge. */}
+      <SaveStatus />
       <button
         type="button"
         aria-label="Previous page"

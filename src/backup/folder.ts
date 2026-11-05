@@ -13,7 +13,7 @@
 // when it's missing, a banner with a "Reconnect" button shows on the page,
 // and the backup page has the same button.
 
-import { folderDrops, folderFileName } from "./folderNames";
+import { folderDrops, folderFileName, folderFileTime } from "./folderNames";
 import { FOLDER_DB, FOLDER_NOTE } from "./storage";
 
 // The File System Access API's parts that TypeScript's DOM types lack.
@@ -282,4 +282,60 @@ export function showFolderBanner(kind: keyof typeof FOLDER_TEXT): void {
   };
   bar.append(message, actions, close);
   document.body.append(bar);
+}
+
+/** The one always-current save in the folder (clearer saving, Edges round
+    item 2): rewritten within seconds of every change. The dated copies
+    beside it are the automatic backups (`gauntlet-auto-…`, every 10 min
+    when something changed, kept by folderNames.ts's rule). */
+export const LATEST_FILE = "gauntlet-save.json";
+
+/** Writes `json` as the folder's current save. Never throws. */
+export async function writeLatest(json: string, now: Date): Promise<FolderOutcome> {
+  const folder = await backupFolder();
+  if (!folder) return "none";
+  if ((await permission(folder)) !== "granted") {
+    note({ ...lastFolderNote(), at: now.getTime(), ok: false, folder: folder.name, problem: "needs-permission" });
+    return "needs-permission";
+  }
+  try {
+    const handle = await folder.getFileHandle(LATEST_FILE, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(json);
+    await writable.close();
+  } catch (error) {
+    console.error("Gauntlet: the save could not be written to the folder", error);
+    note({ ...lastFolderNote(), at: now.getTime(), ok: false, folder: folder.name, problem: "failed", detail: String(error) });
+    return "failed";
+  }
+  const before = lastFolderNote();
+  note({ at: now.getTime(), ok: true, folder: folder.name, file: before?.file, print: before?.print });
+  return "written";
+}
+
+export interface FolderCopy {
+  readonly name: string;
+  /** When it was made (ms): from its name, or the file's own time. */
+  readonly at: number;
+}
+
+/** The folder's saves, newest first: the current one and every dated copy. */
+export async function listFolderCopies(): Promise<FolderCopy[]> {
+  const folder = await backupFolder();
+  if (!folder || (await permission(folder)) !== "granted") return [];
+  const out: FolderCopy[] = [];
+  for await (const entry of folder.values()) {
+    if (entry.kind !== "file") continue;
+    const at = folderFileTime(entry.name);
+    if (at !== null) out.push({ name: entry.name, at });
+    else if (entry.name === LATEST_FILE) out.push({ name: entry.name, at: (await (entry as FileSystemFileHandle).getFile()).lastModified });
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+
+/** One of the folder's saves, as text. */
+export async function readFolderCopy(name: string): Promise<string> {
+  const folder = await backupFolder();
+  if (!folder) throw new Error("No save folder chosen");
+  return (await (await folder.getFileHandle(name)).getFile()).text();
 }

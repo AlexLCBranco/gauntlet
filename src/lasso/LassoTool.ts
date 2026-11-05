@@ -1,5 +1,6 @@
 import { atom, StateNode, type Editor, type TLShape, type TLShapeId } from "tldraw";
 
+import { pastPageEdge } from "../pages/edges";
 import { enclosedBy, type Point } from "./loop";
 
 /** The loop being drawn, in page space (empty when none); drawn by
@@ -59,7 +60,9 @@ class Lassoing extends StateNode {
     const { editor } = this;
     this.startSelection = editor.getSelectedShapeIds();
     this.base = editor.inputs.getShiftKey() ? this.startSelection : [];
-    const p = editor.inputs.getOriginPagePoint();
+    // Near a page edge counts as past it (pages/edges.ts), so items flush
+    // against the edge can be enclosed.
+    const p = pastPageEdge(editor, editor.inputs.getOriginPagePoint());
     this.loop = [{ x: p.x, y: p.y }];
     lassoLoop.set(this.loop);
   }
@@ -67,7 +70,7 @@ class Lassoing extends StateNode {
     lassoLoop.set([]);
   }
   override onPointerMove() {
-    const p = this.editor.inputs.getCurrentPagePoint();
+    const p = pastPageEdge(this.editor, this.editor.inputs.getCurrentPagePoint());
     const last = this.loop[this.loop.length - 1];
     // Skip points closer than 2 screen pixels: a smooth loop, fewer tests.
     if (Math.hypot(p.x - last.x, p.y - last.y) * this.editor.getZoomLevel() < 2) return;

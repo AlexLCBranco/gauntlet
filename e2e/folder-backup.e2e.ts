@@ -79,13 +79,11 @@ test.describe("backup folder", () => {
     // The backup page shows it in its section, not as a banner.
     await expect(page.locator("[data-folder-warning]")).toHaveCount(0);
 
+    // The whiteboard: its save status says so (Edges round item 2: the
+    // status replaced the banner there).
     await page.goto("/");
-    const banner = page.locator('[data-folder-warning="none"]');
-    await expect(banner).toBeVisible({ timeout: 10_000 });
-    await expect(banner.getByRole("link", { name: "Choose a folder" })).toHaveAttribute("href", "/backup/");
-    // Dismissed: not shown again this visit.
-    await banner.getByRole("button", { name: "Dismiss" }).click();
-    await page.reload();
+    await expect(page.getByTestId("save-status")).toHaveText("Choose a save folder");
+    await expect(page.getByTestId("save-status")).toHaveAttribute("title", /this browser only/);
     await page.waitForTimeout(4_500);
     await expect(page.locator("[data-folder-warning]")).toHaveCount(0);
   });
@@ -163,11 +161,12 @@ test.describe("backup folder", () => {
     await useTestFolder(page);
     await page.reload();
 
-    const banner = page.locator('[data-folder-warning="needs-permission"]');
-    await expect(banner).toBeVisible({ timeout: 10_000 });
+    // The save status (it replaced the banner on the whiteboard): one click.
+    const status = page.getByTestId("save-status");
+    await expect(status).toHaveText("Click to reconnect folder", { timeout: 10_000 });
     expect(autoNames(await folderFiles(page))).toHaveLength(0);
-    await banner.getByRole("button", { name: "Reconnect folder" }).click();
-    await expect(banner).toHaveCount(0);
+    await status.click();
+    await expect(status).not.toHaveText("Click to reconnect folder");
 
     // The backup page shows it reconnected, and the next backup is written.
     await page.goto("/backup/");

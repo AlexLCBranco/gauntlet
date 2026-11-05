@@ -57,7 +57,10 @@ export function tooltip(id: string): string {
   const k = KEYS[id];
   if (!k) return label;
   const keys = k.kbd.split(",").filter((x) => !x.includes("+") && x.toUpperCase() !== k.hint).map((x) => x.toUpperCase());
-  return `${label} — ${[k.hint, ...keys].join(" or ")}`;
+  const line = `${label} — ${[k.hint, ...keys].join(" or ")}`;
+  // The held box key (pages/edges.ts), shown where Select is explained.
+  return id === "select" ? `${line}
+Hold C and drag to draw a selection box, even over items` : line;
 }
 
 /** Tools tldraw (or this app, earlier) offered that are not on this

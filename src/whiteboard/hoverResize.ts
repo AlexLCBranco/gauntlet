@@ -1,5 +1,6 @@
 import { Box, Vec, atom, getCursor, react, type Editor, type StateNode, type TLPointerEventInfo, type TLShape } from "tldraw";
 
+import { boxKeyHeld, edgesInward } from "../pages/edges";
 import { CORNER_PX, EDGE_PX, HANDLE_CURSOR, edgeHit, type ResizeHandle } from "./edgeHit";
 
 // Resize from the edge of an item that isn't selected, as in Excalidraw
@@ -22,8 +23,16 @@ const CONTROLS = "button, input, textarea, select, a, [contenteditable='true'], 
 type Hit = { shape: TLShape; handle: ResizeHandle; rotation: number };
 
 /** The unselected item whose edge or corner is under this page point,
-    topmost first; an item drawn over the point hides the ones below. */
+    topmost first; an item drawn over the point hides the ones below. Where
+    two items touch (a packed page), the one the point is inside wins over a
+    neighbour whose zone only reaches out over it. */
 function hitAt(editor: Editor, point: { x: number; y: number }): Hit | null {
+  let outside: Hit | null = null;
+  const found = (h: Hit, inside: boolean): Hit | null => {
+    if (inside) return h;
+    outside ??= h;
+    return null;
+  };
   const zoom = editor.getZoomLevel();
   const edge = EDGE_PX / zoom;
   const corner = CORNER_PX / zoom;
@@ -38,22 +47,31 @@ function hitAt(editor: Editor, point: { x: number; y: number }): Hit | null {
     if (seen.has(shape.id)) continue;
     seen.add(shape.id);
     if (shape.isLocked || selected.has(shape.id) || !RESIZED_BY_EDGE.has(shape.type)) {
-      if (editor.isPointInShape(sorted[i], point, { hitInside: false, margin: 0 })) return null;
+      if (editor.isPointInShape(sorted[i], point, { hitInside: false, margin: 0 })) return outside;
       continue;
     }
     if (editor.getShapeUtil(shape).hideResizeHandles(shape)) continue;
     const transform = editor.getShapePageTransform(shape.id);
     const local = transform.clone().invert().applyToPoint(point);
-    const where = edgeHit(local, editor.getShapeGeometry(shape).bounds, edge, corner);
+    // A side on the window's edge has its whole zone inside the item
+    // (pages/edges.ts): the outer half would be off screen.
+    const own = editor.getShapeGeometry(shape).bounds;
+    const page = editor.getShapePageBounds(shape);
+    const bounds = page && Math.abs(transform.rotation()) < 1e-6 ? edgesInward(editor, page, own, edge) : own;
+    // A corner reaches at most a quarter along a side: a short item (a
+    // text line) keeps the middle of its sides for its edges.
+    const where = edgeHit(local, bounds, edge, Math.min(corner, bounds.w / 4, bounds.h / 4));
     if (where === null) continue;
     if (where === "inside") {
       // A filled item hides edges below it; an outline-only one doesn't.
-      if (editor.isPointInShape(shape, point, { hitInside: false, margin: 0 })) return null;
+      if (editor.isPointInShape(shape, point, { hitInside: false, margin: 0 })) return outside;
       continue;
     }
-    return { shape, handle: where, rotation: transform.rotation() };
+    const inside = local.x >= own.minX && local.x <= own.maxX && local.y >= own.minY && local.y <= own.maxY;
+    const hit = found({ shape, handle: where, rotation: transform.rotation() }, inside);
+    if (hit) return hit;
   }
-  return null;
+  return outside;
 }
 
 /** Items with buttons and fields of their own (Boardkit's, Linkkit's). */
@@ -214,7 +232,26 @@ export function hoverResize(editor: Editor): () => void {
     originalExit.call(this, info, to);
     if (edge.get()) edge.set(null);
   };
-  const down = function (this: StateNode & { onPointerDown: (info: TLPointerEventInfo) => void }, info: TLPointerEventInfo) {
+  const down = function (this: StateNode & { onPointerDown: (info: TLPointerEventInfo) => void; parent: StateNode }, info: TLPointerEventInfo) {
+    // The box key held (pages/edges.ts): a selection box from here, even
+    // on an item.
+    if (boxKeyHeld() && info.button === 0 && (info.target === "canvas" || info.target === "shape" || info.target === "selection")) {
+      edge.set(null);
+      this.parent.transition("brushing", info);
+      return;
+    }
+    // A selected item's handle wins over a neighbour's edge (below) and over
+    // whatever item's own element took the press (a picture, text, a filled
+    // shape: tldraw checks its handles first only for a press on bare
+    // canvas, and only after this wrapper).
+    if ((info.target === "canvas" || info.target === "shape" || info.target === "selection") && info.button === 0 && !("handle" in info && info.handle)) {
+      const o = editor.overlays.getOverlayAtPoint(editor.inputs.getCurrentPagePoint(), editor.getHitTestMargin());
+      if (o && (o.props as { overlayType?: string }).overlayType === "resize_handle" && !(info.target === "shape" && onControl(editor, info.shape))) {
+        edge.set(null);
+        originalDown.call(this, { ...info, target: "overlay", overlay: o } as unknown as TLPointerEventInfo);
+        return;
+      }
+    }
     if ((info.target === "canvas" || info.target === "shape") && !info.shiftKey && !info.ctrlKey && !info.altKey && info.button === 0) {
       const hit = hitAt(editor, editor.inputs.getCurrentPagePoint());
       if (hit && !onControl(editor, hit.shape)) {

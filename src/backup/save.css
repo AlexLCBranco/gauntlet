@@ -1,0 +1,61 @@
+/* The save status, in the page arrows' island (SaveStatus.tsx). */
+.gk-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  margin-right: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #b8b8c2;
+  font: 13px/1 system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.gk-save:hover { background: #33333b; color: #fff; }
+.gk-save__dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf7a; }
+.gk-save[data-phase="saving"] .gk-save__dot { background: #8a8a96; }
+.gk-save[data-phase="reconnect"], .gk-save[data-phase="no-folder"] { color: #f2c94c; }
+.gk-save[data-phase="reconnect"] .gk-save__dot, .gk-save[data-phase="no-folder"] .gk-save__dot { background: #f2c94c; }
+/* Not saved: impossible to miss. */
+.gk-save[data-phase="failed"] { background: #c62828; color: #fff; font-weight: 700; }
+.gk-save[data-phase="failed"] .gk-save__dot { background: #fff; }
+
+.gk-restore {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 380px;
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  border-radius: 10px;
+  background: #232329;
+  color: #e3e3e8;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 0.5);
+  font: 13px/1.4 system-ui, sans-serif;
+}
+.gk-restore__head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.gk-restore__head button { background: none; border: 0; color: inherit; font-size: 18px; cursor: pointer; }
+.gk-restore__lead { margin: 4px 0 8px; color: #a0a0aa; }
+.gk-restore ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
+.gk-restore li button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gk-restore li button:hover:not(:disabled) { background: #33333b; }
+.gk-restore__where { color: #8a8a96; white-space: nowrap; }
+.gk-restore__more { margin-top: 8px; color: #a8a5ff; font-size: 12px; }
