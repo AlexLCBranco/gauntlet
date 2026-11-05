@@ -16,6 +16,9 @@ Finished work goes to docs/HISTORY.md.
 - Pinned: Boardkit v0.0.105 (`5a6850a`), Linkkit v0.0.113 (`f8b63cf`),
   calendarkit v1.28.1 (`e125a19`).
 - Last results: see "Slate step 2 results" in docs/HISTORY.md.
+- EDGES ROUND (owner, 2026-11-05; request word for word + checkboxes in
+  docs/ROUND-EDGES.md): items 0-9 in order. Not phase 4, not the speed
+  session, not Slate step 3. Started: item 0.
 ## Waiting for the owner
 
 - Feel of the map fixes: the dim while editing a map, the label, a dot
