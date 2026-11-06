@@ -1240,3 +1240,21 @@ hover p95 18 vs 18, no long tasks. 30 pages each with a Slate opens in
 Visual vs calendarkit's copy: layout and text exact; 1.7% (its on-screen
 layout) / 2.4% (the copied PNG) of card pixels >32 levels apart (row
 edges at fractional pixels; held under 5%).
+## Edges round (owner, 2026-11-05) — DONE, live
+
+Request word for word in docs/ROUND-EDGES.md; behaviour in DECISIONS
+2026-11-05 (items 0-9). Commits 8c9adaa .. 77d8e4c.
+Pins: calendarkit v1.40.1 (7c606c6), Boardkit v0.0.106 (79ae65b), Linkkit
+v0.0.114 (c032a8b); the Boardkit and Linkkit changes were made on their
+`edges-round` branches and fast-forwarded into their main at the end.
+Results: unit 115 + scripts 20; local gauntlet 279 + 2 test updates
+(rerun ✓), Linkkit 18; live 272 passed, 8 skipped (local-only), 1 test
+fixed and rerun live ✓ (save Ctrl+S count).
+Numbers. Slate (live, 1600 x 1000): first insert 498 ms (step 2: 306),
+2nd 92 (40), 3rd 63 (67); page with 3 Slates + a board, zoom p95 58 ms
+(step 2: 43; limit 108), pan 28 (18), hover 23 (18); 30 pages each with a
+Slate open in 325 ms vs 369 without (step 2: 314 vs 323). Odds: one
+request per night per page shown. Pixels vs calendarkit's copy: 2.2% /
+3.2% of card pixels >32 levels apart (held under 5%). Stamps, 50 vs 0:
+tray opens in 95 vs 60 ms, zoom p95 17.5 vs 17.8 ms. GIF/video: frame
+p95 17-18 ms with or without them.

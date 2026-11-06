@@ -17,7 +17,7 @@ HANDOFF.md).
 - [x] 7. Case switcher in the style panel
 - [x] 8. Two-way sync as a rule for every widget
 - [x] 9. GIF / video / sound check (report only)
-- [ ] FINISH: full suite, push, deploy, live run, docs
+- [x] FINISH: full suite, push, deploy, live run, docs
 - [ ] REPORT
 
 ## The request
