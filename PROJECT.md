@@ -1005,6 +1005,14 @@ Changes to the plan, newest last. Each says what and why.
   image, page images) in the shown case; typing shows the text as typed.
   Whiteboard only.
 
+- 2026-11-05 — Edges round item 8, two-way sync as a rule for every widget:
+  an e2e per widget type and direction (e2e/sync.e2e.ts, plus the ones
+  already in boards, maps, widgets and slate .e2e.ts): board, list and map
+  widgets both ways with the app open in another tab and with only one side
+  open; the Slate, /calendar → widget both ways of opening (its notes are
+  read only on the whiteboard until Slate step 4). No case failed: nothing
+  to fix.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

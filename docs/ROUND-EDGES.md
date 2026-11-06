@@ -15,7 +15,7 @@ HANDOFF.md).
 - [x] 5. Style panel: collapse and left/right
 - [x] 6. Stamps tray v0
 - [x] 7. Case switcher in the style panel
-- [ ] 8. Two-way sync as a rule for every widget
+- [x] 8. Two-way sync as a rule for every widget
 - [ ] 9. GIF / video / sound check (report only)
 - [ ] FINISH: full suite, push, deploy, live run, docs
 - [ ] REPORT
