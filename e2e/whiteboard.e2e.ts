@@ -382,7 +382,16 @@ test("no Present and no page menu at the top left; bottom right shows only ‹ N
   await expect(page.locator(".tlui-layout [data-testid='page-menu.button']")).toHaveCount(0);
   await expect(page.getByTestId("main-menu.button")).toBeVisible();
   const group = page.getByRole("group", { name: "Pages" });
-  const seen = () => group.evaluate((el) => (el as HTMLElement).innerText.replace(/\s+/g, " ").trim());
+  // The island also holds the save status (Edges round item 2): left out.
+  const seen = () =>
+    group.evaluate((el) => {
+      const c = el.cloneNode(true) as HTMLElement;
+      c.querySelector('[data-testid="save-status"]')?.remove();
+      document.body.append(c);
+      const t = c.innerText.replace(/\s+/g, " ").trim();
+      c.remove();
+      return t;
+    });
   await expect.poll(seen).toBe("‹ 1 / 1 ›");
   // Renamed pages: still only the position.
   await ed(page, (e) => e.renamePage(e.getCurrentPageId(), "My long page name"));

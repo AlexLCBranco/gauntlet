@@ -169,11 +169,13 @@ test("a box at the top of the page (under the toolbar's row): move over its body
   }, id);
   const b = await screenBox(page, id);
   expect(b.y).toBeLessThan(10);
-  // Points across its top band that no toolbar or menu covers.
+  // Points across its top band that no toolbar or menu covers, past its
+  // top edge's grab zone (on the window's edge that zone is 12 px inside
+  // the box: Edges round item 1).
   const points = await page.evaluate((b) => {
     const out: { x: number; y: number }[] = [];
     for (let x = b.x + 20; x < b.x + b.w - 20; x += 40)
-      for (const y of [b.y + 12, b.y + 30]) {
+      for (const y of [b.y + 16, b.y + 30]) {
         const el = document.elementFromPoint(x, y);
         if (el && el.closest(".tl-canvas")) out.push({ x, y });
       }
