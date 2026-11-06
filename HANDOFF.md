@@ -13,16 +13,11 @@ Finished work goes to docs/HISTORY.md.
   step 1 done in calendarkit; STEP 2 (static widget) DONE: src/slate/,
   e2e/slate.e2e.ts (9), 2 Slate tests in perf.e2e.ts. STOPPED for the
   owner's report. Step 3 not started (←/→ date, keys vs nudge, ↗, tooltips).
-- Pinned: Boardkit v0.0.106 (`79ae65b`, branch edges-round), Linkkit
-  v0.0.114 (`c032a8b`, branch edges-round), calendarkit v1.40.1 (`7c606c6`).
-- Last results: see "Slate step 2 results" in docs/HISTORY.md.
-- EDGES ROUND (owner, 2026-11-05; request word for word + checkboxes in
-  docs/ROUND-EDGES.md): items 0-9 in order. Not phase 4, not the speed
-  session, not Slate step 3. Items 0-9 DONE locally (DECISIONS
-  2026-11-05; e2e slate, edges, save; edges and save fail on the old
-  code), not pushed yet (push once at the end). Next: FINISH (full suite, merge app branches, push, live run). Boardkit and Linkkit changes are on their `edges-round`
-  branches (pinned 79ae65b, c032a8b): merge both into their main at FINISH
-  (copy-from-the-app needs them live).
+- Pinned: Boardkit v0.0.106 (`79ae65b`), Linkkit v0.0.114 (`c032a8b`),
+  calendarkit v1.40.1 (`7c606c6`); all three on their main, live.
+- EDGES ROUND (owner, 2026-11-05; docs/ROUND-EDGES.md): items 0-9 DONE and
+  LIVE (DECISIONS 2026-11-05; results in docs/HISTORY.md "Edges round").
+  STOPPED for the owner's report and hand check (feel only).
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
   scripted "\n" replaces then silently miss. Use the Edit tool after one.
 ## Waiting for the owner
@@ -70,18 +65,16 @@ Finished work goes to docs/HISTORY.md.
 
 ## Standing notes
 
-- Open ideas for later (not built): Boardkit card images (build in Boardkit
-  itself); "New map" waits for phase 3; whiteboard-level search, page
-  download/copy as PNG/PDF, shortcuts help, a trash panel (see HISTORY,
-  "Whiteboard-level ideas"). Boardkit `npm audit` 7 high in the shadcn CLI:
-  leave as is (owner).
-- tldraw internals this code relies on (why tldraw is pinned): the edge
-  wall (select tool states), the unsaved journal, undo skipping selection,
-  the page undo (`editor.history` stacks, `store.addHistoryInterceptor`),
-  the page list moved to "N / M" (pages.css pins Radix's popover), the
-  Excalidraw import's hand-back of other files to tldraw's own files
-  handler (`externalContentHandlers.files`), crop mode `select.crop.idle`,
-  display values for exact colours and sizes (src/style/shapeUtils.ts).
+- Open ideas (not built): Boardkit card images (in Boardkit itself);
+  whiteboard search, page PNG/PDF, shortcuts help, a trash panel (HISTORY,
+  "Whiteboard-level ideas"). Boardkit `npm audit` 7 high (shadcn CLI): leave.
+- tldraw internals relied on (why tldraw is pinned): select tool states
+  (edge wall), unsaved journal, undo skipping selection, page undo
+  (`editor.history`, `store.addHistoryInterceptor`), page list in "N / M",
+  Excalidraw files hand-back, `select.crop.idle`, display values
+  (src/style/shapeUtils.ts); since the Edges round also the selection
+  overlay (subclassed), Brushing.hitTestShapes, inputs._currentPagePoint,
+  the text sizeCache width.
 - Previews: /boardkit and /linkkit on a preview are the LIVE apps; the
   real-data test (`e2e/realdata.e2e.ts`, owner's backup file read at run
   time from Downloads) runs only on localhost.
@@ -98,5 +91,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- The owner's report on Slate step 2 (feel), then "go" for step 3.
+- The owner's report on the Edges round and on Slate step 2 (feel), then
+  "go" for Slate step 3.
 - The owner's phase 3 hand test, then the speed session, then phase 4.
