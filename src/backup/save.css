@@ -12,6 +12,7 @@
   color: #b8b8c2;
   font: 13px/1 system-ui, sans-serif;
   white-space: nowrap;
+  flex-shrink: 0; /* never squeezed: its text would spill over the arrows and the watermark */
   cursor: pointer;
 }
 .gk-save:hover { background: #33333b; color: #fff; }
@@ -59,3 +60,6 @@
 .gk-restore li button:hover:not(:disabled) { background: #33333b; }
 .gk-restore__where { color: #8a8a96; white-space: nowrap; }
 .gk-restore__more { margin-top: 8px; color: #a8a5ff; font-size: 12px; }
+
+/* In the page arrows' island, whose buttons are 30 px squares (pages.css). */
+.gauntlet-pages > button.gk-save { width: auto; font-size: 13px; line-height: 1; }

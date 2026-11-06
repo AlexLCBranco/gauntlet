@@ -69,3 +69,47 @@
   border: 1px solid #3a3946;
   border-radius: 4px;
 }
+
+/* Placement (owner, Edges round item 5): a fixed column on the side the
+   owner picked, under the toolbar's row and above the bottom controls, so
+   it covers neither; collapsed, a small tab at that screen edge. Where a
+   selection's handles lie under it, it fades and lets them take the press
+   (src/pages/edges.ts). */
+.gk-style-panel {
+  position: fixed;
+  top: 56px;
+  left: 8px;
+  margin: 0;
+  max-height: calc(100vh - 56px - 64px);
+  pointer-events: all;
+}
+.gk-style-panel[data-side="right"] { left: auto; right: 8px; }
+.gk-panel-head { display: flex; justify-content: flex-end; gap: 2px; margin: -4px -6px 4px 0; }
+.gk-style-panel[data-side="right"] .gk-panel-head { justify-content: flex-start; margin: -4px 0 4px -6px; }
+.gk-panel-btn {
+  width: 24px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #b8b8c2;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gk-panel-btn:hover { background: #2e2d39; color: #fff; }
+.gk-panel-tab {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  height: 28px;
+  padding: 0 8px 0 6px;
+  border: 0;
+  border-radius: 0 8px 8px 0;
+  color: #b8b8c2;
+  font: 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+  pointer-events: all;
+}
+.gk-panel-tab[data-side="right"] { left: auto; right: 0; border-radius: 8px 0 0 8px; padding: 0 6px 0 8px; }
+.gk-panel-tab:hover { color: #fff; }

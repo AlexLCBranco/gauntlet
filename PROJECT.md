@@ -968,6 +968,18 @@ Changes to the plan, newest last. Each says what and why.
   for that paste: a tldraw internal). Cards copied in a board still paste
   into the list under the pointer (parity K2 test, passes).
 
+- 2026-11-05 — Edges round item 5, the style panel (src/style/panelPlace.ts):
+  a fixed column under the toolbar's row (top 56 px) and ending 64 px above
+  the bottom, so it covers neither the toolbar nor the bottom controls, on
+  the side the owner picks (⇥/⇤ in its header), collapsible to a small
+  "› Style" tab at that screen edge (‹ in its header; the tab opens it);
+  stays collapsed whatever is selected until opened; both kept in
+  localStorage gauntlet:style-panel. It never moves by itself. Where its
+  own selection's handles lie under it, it fades and the handle takes the
+  press (item 1's rule). Also fixed: the save status had been squeezed to
+  30 px by the page arrows' button rule and its text ran over the arrows
+  and the watermark.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

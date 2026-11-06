@@ -18,6 +18,7 @@ import {
 } from "tldraw";
 
 import { ColorRow } from "./ColorRow";
+import { setPlace, usePanelPlace } from "./panelPlace";
 import { metaHex, normalizeHex, type ColorKey } from "./colors";
 import { TEXT_TYPES } from "./shapeUtils";
 import { FONT_STEPS, fontStepOf, shared, type FontStep, type StyleMeta } from "./styleMeta";
@@ -234,6 +235,7 @@ export function StylePanel() {
   const editor = useEditor();
   const styles = useRelevantStyles();
   const ref = useRef<HTMLDivElement>(null);
+  const place = usePanelPlace();
   const view = useValue(
     "style panel",
     () => {
@@ -270,7 +272,7 @@ export function StylePanel() {
     const mark = (e: PointerEvent) => editor.markEventAsHandled(e);
     el.addEventListener("pointermove", mark);
     return () => el.removeEventListener("pointermove", mark);
-  }, [editor, view === null]);
+  }, [editor, view === null, place.collapsed]);
 
   if (!view || !styles) return null;
   const types = new Set(view.types);
@@ -346,8 +348,57 @@ export function StylePanel() {
     editor.focus();
   };
 
+  // Collapsed (Edges round item 5): a small tab at its screen edge; one
+  // click opens it. It stays collapsed whatever is selected.
+  if (place.collapsed)
+    return (
+      <button
+        type="button"
+        className="gk-panel-tab gauntlet-island"
+        data-side={place.side}
+        data-testid="style-panel-tab"
+        title="Show the style panel"
+        aria-label="Show the style panel"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => {
+          setPlace({ collapsed: false });
+          editor.focus();
+        }}
+      >
+        {place.side === "left" ? "›" : "‹"} Style
+      </button>
+    );
+
   return (
-    <div ref={ref} className="gk-style-panel gauntlet-island" data-testid="style-panel" onPointerDown={(e) => e.stopPropagation()}>
+    <div ref={ref} className="gk-style-panel gauntlet-island" data-side={place.side} data-testid="style-panel" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="gk-panel-head">
+        <button
+          type="button"
+          className="gk-panel-btn"
+          data-testid="style-panel-side"
+          title={place.side === "left" ? "Move the panel to the right" : "Move the panel to the left"}
+          aria-label={place.side === "left" ? "Move the panel to the right" : "Move the panel to the left"}
+          onClick={() => {
+            setPlace({ side: place.side === "left" ? "right" : "left" });
+            editor.focus();
+          }}
+        >
+          {place.side === "left" ? "⇥" : "⇤"}
+        </button>
+        <button
+          type="button"
+          className="gk-panel-btn"
+          data-testid="style-panel-collapse"
+          title="Collapse the style panel"
+          aria-label="Collapse the style panel"
+          onClick={() => {
+            setPlace({ collapsed: true });
+            editor.focus();
+          }}
+        >
+          {place.side === "left" ? "‹" : "›"}
+        </button>
+      </div>
       {stroke !== undefined && (
         <ColorSection title="Stroke">
           <ColorRow name="stroke" current={view.strokeColor} onPick={(c) => setColor(editor, "strokeHex", c, tldrawStyle(DefaultColorStyle as StyleProp<string>, c))} />

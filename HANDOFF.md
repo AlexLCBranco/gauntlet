@@ -18,9 +18,9 @@ Finished work goes to docs/HISTORY.md.
 - Last results: see "Slate step 2 results" in docs/HISTORY.md.
 - EDGES ROUND (owner, 2026-11-05; request word for word + checkboxes in
   docs/ROUND-EDGES.md): items 0-9 in order. Not phase 4, not the speed
-  session, not Slate step 3. Items 0-4 DONE locally (DECISIONS
+  session, not Slate step 3. Items 0-5 DONE locally (DECISIONS
   2026-11-05; e2e slate, edges, save; edges and save fail on the old
-  code), not pushed yet (push once at the end). Next: item 5. Boardkit and Linkkit changes are on their `edges-round`
+  code), not pushed yet (push once at the end). Next: item 6. Boardkit and Linkkit changes are on their `edges-round`
   branches (pinned 79ae65b, c032a8b): merge both into their main at FINISH
   (copy-from-the-app needs them live).
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
