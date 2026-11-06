@@ -5,7 +5,7 @@
     the right holds the rest. Always exactly these on the bar, at every
     window size: there is no overflow. */
 export const SEPARATOR = "|";
-export const BAR: readonly string[] = ["select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate"];
+export const BAR: readonly string[] = ["select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate", "stamps"];
 export const MORE: readonly string[] = ["asset", "embed", "lasso", "markup", "text", "draw"];
 
 /** Each tool's name on the toolbar and in the ⋮ menu, as the owner named
@@ -19,6 +19,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   board: "Board",
   map: "Map",
   slate: "Slate",
+  stamps: "Stamps",
   asset: "Insert image",
   embed: "Web embed",
   lasso: "Lasso selection",
@@ -46,6 +47,8 @@ export const KEYS: Readonly<Record<string, { kbd: string; hint: string }>> = {
   board: { kbd: "b", hint: "B" },
   map: { kbd: "m", hint: "M" },
   slate: { kbd: "s", hint: "S" },
+  // Y: no tldraw or Excalidraw key.
+  stamps: { kbd: "y", hint: "Y" },
   asset: { kbd: "cmd+u,ctrl+u,9", hint: "9" },
   embed: { kbd: "i", hint: "I" },
   lasso: { kbd: "w", hint: "W" },

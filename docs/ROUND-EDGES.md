@@ -13,7 +13,7 @@ HANDOFF.md).
 - [x] 3. Adding any widget must be faster than a screenshot
 - [x] 4. Paste at the cursor
 - [x] 5. Style panel: collapse and left/right
-- [ ] 6. Stamps tray v0
+- [x] 6. Stamps tray v0
 - [ ] 7. Case switcher in the style panel
 - [ ] 8. Two-way sync as a rule for every widget
 - [ ] 9. GIF / video / sound check (report only)

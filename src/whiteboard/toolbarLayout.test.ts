@@ -6,7 +6,7 @@ describe("toolbar layout", () => {
   const onBar = BAR.filter((id) => id !== SEPARATOR);
 
   it("is the owner's: four drawing tools, a separator, Board, Map and Slate; the ⋮ menu in order", () => {
-    expect(BAR).toEqual(["select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate"]);
+    expect(BAR).toEqual(["select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate", "stamps"]);
     expect(MORE).toEqual(["asset", "embed", "lasso", "markup", "text", "draw"]);
   });
 
@@ -40,15 +40,15 @@ describe("arranging the toolbar (step 3)", () => {
 
   it("pins a menu tool onto the bar at the drop place, and unpins a bar tool into the menu", () => {
     const pinned = moveTool(D, "lasso", "bar", 1);
-    expect(pinned.bar).toEqual(["select", "lasso", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate"]);
+    expect(pinned.bar).toEqual(["select", "lasso", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate", "stamps"]);
     expect(pinned.more).toEqual(["asset", "embed", "markup", "text", "draw"]);
     const unpinned = moveTool(D, "rectangle", "more", 0);
-    expect(unpinned.bar).toEqual(["select", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate"]);
+    expect(unpinned.bar).toEqual(["select", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate", "stamps"]);
     expect(unpinned.more[0]).toBe("rectangle");
   });
 
   it("reorders within the bar and within the menu", () => {
-    expect(moveTool(D, "map", "bar", 0).bar).toEqual(["map", "select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "slate"]);
+    expect(moveTool(D, "map", "bar", 0).bar).toEqual(["map", "select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "slate", "stamps"]);
     expect(moveTool(D, "draw", "more", 0).more).toEqual(["draw", "asset", "embed", "lasso", "markup", "text"]);
     // An index past the end goes last.
     expect(moveTool(D, "select", "bar", 99).bar.at(-1)).toBe("select");
@@ -66,7 +66,7 @@ describe("arranging the toolbar (step 3)", () => {
     for (const bad of [null, "x", 3, {}, { bar: "x", more: [] }]) expect(normalizeLayout(bad)).toBe(D);
     const fixed = normalizeLayout({ bar: ["lasso", "lasso", "zzz", "rectangle"], more: ["select", "asset", 7] });
     // Select back on the bar; every tool once; missing ones where the default has them.
-    expect(fixed.bar).toEqual(["lasso", "rectangle", "select", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate"]);
+    expect(fixed.bar).toEqual(["lasso", "rectangle", "select", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate", "stamps"]);
     expect(fixed.more).toEqual(["asset", "embed", "markup", "text", "draw"]);
     const all = [...fixed.bar, ...fixed.more];
     expect(new Set(all).size).toBe(all.length);
@@ -75,11 +75,11 @@ describe("arranging the toolbar (step 3)", () => {
 });
 
 describe("the bar never overflows", () => {
-  const ALL = ["select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate", "asset", "embed", "lasso", "markup", "text", "draw"];
+  const ALL = ["select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate", "stamps", "asset", "embed", "lasso", "markup", "text", "draw"];
 
-  it("measures as toolbar.css draws it: the default bar is 373 px, everything pinned 613 px", () => {
-    expect(barWidth(visibleBar(BAR))).toBe(373);
-    expect(barWidth(visibleBar(ALL))).toBe(613);
+  it("measures as toolbar.css draws it: the default bar is 413 px, everything pinned 653 px", () => {
+    expect(barWidth(visibleBar(BAR))).toBe(413);
+    expect(barWidth(visibleBar(ALL))).toBe(653);
   });
 
   it("the separator shows only between two tools", () => {
@@ -89,9 +89,9 @@ describe("the bar never overflows", () => {
   });
 
   it("with room, everything shows; short of room, the last pinned tools wait in the menu, in bar order; Select always stays", () => {
-    expect(fitBar(ALL, 613)).toEqual({ shown: ALL, spilled: [] });
+    expect(fitBar(ALL, 653)).toEqual({ shown: ALL, spilled: [] });
     const narrow = fitBar(ALL, 500);
-    expect(narrow.spilled).toEqual(["markup", "text", "draw"]);
+    expect(narrow.spilled).toEqual(["lasso", "markup", "text", "draw"]);
     expect(barWidth(narrow.shown)).toBeLessThanOrEqual(500);
     const tiny = fitBar(ALL, 10);
     expect(tiny.shown).toEqual(["select"]);

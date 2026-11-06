@@ -34,6 +34,7 @@ import { markup, MARKUP_TOOL, MarkupTool, startMarkup } from "../markup/markup";
 import { MarkupLayer } from "../markup/MarkupLayer";
 import { markChanged, setAppSaveFailing } from "../backup/save";
 import { pasteMiddleOffPage, pasteWidgets } from "../widgets/pasteWidget";
+import { StampsTray, stampsToolItem } from "../stamps/StampsTray";
 import { trackPointerOverPage, WidgetPicker, widgetsToolItem } from "../widgets/WidgetPicker";
 import { useSaveHealth } from "../boards/boardkit";
 import { brushPastEdges, controlsYield, EdgeSelectionForeground, trackBoxKey } from "../pages/edges";
@@ -121,6 +122,7 @@ const overrides: TLUiOverrides = {
       if (own) tools[id] = { ...own, onSelect: (source) => (editor.getCurrentToolId() === MARKUP_TOOL ? startMarkup(editor, id) : own.onSelect(source)) };
     }
     tools.widgets = widgetsToolItem(editor);
+    tools.stamps = stampsToolItem();
     tools.board = boardToolItem(editor);
     tools.map = mapToolItem(editor);
     tools.slate = slateToolItem(editor);
@@ -153,7 +155,7 @@ const overrides: TLUiOverrides = {
     if (actions["edit-link"]) actions["edit-link"] = { ...actions["edit-link"], kbd: "cmd+k,ctrl+k", onSelect: () => editSelectedLink(editor) };
     return actions;
   },
-  translations: { en: { "tool.lasso": "Lasso select", "tool.widgets": "Add widget", "tool.board": "Board", "tool.map": "Map", "tool.slate": "Slate", "tool.markup": "Markup", ...LINK_TRANSLATIONS } },
+  translations: { en: { "tool.lasso": "Lasso select", "tool.widgets": "Add widget", "tool.stamps": "Stamps","tool.board": "Board", "tool.map": "Map", "tool.slate": "Slate", "tool.markup": "Markup", ...LINK_TRANSLATIONS } },
 };
 
 /** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards,
@@ -183,6 +185,7 @@ function InFront() {
       <BoardPicker />
       <MapPicker />
       <WidgetPicker />
+      <StampsTray />
       <ImportNotice />
       <MapEditingBar />
       {/* Each linked item's link icon, and the link field (src/links/). */}

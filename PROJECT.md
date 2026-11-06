@@ -980,6 +980,22 @@ Changes to the plan, newest last. Each says what and why.
   30 px by the page arrows' button rule and its text ran over the arrows
   and the watermark.
 
+- 2026-11-05 — Edges round item 6, the stamps tray v0 (src/stamps/; IDEAS
+  of 19/10, asked for now). Toolbar "Stamps" (key Y, no tldraw or
+  Excalidraw key) opens and closes a small tray at the right, under the
+  toolbar's row, 24 px from the window's edge (and it gives way to handles
+  under it). Add: "+ Add selection" in the tray or right-click → "Add to
+  tray" (anything selected: pictures, text, groups, labelled boxes), or a
+  picture pasted (pointer over the tray) or dropped onto it. Use: a click
+  puts a normal, independent copy where the pointer last was on the page
+  (its middle there; else the middle of the view), a drag puts it where it
+  is let go; one undo step each. Same tray on every page, kept apart from
+  pages in IndexedDB gauntlet-stamps (pictures as data: addresses, so a
+  sticker stands on its own), so the backup file, restore and the folder
+  save carry it. Manage: × deletes, a drag within the tray reorders.
+  Nothing else (no folders, search, names). The toolbar is 653 px with
+  everything pinned (fits from ~750 px windows).
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

@@ -29,13 +29,27 @@ let overPage = false;
 /** The pointer's last place on screen (client px), from its own events:
     tldraw takes in pointer moves once a frame, a step behind a quick move. */
 let lastClient: { x: number; y: number } | null = null;
+/** Where the pointer last was over the page (client px). */
+let lastOnPage: { x: number; y: number } | null = null;
+
+/** The page point where the pointer last was over the visible page (it
+    may be on a tray or toolbar now), else the middle of the view. */
+export function lastPointOnPage(editor: Editor): { x: number; y: number } {
+  const v = editor.getViewportPageBounds();
+  if (lastOnPage) {
+    const p = editor.screenToPage(lastOnPage);
+    if (v.containsPoint(p)) return { x: p.x, y: p.y };
+  }
+  return { x: v.midX, y: v.midY };
+}
 export function trackPointerOverPage(editor: Editor): () => void {
   const move = (e: PointerEvent) => {
     // Inside the whiteboard, not on tldraw's UI (toolbar, menus, panels:
     // all under .tlui-layout) nor on a picker or dialog of ours.
     const t = e.target instanceof Element ? e.target : null;
     lastClient = { x: e.clientX, y: e.clientY };
-    overPage = !!t && editor.getContainer().contains(t) && !t.closest(".tlui-layout, .gw-picker, .gb-picker, [role='menu'], [role='dialog']");
+    overPage = !!t && editor.getContainer().contains(t) && !t.closest(".tlui-layout, .gw-picker, .gb-picker, .gs-tray, [role='menu'], [role='dialog']");
+    if (overPage) lastOnPage = { ...lastClient };
   };
   window.addEventListener("pointermove", move, true);
   return () => window.removeEventListener("pointermove", move, true);
