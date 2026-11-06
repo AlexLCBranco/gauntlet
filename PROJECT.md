@@ -1013,6 +1013,16 @@ Changes to the plan, newest last. Each says what and why.
   read only on the whiteboard until Slate step 4). No case failed: nothing
   to fix.
 
+- 2026-11-05 — Edges round item 9, GIF / video / sound check, REPORT ONLY
+  (e2e/media.e2e.ts records it; nothing built). An animated GIF pasted:
+  animates (tldraw marks it animated). An mp4 with sound dropped: a video
+  that plays at once, looping, MUTED, no controls; a double-click opens it
+  and the browser's own controls show (when it is at least 110 px wide on
+  screen), with the speaker button: sound can be turned on. No slowdown
+  measured (frame p95 17-18 ms at rest and zooming, with and without
+  them). Both survive a reload and a backup restored into a fresh browser.
+  Moved to IDEAS: a sound on/off button on a video without opening it.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.
@@ -1025,3 +1035,6 @@ They wait here; the agent tells the owner instead of building them.
   dropped 2026-10-22). Blocker: neither Linkkit nor Boardkit can turn an
   existing map's boxes into a board's lists and cards; it needs that
   converter first, not worth building only for this picker.
+- Video sound without opening it (owner, Edges round item 9, 2026-11-05):
+  a dropped video plays muted and its controls (speaker) show only after a
+  double-click; a small speaker toggle on the video itself would skip that.
