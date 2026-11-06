@@ -18,6 +18,7 @@ import {
 } from "tldraw";
 
 import { ColorRow } from "./ColorRow";
+import { caseOf } from "./textCase";
 import { setPlace, usePanelPlace } from "./panelPlace";
 import { metaHex, normalizeHex, type ColorKey } from "./colors";
 import { TEXT_TYPES } from "./shapeUtils";
@@ -257,6 +258,7 @@ export function StylePanel() {
           ? shared(texty.map((s) => fontStepOf(s.meta, (s.props as { size: string }).size)))
           : next.fontStep,
         opacity: editor.getSharedOpacity(),
+        textCase: shared(texty.map((s) => caseOf(s.meta) ?? ("as" as const))),
         // One unlocked picture: the Actions row offers Crop.
         croppable: shapes.length === 1 && shapes[0].type === "image" && !shapes[0].isLocked,
       };
@@ -450,6 +452,17 @@ export function StylePanel() {
           ))}
         </Section>
       )}
+      {hasText && selection && (
+        // The case switcher (Edges round item 7): a display style, the text
+        // stays as typed (textCase.ts). One undo step for all selected.
+        <Section title="Case">
+          {CASES.map((c) => (
+            <Choice key={c.id} label={c.label} value={c.id} current={view.textCase} onPick={(v) => setMeta(editor, { textCase: v === "as" ? null : v }, TEXT_TYPES)} testId={`case-${c.id}`}>
+              <span className="gk-text-choice">{c.text}</span>
+            </Choice>
+          ))}
+        </Section>
+      )}
       {hasText && font !== undefined && (
         <Section title="Font family">
           {(["draw", "sans", "serif", "mono"] as const).map((v) => (
@@ -566,3 +579,10 @@ export function StylePanel() {
     </div>
   );
 }
+
+/** The case switcher's three buttons. */
+const CASES = [
+  { id: "as", text: "Aa", label: "As typed" },
+  { id: "upper", text: "AA", label: "All caps" },
+  { id: "lower", text: "aa", label: "All lowercase" },
+] as const;

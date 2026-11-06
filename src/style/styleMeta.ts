@@ -29,6 +29,8 @@ export interface StyleMeta {
   fillHex?: string;
   textHex?: string;
   fontPx?: number | null;
+  /** The case switcher (textCase.ts): shown in all caps or all lowercase. */
+  textCase?: "upper" | "lower" | null;
 }
 
 const isStep = (v: unknown): v is FontStep => FONT_STEPS.some((s) => s.id === v);

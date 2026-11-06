@@ -996,6 +996,15 @@ Changes to the plan, newest last. Each says what and why.
   Nothing else (no folders, search, names). The toolbar is 653 px with
   everything pinned (fits from ~750 px windows).
 
+- 2026-11-05 — Edges round item 7, the case switcher (src/style/textCase.ts):
+  a "Case" row in the style panel, Aa (as typed) / AA / aa, for texts, box
+  labels and arrow labels, one or several at once, one undo step. A display
+  style kept in meta.textCase, like the font size (and like it, it carries
+  on to the next items drawn); the typed text never changes. Drawn,
+  measured (a text in caps is widened, not wrapped) and exported (copy as
+  image, page images) in the shown case; typing shows the text as typed.
+  Whiteboard only.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

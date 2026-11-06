@@ -12,6 +12,7 @@ import {
 } from "tldraw";
 
 import { shownHex, withAlpha } from "./colors";
+import { caseOf, shownInCase } from "./textCase";
 import { fillColorOf, metaFontPx, metaNumber } from "./styleMeta";
 
 type Mode = "dark" | "light";
@@ -26,16 +27,43 @@ const FILL_SHADE: Record<Exclude<TLDefaultFillStyle, "none" | "semi">, "semi" | 
 };
 
 /** Meta keys that change how big a text or label is drawn. */
-const MEASURED = ["fontStep", "fontPx", "lineHeight", "labelPad"] as const;
+const MEASURED = ["fontStep", "fontPx", "lineHeight", "labelPad", "textCase"] as const;
 
 /** tldraw re-measures a text or a shape's label (and grows the box to fit)
     only when its own size, font or text changes. A font size (or line
     height, label padding) picked in meta goes the same way: tldraw is shown
     a size change. */
 function remeasureOnFontStep<S extends TLGeoShape | TLTextShape>(prev: S, next: S, run: (prev: S, next: S) => S | undefined): S | undefined {
-  if (MEASURED.every((k) => prev.meta[k] === next.meta[k])) return run(prev, next);
-  const sizeChanged = { ...prev, props: { ...prev.props, size: prev.props.size === "s" ? "m" : "s" } };
-  return run(sizeChanged, next) ?? { ...next, props: { ...next.props } };
+  // Measured in the case it is shown in (textCase.ts); the stored text is
+  // put back as typed.
+  const typed = next.props.richText;
+  const keep = (out: S | undefined) => (out ? ({ ...out, props: { ...out.props, richText: typed } } as S) : out);
+  const p = shownInCase(prev);
+  const n = shownInCase(next);
+  if (MEASURED.every((k) => prev.meta[k] === next.meta[k])) return keep(run(p, n));
+  const sizeChanged = { ...p, props: { ...p.props, size: p.props.size === "s" ? "m" : "s" } };
+  return keep(run(sizeChanged, n)) ?? { ...next, props: { ...next.props } };
+}
+
+/** Draws, exports and measures a shape's text in its picked case (meta
+    textCase, the case switcher), not while it is typed in. */
+// oxlint-disable-next-line typescript/no-explicit-any
+function withCase<T extends abstract new (...args: any[]) => { editor: { getEditingShapeId(): string | null }; component(s: any): any; toSvg?(s: any, c: any): any; getGeometry(s: any, o?: any): any }>(Base: T) {
+  abstract class Cased extends Base {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    override component(shape: any) {
+      return super.component(shownInCase(shape, this.editor.getEditingShapeId() === shape.id));
+    }
+    // oxlint-disable-next-line typescript/no-explicit-any
+    override toSvg(shape: any, ctx: any) {
+      return super.toSvg?.(shownInCase(shape), ctx);
+    }
+    // oxlint-disable-next-line typescript/no-explicit-any
+    override getGeometry(shape: any, opts?: any) {
+      return super.getGeometry(shownInCase(shape), opts);
+    }
+  }
+  return Cased;
 }
 
 /** Exact (fixed or custom) colours and sizes kept in meta, as tldraw's
@@ -89,7 +117,7 @@ const GeoWithMeta = GeoShapeUtil.configure({
     return out;
   },
 });
-class GeoUtil extends GeoWithMeta {
+class GeoUtil extends withCase(GeoWithMeta) {
   override onBeforeUpdate(prev: TLGeoShape, next: TLGeoShape) {
     return remeasureOnFontStep(prev, next, (p, n) => super.onBeforeUpdate(p, n));
   }
@@ -108,11 +136,27 @@ const TextWithMeta = TextShapeUtil.configure({
     return out;
   },
 });
-class TextUtil extends TextWithMeta {
+class TextUtil extends withCase(TextWithMeta) {
+  // tldraw sizes a text from its stored (typed) text; shown in caps it is
+  // wider: an auto-sized text in a case is as wide as onBeforeUpdate
+  // measured it in that case (props.w).
+  override getMinDimensions(shape: TLTextShape) {
+    const own = super.getMinDimensions(shape);
+    if (!caseOf(shape.meta) || !shape.props.autoSize) return own;
+    return { ...own, width: shape.props.w };
+  }
   override onBeforeUpdate(prev: TLTextShape, next: TLTextShape) {
     return remeasureOnFontStep(prev, next, (p, n) => super.onBeforeUpdate(p, n));
   }
 }
+
+class ArrowUtil extends withCase(
+  ArrowShapeUtil.configure({
+    getCustomDisplayValues(_editor, shape, _theme, mode) {
+      return { ...exact(shape.meta, mode), ...exactFill(shape.meta, shape.props.fill, mode) };
+    },
+  }),
+) {}
 
 /** tldraw's shapes, drawn with the styles kept in `meta` (styleMeta.ts,
     colors.ts): a picked font size, a rectangle/ellipse/diamond's own
@@ -135,11 +179,7 @@ export const shapeUtils = [
       return out;
     },
   }),
-  ArrowShapeUtil.configure({
-    getCustomDisplayValues(_editor, shape, _theme, mode) {
-      return { ...exact(shape.meta, mode), ...exactFill(shape.meta, shape.props.fill, mode) };
-    },
-  }),
+  ArrowUtil,
   DrawShapeUtil.configure({
     getCustomDisplayValues(_editor, shape, _theme, mode) {
       const { strokeColor, strokeWidth } = exact(shape.meta, mode);
