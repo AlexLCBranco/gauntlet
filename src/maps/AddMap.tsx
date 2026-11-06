@@ -125,20 +125,44 @@ export function MapPicker() {
  * still empty, the map leaves Linkkit too (emptyNewMaps.ts). Returns false
  * when Linkkit could not store it.
  */
-function newMap(editor: Editor): boolean {
+export function newMap(editor: Editor, corner?: { x: number; y: number }): boolean {
   const made = createWhiteboardMap();
   if (!made) return false;
   mapListChanged();
-  namingMap.set(place(editor, made.id, "new map", { newMap: made.name }));
+  namingMap.set(placeMap(editor, made.id, "new map", { newMap: made.name }, corner));
   return true;
 }
 
-/** One undo step: the widget for `mapId` in the middle of the view, kept
-    inside the page (placed there at once, so keepInside has nothing to
-    move), selected. Both picker entries place maps this way. */
-function place(editor: Editor, mapId: string, step: string, meta: Record<string, string> = {}) {
+const place = (editor: Editor, mapId: string, step: string) => placeMap(editor, mapId, step);
+
+/** One undo step: the widget for `mapId` in the middle of the view (or its
+    top-left corner at `corner`: the widget picker), kept inside the page
+    (placed there at once, so keepInside has nothing to move), selected. */
+export function placeMap(editor: Editor, mapId: string, step: string, meta: Record<string, string> = {}, corner?: { x: number; y: number }) {
   const { w, h } = editor.getShapeUtil<MapShape>(MAP_TYPE).getDefaultProps();
   const view = editor.getViewportPageBounds();
+  if (corner) {
+    const at = { x: corner.x, y: corner.y, w, h };
+    const d = insideDelta({ ...at, w: 1, h: 1 }, pageBox.get() ?? SHEET);
+    const id = createShapeId();
+    editor.markHistoryStoppingPoint(step);
+    editor.createShape<MapShape>({ id, type: MAP_TYPE, x: at.x + d.x, y: at.y + d.y, props: { mapId }, meta: { ...meta, corner: Date.now() } });
+    editor.setCurrentTool("select");
+    editor.select(id);
+    pickerOpen.set(false);
+    // A map is drawn where its boxes are (its crop), not at its corner: once
+    // its layout has settled, its drawn box is moved onto the cursor (not an
+    // undo step: part of placing it).
+    const target = { x: at.x + d.x, y: at.y + d.y };
+    const align = () => {
+      const b = editor.getShapePageBounds(id);
+      const s = editor.getShape<MapShape>(id);
+      if (!b || !s || Math.abs(b.x - target.x) < 0.5 && Math.abs(b.y - target.y) < 0.5) return;
+      editor.run(() => editor.updateShape<MapShape>({ id, type: MAP_TYPE, x: s.x + target.x - b.x, y: s.y + target.y - b.y }), { history: "ignore" });
+    };
+    for (const ms of [150, 600, 1500]) setTimeout(align, ms);
+    return id;
+  }
   const at = { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
   const d = insideDelta(at, pageBox.get() ?? SHEET);
   const id = createShapeId();

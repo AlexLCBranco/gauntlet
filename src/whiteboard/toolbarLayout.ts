@@ -5,7 +5,7 @@
     the right holds the rest. Always exactly these on the bar, at every
     window size: there is no overflow. */
 export const SEPARATOR = "|";
-export const BAR: readonly string[] = ["select", "rectangle", "arrow", "line", SEPARATOR, "board", "map", "slate"];
+export const BAR: readonly string[] = ["select", "rectangle", "arrow", "line", SEPARATOR, "widgets", "board", "map", "slate"];
 export const MORE: readonly string[] = ["asset", "embed", "lasso", "markup", "text", "draw"];
 
 /** Each tool's name on the toolbar and in the ⋮ menu, as the owner named
@@ -15,6 +15,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   rectangle: "Rectangle",
   arrow: "Arrow",
   line: "Line",
+  widgets: "Add widget",
   board: "Board",
   map: "Map",
   slate: "Slate",
@@ -40,6 +41,8 @@ export const KEYS: Readonly<Record<string, { kbd: string; hint: string }>> = {
   rectangle: { kbd: "r,2", hint: "R" },
   arrow: { kbd: "a,5", hint: "A" },
   line: { kbd: "l,6", hint: "L" },
+  // E: Excalidraw's eraser key; the eraser is gone here (2026-10-22).
+  widgets: { kbd: "e", hint: "E" },
   board: { kbd: "b", hint: "B" },
   map: { kbd: "m", hint: "M" },
   slate: { kbd: "s", hint: "S" },

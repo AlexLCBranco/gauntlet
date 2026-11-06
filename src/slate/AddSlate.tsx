@@ -20,14 +20,16 @@ export function slateToolItem(editor: Editor): TLUiToolItem {
 /** One undo step: a Slate widget pinned to `date` in the middle of the
     view, inside the page, selected. It sizes itself once its cards are
     drawn (SlateWidget.tsx), fitting the whole night to the page. */
-export function insertSlate(editor: Editor, date = slateToday()) {
+export function insertSlate(editor: Editor, date = slateToday(), corner?: { x: number; y: number }) {
   const { w, h } = editor.getShapeUtil<SlateShape>(SLATE_TYPE).getDefaultProps();
   const view = editor.getViewportPageBounds();
-  const at = { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
-  const d = insideDelta(at, pageBox.get() ?? SHEET);
+  // The widget picker puts its top-left corner at the cursor (`meta.corner`:
+  // its first sizing keeps that corner, SlateWidget.tsx).
+  const at = corner ? { x: corner.x, y: corner.y, w, h } : { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
+  const d = insideDelta(corner ? { ...at, w: 1, h: 1 } : at, pageBox.get() ?? SHEET);
   const id = createShapeId();
   editor.markHistoryStoppingPoint("add slate");
-  editor.createShape<SlateShape>({ id, type: SLATE_TYPE, x: at.x + d.x, y: at.y + d.y, props: { date } });
+  editor.createShape<SlateShape>({ id, type: SLATE_TYPE, x: at.x + d.x, y: at.y + d.y, props: { date }, meta: corner ? { corner: true } : {} });
   editor.setCurrentTool("select");
   editor.select(id);
   return id;

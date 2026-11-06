@@ -126,25 +126,28 @@ export function BoardPicker() {
  * takes it off the whiteboard; still empty, the board leaves Boardkit too
  * (emptyNewBoards.ts). Returns false when Boardkit could not store it.
  */
-function newBoard(editor: Editor): boolean {
+export function newBoard(editor: Editor, corner?: { x: number; y: number }): boolean {
   const boardId = createWhiteboardBoard(NEW_BOARD_NAME);
   if (!boardId) return false;
   registryChanged();
-  namingBoard.set(place(editor, boardId, "new board", { newBoard: true }));
+  namingBoard.set(place(editor, boardId, "new board", { newBoard: true }, corner));
   return true;
 }
 
-/** One undo step: the widget for `boardId` in the middle of the view, kept
-    inside the page (placed there at once, so keepInside has nothing to
-    move), selected. Both picker entries place boards this way. */
-function place(editor: Editor, boardId: string, step: string, meta: Record<string, boolean> = {}) {
+/** One undo step: the widget for `boardId` in the middle of the view (or
+    its top-left corner at `corner`: the widget picker), kept inside the
+    page (placed there at once, so keepInside has nothing to move),
+    selected. `meta.listId`: one list of the board (a list widget). */
+export function place(editor: Editor, boardId: string, step: string, meta: Record<string, boolean | string> = {}, corner?: { x: number; y: number }) {
   const { w, h } = editor.getShapeUtil<BoardShape>(BOARD_TYPE).getDefaultProps();
   const view = editor.getViewportPageBounds();
-  const at = { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
-  const d = insideDelta(at, pageBox.get() ?? SHEET);
+  const at = corner ? { x: corner.x, y: corner.y, w, h } : { x: view.midX - w / 2, y: view.midY - h / 2, w, h };
+  // At a corner (the widget picker), only the corner is kept inside: the
+  // widget then fits itself, and keepInside pulls it back if it must.
+  const d = insideDelta(corner ? { ...at, w: 1, h: 1 } : at, pageBox.get() ?? SHEET);
   const id = createShapeId();
   editor.markHistoryStoppingPoint(step);
-  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: at.x + d.x, y: at.y + d.y, props: { boardId }, meta });
+  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: at.x + d.x, y: at.y + d.y, props: { boardId }, meta: corner ? { ...meta, corner: true } : meta });
   editor.setCurrentTool("select");
   editor.select(id);
   pickerOpen.set(false);

@@ -94,7 +94,11 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   const content = useRef<HTMLDivElement>(null);
   const mapHalf = useRef<HTMLDivElement>(null);
   const { boardId, scale } = shape.props;
-  const linkedMap = useLinkedMap(boardId);
+  // A list widget (Edges round item 3c): one list of the board, the same
+  // record; no map views of its own.
+  const listId = typeof shape.meta?.listId === "string" ? shape.meta.listId : undefined;
+  const boardMap = useLinkedMap(boardId);
+  const linkedMap = listId ? undefined : boardMap;
   const view = linkedMap ? viewOf(shape) : "list";
   const half = useValue(
     "half edited",
@@ -188,7 +192,9 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       // Placed new: grow from the middle, where it was put, inside the page.
       let move = {};
       if (p.scale === 0) {
-        const at = { x: current.x + (p.w - fit.w) / 2, y: current.y + (p.h - fit.h) / 2 };
+        // Placed by the widget picker or a paste (`meta.corner`): its
+        // top-left corner stays at the cursor.
+        const at = current.meta?.corner ? { x: current.x, y: current.y } : { x: current.x + (p.w - fit.w) / 2, y: current.y + (p.h - fit.h) / 2 };
         const page = pageBox.get();
         const d = page ? insideDelta({ ...at, w: fit.w, h: fit.h }, page) : { x: 0, y: 0 };
         move = { x: at.x + d.x, y: at.y + d.y };
@@ -345,10 +351,10 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         <div className="gb-head">
           <BoardName shapeId={shape.id} boardId={boardId} shown={scale > 0} />
           {linkedMap && <ViewSwitch shapeId={shape.id} view={view} />}
-          {linkedMap ? <BoardMenu shapeId={shape.id} mapId={linkedMap} /> : <AddMapView shapeId={shape.id} boardId={boardId} />}
+          {linkedMap ? <BoardMenu shapeId={shape.id} mapId={linkedMap} /> : !listId && <AddMapView shapeId={shape.id} boardId={boardId} />}
         </div>
         <div className="gb-views">
-          {view !== "map" && <WhiteboardBoard boardId={boardId} editing={listEditing} active={selected || editing} />}
+          {view !== "map" && <WhiteboardBoard boardId={boardId} listId={listId} editing={listEditing} active={selected || editing} />}
           {view !== "list" && linkedMap && (
             <div ref={mapHalf} className="gb-map" data-editing={mapEditing ? "" : undefined}>
               <MapView mapId={linkedMap} editing={mapEditing} onContent={onMapContent} />

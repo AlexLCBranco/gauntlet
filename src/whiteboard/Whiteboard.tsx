@@ -33,6 +33,8 @@ import { LassoTool } from "../lasso/LassoTool";
 import { markup, MARKUP_TOOL, MarkupTool, startMarkup } from "../markup/markup";
 import { MarkupLayer } from "../markup/MarkupLayer";
 import { markChanged, setAppSaveFailing } from "../backup/save";
+import { pasteMiddleOffPage, pasteWidgets } from "../widgets/pasteWidget";
+import { trackPointerOverPage, WidgetPicker, widgetsToolItem } from "../widgets/WidgetPicker";
 import { useSaveHealth } from "../boards/boardkit";
 import { brushPastEdges, controlsYield, EdgeSelectionForeground, trackBoxKey } from "../pages/edges";
 import { edgeWall } from "../pages/edgeWall";
@@ -66,6 +68,8 @@ const PERSISTENCE_KEY = "gauntlet-whiteboard";
 /** Set once the first-visit defaults (dark, wrap selection) are applied, so
     a choice changed later in the menu sticks. */
 const DEFAULTS_KEY = "gauntlet:whiteboard:defaults";
+/** Set once "Paste at cursor" was turned on (2026-11-05). */
+const PASTE_AT_CURSOR_KEY = "gauntlet:paste-at-cursor";
 
 const camera: Partial<TLCameraOptions> = {
   // As in Excalidraw: 100% is one page unit per screen pixel. The page is
@@ -116,6 +120,7 @@ const overrides: TLUiOverrides = {
       const own = tools[id];
       if (own) tools[id] = { ...own, onSelect: (source) => (editor.getCurrentToolId() === MARKUP_TOOL ? startMarkup(editor, id) : own.onSelect(source)) };
     }
+    tools.widgets = widgetsToolItem(editor);
     tools.board = boardToolItem(editor);
     tools.map = mapToolItem(editor);
     tools.slate = slateToolItem(editor);
@@ -148,7 +153,7 @@ const overrides: TLUiOverrides = {
     if (actions["edit-link"]) actions["edit-link"] = { ...actions["edit-link"], kbd: "cmd+k,ctrl+k", onSelect: () => editSelectedLink(editor) };
     return actions;
   },
-  translations: { en: { "tool.lasso": "Lasso select", "tool.board": "Board", "tool.map": "Map", "tool.slate": "Slate", "tool.markup": "Markup", ...LINK_TRANSLATIONS } },
+  translations: { en: { "tool.lasso": "Lasso select", "tool.widgets": "Add widget", "tool.board": "Board", "tool.map": "Map", "tool.slate": "Slate", "tool.markup": "Markup", ...LINK_TRANSLATIONS } },
 };
 
 /** tldraw's shapes with our extra styles (`src/style/`), and Boardkit boards,
@@ -177,6 +182,7 @@ function InFront() {
       <DragOutline />
       <BoardPicker />
       <MapPicker />
+      <WidgetPicker />
       <ImportNotice />
       <MapEditingBar />
       {/* Each linked item's link icon, and the link field (src/links/). */}
@@ -217,6 +223,18 @@ function setUp(editor: Editor) {
   } catch {
     editor.user.updateUserPreferences({ colorScheme: "dark", isWrapMode: true });
   }
+  // Paste at the cursor (owner, Edges round item 4): tldraw's own "Paste
+  // at cursor" preference, turned on once for everyone (it stays in the
+  // main menu's Preferences); off the page, pasteAtCursor.ts uses the
+  // middle of the view.
+  try {
+    if (!localStorage.getItem(PASTE_AT_CURSOR_KEY)) {
+      editor.user.updateUserPreferences({ isPasteAtCursorMode: true });
+      localStorage.setItem(PASTE_AT_CURSOR_KEY, "1");
+    }
+  } catch {
+    editor.user.updateUserPreferences({ isPasteAtCursorMode: true });
+  }
   // For the e2e tests (and the console).
   (window as unknown as { editor: Editor }).editor = editor;
   // What was drawn just before a reload or tab close, not yet saved by tldraw.
@@ -234,6 +252,11 @@ function setUp(editor: Editor) {
   // past an edge, the held C key starts a box on an item, the floating
   // controls give way to a selection's handles.
   const stopBrush = brushPastEdges(editor);
+  // Widgets in 3 actions: the picker places at the cursor; a board, list or
+  // map copied in its app pastes as that live widget (src/widgets/).
+  const stopOverPage = trackPointerOverPage(editor);
+  const stopPasteWidgets = pasteWidgets(editor);
+  const stopPasteMiddle = pasteMiddleOffPage(editor);
   // The save status (src/backup/save.ts): the whiteboard's own edits, and
   // Boardkit's save health (a board write failing is "Not saved").
   const stopEdits = editor.store.listen(() => markChanged(), { source: "user", scope: "document" });
@@ -274,6 +297,9 @@ function setUp(editor: Editor) {
     stopWall();
     stopHoverResize();
     stopBrush();
+    stopOverPage();
+    stopPasteWidgets();
+    stopPasteMiddle();
     stopEdits();
     stopHealth();
     stopBoxKey();

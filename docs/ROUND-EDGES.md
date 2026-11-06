@@ -10,8 +10,8 @@ HANDOFF.md).
 - [x] 0. Slate widget: move the calendarkit pin to the latest commit
 - [x] 1. Page edges and packed layouts
 - [x] 2. Clearer saving
-- [ ] 3. Adding any widget must be faster than a screenshot
-- [ ] 4. Paste at the cursor
+- [x] 3. Adding any widget must be faster than a screenshot
+- [x] 4. Paste at the cursor
 - [ ] 5. Style panel: collapse and left/right
 - [ ] 6. Stamps tray v0
 - [ ] 7. Case switcher in the style panel

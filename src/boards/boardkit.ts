@@ -3,5 +3,5 @@
 // import from Boardkit goes through this file.
 import "./boardkit.css";
 
-export { WhiteboardBoard, createWhiteboardBoard, deleteEmptyWhiteboardBoard, renameWhiteboardBoard, flushBoard, useSelectionStore, useThemeStore, IconSprite, Toaster, SaveFailedBanner, onBoardHistory, undoBoard, redoBoard, keyStoredElsewhere, onWroteHere, setWhiteboardItemUrl, whiteboardItemUrl, useWhiteboardBoardUrl, type WhiteboardLinkTarget } from "boardkit/src/app/whiteboard";
+export { WhiteboardBoard, createWhiteboardBoard, deleteEmptyWhiteboardBoard, renameWhiteboardBoard, flushBoard, useSelectionStore, useThemeStore, IconSprite, Toaster, SaveFailedBanner, onBoardHistory, undoBoard, redoBoard, keyStoredElsewhere, onWroteHere, setWhiteboardItemUrl, whiteboardItemUrl, useWhiteboardBoardUrl, readWidgetRef, type WhiteboardLinkTarget } from "boardkit/src/app/whiteboard";
 export { useSaveHealth } from "boardkit/src/store/saveHealthStore";

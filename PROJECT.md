@@ -938,6 +938,36 @@ Changes to the plan, newest last. Each says what and why.
   status says it); /backup/, browser backups and the apps' own exports
   stay as they were.
 
+- 2026-11-05 — Edges round item 3, widgets in 3 actions or fewer
+  (src/widgets/). Toolbar "Add widget" (key E; E was Excalidraw's eraser,
+  gone here), right after the separator: a picker for every kind, search
+  focused: "+ New board / map / Slate (tonight)" first, then boards (▸
+  opens a board's lists), maps and Slate nights (last night, tonight,
+  tomorrow), most recently used first (localStorage
+  gauntlet:widget-recent, 30). A click places it with its top-left corner
+  at the cursor when the picker was opened by E over the page; from the
+  button (the cursor is on the toolbar) in the middle of the view; a widget
+  too big to fit from there is pulled back inside the page. Counts: board,
+  map, night, new anything: 2 (E, click); a list: 3 (E, ▸, the list) or E,
+  type, Enter. A single list is its own LIVE widget: a board widget with
+  meta.listId, drawn by Boardkit with only that list (Boardkit v0.0.106,
+  branch edges-round, WhiteboardBoard listId), same record, so edits show
+  both ways; no map views. Copy in the app, paste on the whiteboard:
+  Ctrl+C in /boardkit with no card picked and no text highlighted copies
+  the board, or the list under the pointer, as /boardkit/?board=&list=
+  (Boardkit v0.0.106); Ctrl+C in /linkkit with no box picked copies
+  /linkkit/?map= (Linkkit v0.0.114, branch edges-round, listed in its
+  shortcuts dialog); Ctrl+V on the whiteboard places that live widget at
+  the cursor (2 actions). Pasted elsewhere it is just a link. The toolbar
+  is 613 px with everything pinned (fits from ~710 px windows).
+- 2026-11-05 — Edges round item 4, paste at the cursor: tldraw's own "Paste
+  at cursor" preference (it existed; Preferences menu), turned on once for
+  everyone (gauntlet:paste-at-cursor). The copied items keep their layout.
+  With the cursor off the page (a toolbar, outside the window) the paste
+  goes to the middle of the view (tldraw's remembered pointer is set there
+  for that paste: a tldraw internal). Cards copied in a board still paste
+  into the list under the pointer (parity K2 test, passes).
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

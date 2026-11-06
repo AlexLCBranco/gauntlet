@@ -13,14 +13,16 @@ Finished work goes to docs/HISTORY.md.
   step 1 done in calendarkit; STEP 2 (static widget) DONE: src/slate/,
   e2e/slate.e2e.ts (9), 2 Slate tests in perf.e2e.ts. STOPPED for the
   owner's report. Step 3 not started (←/→ date, keys vs nudge, ↗, tooltips).
-- Pinned: Boardkit v0.0.105 (`5a6850a`), Linkkit v0.0.113 (`f8b63cf`),
-  calendarkit v1.40.1 (`7c606c6`).
+- Pinned: Boardkit v0.0.106 (`79ae65b`, branch edges-round), Linkkit
+  v0.0.114 (`c032a8b`, branch edges-round), calendarkit v1.40.1 (`7c606c6`).
 - Last results: see "Slate step 2 results" in docs/HISTORY.md.
 - EDGES ROUND (owner, 2026-11-05; request word for word + checkboxes in
   docs/ROUND-EDGES.md): items 0-9 in order. Not phase 4, not the speed
-  session, not Slate step 3. Items 0, 1, 2 DONE locally (DECISIONS
+  session, not Slate step 3. Items 0-4 DONE locally (DECISIONS
   2026-11-05; e2e slate, edges, save; edges and save fail on the old
-  code), not pushed yet (push once at the end). Next: item 3.
+  code), not pushed yet (push once at the end). Next: item 5. Boardkit and Linkkit changes are on their `edges-round`
+  branches (pinned 79ae65b, c032a8b): merge both into their main at FINISH
+  (copy-from-the-app needs them live).
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
   scripted "\n" replaces then silently miss. Use the Edit tool after one.
 ## Waiting for the owner

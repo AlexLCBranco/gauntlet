@@ -186,7 +186,7 @@ function fit(editor: Editor, id: SlateShape["id"], el: HTMLElement, n: number) {
     } else {
       next = { cols: 1, ...fitBoard(natural, 1, page) };
     }
-    const at = { x: cur.x + (p.w - next.w) / 2, y: cur.y + (p.h - next.h) / 2 };
+    const at = cur.meta?.corner ? { x: cur.x, y: cur.y } : { x: cur.x + (p.w - next.w) / 2, y: cur.y + (p.h - next.h) / 2 };
     const d = insideDelta({ ...at, w: next.w, h: next.h }, page);
     editor.run(() => editor.updateShape<SlateShape>({ id, type: SLATE_TYPE, x: at.x + d.x, y: at.y + d.y, props: next }), { history: "ignore" });
     return;

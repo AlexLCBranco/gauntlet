@@ -114,7 +114,9 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
       // Placed new: grow from the middle, where it was put, inside the page.
       let move = {};
       if (p.scale === 0) {
-        const at = { x: current.x + (p.w - fit.w) / 2, y: current.y + (p.h - fit.h) / 2 };
+        // Placed by the widget picker or a paste (`meta.corner`): its
+        // top-left corner stays at the cursor.
+        const at = current.meta?.corner ? { x: current.x, y: current.y } : { x: current.x + (p.w - fit.w) / 2, y: current.y + (p.h - fit.h) / 2 };
         const page = pageBox.get();
         const d = page ? insideDelta({ ...at, w: fit.w, h: fit.h }, page) : { x: 0, y: 0 };
         move = { x: at.x + d.x, y: at.y + d.y };
@@ -141,7 +143,10 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
       const top = box.top - shift.y;
       if (left === p.cropX && top === p.cropY) return;
       const s = p.scale || 1;
-      const move = p.cropX === -1 && p.cropY === -1 ? {} : { x: current.x + (left - p.cropX) * s, y: current.y + (top - p.cropY) * s };
+      // Just placed at the cursor (widget picker or paste: `meta.corner`, when):
+      // the map's first layouts settle without moving it off the cursor.
+      const settling = typeof current.meta?.corner === "number" && Date.now() - current.meta.corner < 2000;
+      const move = settling || (p.cropX === -1 && p.cropY === -1) ? {} : { x: current.x + (left - p.cropX) * s, y: current.y + (top - p.cropY) * s };
       editor.run(() => editor.updateShape<MapShape>({ id: shape.id, type: MAP_TYPE, ...move, props: { cropX: left, cropY: top } }), {
         history: "ignore",
       });
