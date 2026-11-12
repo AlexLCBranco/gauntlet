@@ -110,6 +110,10 @@ test("picture: the same", async ({ page }) => {
     e.createShape({ type: "image", x: 500, y: 300, props: { assetId, w: 240, h: 160 } });
     return e.getCurrentPageShapes()[0].id as string;
   });
+  // A picture given as data: text is moved out of its record first (speed
+  // session, Part 2), which redraws it once.
+  await expect.poll(() => ed(page, (e) => String(e.getAsset("asset:hoverpic")?.props.src).slice(0, 6))).toBe("asset:");
+  await page.waitForTimeout(300);
   await checkItem(page, id);
 });
 

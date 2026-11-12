@@ -173,7 +173,13 @@ test.describe("adding widgets", () => {
     await page.mouse.move(wb.x + wb.width / 2, wb.y + wb.height - 10, { steps: 3 });
     // A real press: the widget lets presses through to the whiteboard, which
     // hands a press on its "+" to Boardkit (one click, DECISIONS 2026-10-21).
-    const plus = await box(widget.locator(`section[data-list-id="${listId}"] [data-add="card"]`));
+    // The "+" fades in under the pointer and takes a press once it shows
+    // (BoardShape.tsx): wait for that, as a person's eye does. Pressing in
+    // the very frame the pointer arrived selected the board instead (this
+    // test failed that way now and then, 1 run in 6; 2026-11-12).
+    const add = widget.locator(`section[data-list-id="${listId}"] [data-add="card"]`);
+    await expect.poll(() => add.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.05);
+    const plus = await box(add);
     await page.mouse.click(plus.x + plus.width / 2, plus.y + plus.height / 2);
     await expect(page.getByRole("textbox", { name: "Add a card" })).toBeFocused();
     await page.keyboard.type("From the whiteboard 82");
