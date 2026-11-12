@@ -1258,3 +1258,33 @@ request per night per page shown. Pixels vs calendarkit's copy: 2.2% /
 3.2% of card pixels >32 levels apart (held under 5%). Stamps, 50 vs 0:
 tray opens in 95 vs 60 ms, zoom p95 17.5 vs 17.8 ms. GIF/video: frame
 p95 17-18 ms with or without them.
+
+## Speed session (owner, 2026-11-12; docs/SPEED-SESSION.md)
+
+Part 0, measured only (e2e/perf-save.e2e.ts; local build, headless Edge,
+1920 x 1080; folder = OPFS, a real or Drive folder is slower). Fixture: 19
+pages x 4 generated 1920 x 1080 PNGs = 76 pictures, 87 MB.
+- Save after a small edit: all 76 pictures (87 MB) re-read and re-encoded
+  every time; reading 3.2 s, JSON.stringify 0.13 s, folder write 0.6 s;
+  file 117 MB; edit to "Saved" 6.7 s. Main-thread stalls per save: 2-3,
+  the longest 340-530 ms (handing the 117 MB text to the file), then
+  stringify 125 ms; 0.5-0.8 s stalled in all.
+- Drag with no save in play: every frame 17 ms, no stall (during and 6 s
+  after). Drag then its save: smooth drag, then 2.5 s after letting go 2-3
+  stalls up to 350-410 ms. Drag WHILE a save runs: stalls up to 380-440 ms,
+  and 3 s of pointer moves took 7 s to get through.
+- Automatic backup (3 s after opening, then every 10 min): 8.4 s, 1.6 s
+  stalled, 42 frames over 50 ms, longest 408 ms; it stringifies the 117 MB
+  three times. Its copy in the browser FAILS at this size ("could not be
+  kept", IndexedDB refuses the 117 MB value): only the folder copy exists.
+  Each dated folder copy is 117 MB (up to ~120 kept: ~14 GB).
+- Opening: empty 0.28-0.48 s, with the 19 pages 0.26 s to the editor,
+  0.31 s to the page's pictures. Not slower.
+- Also seen: pasted pictures are stored by tldraw as blobs (src "asset:…"),
+  none as a data: address; only the current page is mounted (4 of 76 shapes
+  and 4 <img> in the DOM).
+Cause: the owner's hypothesis holds (save.ts and auto.ts dump everything on
+every change / every 10 min). Not the drawing itself.
+Part 1 options put to the owner: A pictures as own files, written once,
+main file without them (the owner's direction); B same plus the remaining
+dump in a worker; C keep one file, only move the work to a worker.

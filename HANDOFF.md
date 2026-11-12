@@ -4,7 +4,7 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-10-31)
+## Current state (2026-11-12)
 
 - PHASE 3 DONE; phase 4 NOT started (owner: don't start it). Earlier rounds
   (hand-test fixes, Excalidraw parity, move cursor, map fixes, toolbar
@@ -18,6 +18,11 @@ Finished work goes to docs/HISTORY.md.
 - EDGES ROUND (owner, 2026-11-05; docs/ROUND-EDGES.md): items 0-9 DONE and
   LIVE (DECISIONS 2026-11-05; results in docs/HISTORY.md "Edges round").
   STOPPED for the owner's report and hand check (feel only).
+- SPEED SESSION (owner, 2026-11-12; request in docs/SPEED-SESSION.md,
+  Parts 0-8, one at a time, stop and report after each): PART 0 DONE
+  (e2e/perf-save.e2e.ts, measures only, no limits yet; numbers and cause in
+  docs/HISTORY.md "Speed session"). App unchanged. STOPPED for the owner:
+  Part 1 design choice (options in HISTORY). Parts 1-8 not started.
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
   scripted "\n" replaces then silently miss. Use the Edit tool after one.
 ## Waiting for the owner
@@ -26,7 +31,6 @@ Finished work goes to docs/HISTORY.md.
   dragged far out, a board's Map and Both views.
 - Phase 3 hand test (feel only): placing and scaling a map, editing it in
   place, the List | Map | Both switch, one undo. Then "go to phase 4".
-- Earlier hand test (phase 2.5 feel items), if not done yet.
 
 ## Half-done
 
@@ -91,6 +95,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- The owner's report on the Edges round and on Slate step 2 (feel), then
-  "go" for Slate step 3.
-- The owner's phase 3 hand test, then the speed session, then phase 4.
+- Speed session Part 1 (saving that scales) once the owner picks a design;
+  then Parts 2-8 in order (Part 4 = Slate step 3, the owner said go).
+- Phase 4 only after this round is live and the owner says "go".
