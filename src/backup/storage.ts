@@ -41,9 +41,13 @@ export const FOLDER_DB = "gauntlet-backup-folder";
 /** Its note of the last write (localStorage): not part of a backup either. */
 export const FOLDER_NOTE = "gauntlet:folder-backup";
 
+/** The smaller copies of pictures (src/images/smaller.ts): a cache, remade
+    when missing, so never part of a backup. */
+export const PICTURE_CACHE_DB = "gauntlet-picture-cache";
+
 /** Kept as they are here: never in a backup, never replaced by a restore. */
 const LOCAL_ONLY_KEYS = [AUTO_NOTE, FOLDER_NOTE];
-export const LOCAL_ONLY_DBS = [AUTO_DB, FOLDER_DB];
+export const LOCAL_ONLY_DBS = [AUTO_DB, FOLDER_DB, PICTURE_CACHE_DB];
 
 export const OTHER_TABS = "Another tab of this site is open. Close every other gauntlet, Boardkit and Linkkit tab, then try again.";
 

@@ -1313,3 +1313,15 @@ save after a small edit 0.28-0.35 s (reading 0.16-0.21 s, write 0.12-0.16
 s), no stall, "Saved" 2.9 s after the edit. The old save's write alone
 (117 MB text) on the same folder: 0.9 s with an 84 ms stall.
 
+Part 2, images on the page (DECISIONS 2026-11-12). Same fixture; the four
+screenshots of a page are shown 900 px wide (47% of their 1920).
+- Going to a page of 4 screenshots (median of 6 pages): 219 ms -> 123 ms;
+  pixels decoded for it 33.2 MB (4 x 1920 x 1080) -> 8.3 MB (4 x 960 x 540).
+- The 76 half-size copies: 27.4 MB in the browser's cache, made in 5.7 s
+  in a worker after the pictures arrive, no stall (every frame 17 ms).
+- Pictures as data: text in records: none from pasting, dropping or the
+  Excalidraw import (before and after); the stamps tray's were (a sticker
+  made of one 400 x 225 picture: its tray entry less than half as long).
+- Mounted: 4 of 76 shapes, 4 <img> (unchanged; now asserted).
+- Saving, drags, opening: as after Part 1 (save 0.12 s, no stall).
+

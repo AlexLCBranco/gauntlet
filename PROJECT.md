@@ -1069,6 +1069,39 @@ Changes to the plan, newest last. Each says what and why.
   folder picked and a restore that removed pictures, use the complete file
   the backup page downloads before a restore).
 
+- 2026-11-12 — Speed session, Part 2: images on the page (owner; numbers
+  in docs/HISTORY.md). How tldraw 5.5.2 holds pictures under
+  persistenceKey (read in its source, useLocalStore.ts and Editor.ts): a
+  pasted or dropped file is a Blob in the whiteboard's IndexedDB (store
+  "assets", key = the asset's id); the asset record's src is "asset:<id>";
+  to draw one tldraw asks the store's resolve(asset, context), whose own
+  answer is always the original.
+  * No picture as data: text in a document record. Checked: pasted and
+    dropped files, the Excalidraw import and pasted tldraw content already
+    stored their bytes as Blobs. Fixed: the stamps tray kept each sticker's
+    pictures and its thumbnail as data: text (so inside every save file);
+    it now keeps them as Blobs (the folder save writes each once, as a
+    file), an old tray is converted when read, and a placed sticker's
+    picture is stored as a pasted file is before it is drawn. Safety net
+    (src/images/dataUrls.ts): any asset record found holding data: text,
+    when the whiteboard opens or later, is moved out (bytes stored first,
+    then the record pointed at them; not an undo step).
+  * A picture shown small is drawn from a smaller copy (src/images/
+    smaller.ts): tldraw's own hook for it is resolve's context (how big
+    the picture is on screen), passed as <Tldraw assets={{ resolve }}>.
+    Copies at 1/2, 1/4, 1/8 of the original, made in a worker, kept in this
+    browser in a database of their own (gauntlet-picture-cache: a cache,
+    never in a backup, remade when missing). The original is used when the
+    picture shows bigger than half (also on a denser screen), when zoomed
+    in, for copies, exports and stickers, and for animated, vector and
+    small (under 0.6 megapixel) pictures and videos. Agent's choices: a
+    copy that isn't made yet never delays a picture (the original shows,
+    the copy from the next page change or zoom); half-size copies are made
+    quietly after a picture arrives and after opening; PNG stays PNG, JPEG
+    stays JPEG.
+  * Only the current page's shapes are mounted: confirmed (4 of 76 shapes
+    and 4 <img> in the page on the fixture), now asserted by tests.
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

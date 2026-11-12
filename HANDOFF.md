@@ -19,11 +19,11 @@ Finished work goes to docs/HISTORY.md.
   LIVE (DECISIONS 2026-11-05; results in docs/HISTORY.md "Edges round").
   STOPPED for the owner's report and hand check (feel only).
 - SPEED SESSION (owner, 2026-11-12; request in docs/SPEED-SESSION.md,
-  Parts 0-8, one at a time, stop and report after each): PARTS 0-1 DONE
-  (Part 1: split save, DECISIONS 2026-11-12; src/backup/ worker.ts,
-  snapshot.ts, client.ts, restore.ts; e2e/split-save.e2e.ts, perf-save
-  with limits; numbers in docs/HISTORY.md "Speed session"). STOPPED for the
-  owner's report. NEXT: Part 2 (images on the page). Parts 2-8 not started.
+  Parts 0-8, one at a time, stop and report after each): PARTS 0-2 DONE
+  (1: split save, src/backup/; 2: pictures, src/images/, src/stamps/;
+  DECISIONS 2026-11-12; e2e split-save, pictures, perf-save; numbers in
+  docs/HISTORY.md "Speed session"). STOPPED for the owner's report.
+  NEXT: Part 3 (nothing arrives too big). Parts 3-8 not started.
 - Real-disk save measurement, by hand only (a visible Edge for ~1 min):
   `node scripts/local-e2e.mjs gauntlet "-c playwright.disk.config.ts"`.
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
@@ -69,16 +69,16 @@ Finished work goes to docs/HISTORY.md.
 
 ## Standing notes
 
-- Open ideas (not built): Boardkit card images (in Boardkit itself);
-  whiteboard search, page PNG/PDF, shortcuts help, a trash panel (HISTORY,
-  "Whiteboard-level ideas"). Boardkit `npm audit` 7 high (shadcn CLI): leave.
+- Open ideas (not built): HISTORY "Whiteboard-level ideas"; Boardkit card
+  images. Boardkit `npm audit` 7 high (shadcn CLI): leave.
 - tldraw internals relied on (why tldraw is pinned): select tool states
   (edge wall), unsaved journal, undo skipping selection, page undo
   (`editor.history`, `store.addHistoryInterceptor`), page list in "N / M",
   Excalidraw files hand-back, `select.crop.idle`, display values
   (src/style/shapeUtils.ts); since the Edges round also the selection
   overlay (subclassed), Brushing.hitTestShapes, inputs._currentPagePoint,
-  the text sizeCache width.
+  the text sizeCache width; the local asset store (key = asset id, our
+  `resolve` laid over it: src/images/smaller.ts).
 - Previews: /boardkit and /linkkit on a preview are the LIVE apps; the
   real-data test (`e2e/realdata.e2e.ts`, owner's backup file read at run
   time from Downloads) runs only on localhost.
@@ -95,6 +95,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- Speed session Part 2 (images on the page), then Parts 3-8 in order,
+- Speed session Part 3 (nothing arrives too big), then Parts 4-8 in order,
   stopping to report after each (Part 4 = Slate step 3, the owner said go).
 - Phase 4 only after this round is live and the owner says "go".

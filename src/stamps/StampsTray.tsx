@@ -112,7 +112,7 @@ export function StampsTray() {
       window.removeEventListener("pointerup", up, true);
       setDrag(null);
       if (!moved) {
-        placeStamp(editor, stamp, lastPointOnPage(editor));
+        void placeStamp(editor, stamp, lastPointOnPage(editor));
         editor.focus();
         return;
       }
@@ -127,7 +127,7 @@ export function StampsTray() {
       }
       const at = dropPoint(editor, u.clientX, u.clientY);
       if (at) {
-        placeStamp(editor, stamp, at);
+        void placeStamp(editor, stamp, at);
         editor.focus();
       }
     };
@@ -167,7 +167,7 @@ export function StampsTray() {
         <div className="gs-tray-grid">
           {list.map((s) => (
             <div key={s.id} className="gs-stamp" data-stamp={s.id} data-testid="stamp" onPointerDown={(e) => begin(e, s)} title="Click: put one on the page · drag: put it there, or to another place in the tray">
-              {s.thumb ? <img src={s.thumb} alt="" draggable={false} /> : <span>?</span>}
+              {s.thumbUrl ? <img src={s.thumbUrl} alt="" draggable={false} /> : <span>?</span>}
               <button
                 type="button"
                 className="gs-stamp-del"
@@ -184,7 +184,7 @@ export function StampsTray() {
           ))}
         </div>
       )}
-      {drag?.moved && drag.stamp.thumb && <img className="gs-stamp-ghost" src={drag.stamp.thumb} alt="" style={{ left: drag.x, top: drag.y }} />}
+      {drag?.moved && drag.stamp.thumbUrl && <img className="gs-stamp-ghost" src={drag.stamp.thumbUrl} alt="" style={{ left: drag.x, top: drag.y }} />}
     </div>
   );
 }

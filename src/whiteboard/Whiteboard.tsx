@@ -2,6 +2,7 @@ import {
   DefaultHelperButtons,
   Tldraw,
   type Editor,
+  type TLAssetStore,
   type TLCameraOptions,
   type TLComponents,
   type TLUiOverrides,
@@ -33,6 +34,8 @@ import { LassoTool } from "../lasso/LassoTool";
 import { markup, MARKUP_TOOL, MarkupTool, startMarkup } from "../markup/markup";
 import { MarkupLayer } from "../markup/MarkupLayer";
 import { markChanged, setAppSaveFailing } from "../backup/save";
+import { keepPicturesOutOfRecords } from "../images/dataUrls";
+import { smallerPictures } from "../images/smaller";
 import { pasteMiddleOffPage, pasteWidgets } from "../widgets/pasteWidget";
 import { StampsTray, stampsToolItem } from "../stamps/StampsTray";
 import { trackPointerOverPage, WidgetPicker, widgetsToolItem } from "../widgets/WidgetPicker";
@@ -66,6 +69,8 @@ import "./whiteboard.css";
 /** tldraw keeps the whiteboard here (IndexedDB, per origin), and syncs it
     between open tabs. */
 const PERSISTENCE_KEY = "gauntlet-whiteboard";
+// Pictures shown small are drawn from smaller copies (src/images/smaller.ts).
+const pictures = smallerPictures(PERSISTENCE_KEY);
 /** Set once the first-visit defaults (dark, wrap selection) are applied, so
     a choice changed later in the menu sticks. */
 const DEFAULTS_KEY = "gauntlet:whiteboard:defaults";
@@ -240,6 +245,10 @@ function setUp(editor: Editor) {
   }
   // For the e2e tests (and the console).
   (window as unknown as { editor: Editor }).editor = editor;
+  (window as unknown as { gauntletPictures: typeof pictures }).gauntletPictures = pictures;
+  // Pictures: none kept as text inside a record; smaller copies made quietly.
+  const stopDataUrls = keepPicturesOutOfRecords(editor);
+  const stopPictures = pictures.attach(editor);
   // What was drawn just before a reload or tab close, not yet saved by tldraw.
   const stopJournal = unsavedJournal(editor);
   // The page this tab was on before a reload.
@@ -315,6 +324,8 @@ function setUp(editor: Editor) {
     stopUnlinks();
     stopNext();
     stopFilled();
+    stopDataUrls();
+    stopPictures();
   };
 }
 
@@ -323,6 +334,10 @@ export function Whiteboard() {
     <div className="gauntlet-whiteboard">
       <Tldraw
         persistenceKey={PERSISTENCE_KEY}
+        // Only `resolve`: tldraw lays what is given here over its own local
+        // store (useLocalStore.ts spreads it last), so upload and remove
+        // stay tldraw's. Its type asks for a whole store.
+        assets={pictures.assets as TLAssetStore}
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY || undefined}
         shapeUtils={shapeUtils}
         overlayUtils={overlayUtils}

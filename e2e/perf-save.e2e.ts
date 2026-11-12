@@ -304,6 +304,76 @@ test("19 pages of screenshots: a save re-reads no picture and never stalls the p
   report.fixture = { ...built, MB: +(built.bytes / 1e6).toFixed(1), avgKB: r(built.bytes / built.pictures / 1e3), ...(await stored()), ...mounted };
   console.log(`fixture: ${JSON.stringify(report.fixture)}`);
   expect(mounted.pages).toBe(PAGES);
+  // Only the current page's items are in the page (Part 2).
+  expect(mounted.shapeElementsInDom).toBe(mounted.shapesOnThisPage);
+  expect(mounted.imgElementsInDom).toBe(PER_PAGE);
+
+  // ---- The half-size copies (Part 2, src/images/smaller.ts): made quietly after the pictures arrive ----
+  {
+    const copies = () =>
+      page.evaluate(async () => {
+        if (!(await indexedDB.databases()).some((d) => d.name === "gauntlet-picture-cache")) return { n: 0, bytes: 0 };
+        const db = await new Promise<IDBDatabase>((res, rej) => {
+          const o = indexedDB.open("gauntlet-picture-cache");
+          o.onsuccess = () => res(o.result);
+          o.onerror = () => rej(o.error);
+        });
+        try {
+          if (!db.objectStoreNames.contains("smaller")) return { n: 0, bytes: 0 };
+          const blobs = await new Promise<Blob[]>((res) => (db.transaction("smaller").objectStore("smaller").getAll().onsuccess = (e) => res((e.target as IDBRequest).result)));
+          return { n: blobs.length, bytes: blobs.reduce((x, b) => x + b.size, 0) };
+        } finally {
+          db.close();
+        }
+      });
+    const a = await now(page);
+    await expect.poll(async () => (await copies()).n, { timeout: 300_000, intervals: [500] }).toBe(PICTURES);
+    const s = await snap(page);
+    const made = await copies();
+    report.smallerCopies = { copies: made.n, MB: +(made.bytes / 1e6).toFixed(1), waitedMs: r(s.now - a), stallsWhileMaking: windowStats(s, a, s.now) };
+    console.log(`smaller copies: ${JSON.stringify(report.smallerCopies)}`);
+    // Made in a worker: the page never stalls for them.
+    expect(windowStats(s, a, s.now).longMax, "longest stall while the copies are made").toBeLessThan(100);
+  }
+
+  // ---- Going to another page: until its pictures are drawn, and what is decoded for them ----
+  {
+    const switches = await page.evaluate(async () => {
+      const editor = (window as any).editor;
+      const pages = editor.getPages() as { id: string }[];
+      const out: { ms: number; decodedMB: number; widths: number[] }[] = [];
+      for (const p of pages.slice(1, 7)) {
+        const t0 = performance.now();
+        editor.setCurrentPage(p.id);
+        const want = editor.getCurrentPageShapes().filter((s: any) => s.type === "image").length;
+        let imgs: HTMLImageElement[] = [];
+        while (performance.now() - t0 < 20_000) {
+          await new Promise((r) => requestAnimationFrame(r));
+          imgs = [...document.querySelectorAll<HTMLImageElement>(".tl-canvas img")].filter((i) => i.complete && i.naturalWidth > 0);
+          if (imgs.length >= want) break;
+        }
+        await Promise.all(imgs.map((i) => i.decode().catch(() => {})));
+        await new Promise((r) => requestAnimationFrame(r));
+        out.push({ ms: Math.round(performance.now() - t0), decodedMB: +(imgs.reduce((x, i) => x + i.naturalWidth * i.naturalHeight * 4, 0) / 1e6).toFixed(1), widths: imgs.map((i) => i.naturalWidth) });
+        // What tldraw settles on a moment later (it asks again for the right size).
+        await new Promise((r) => setTimeout(r, 1200));
+        const settled = [...document.querySelectorAll<HTMLImageElement>(".tl-canvas img")].filter((i) => i.complete && i.naturalWidth > 0);
+        out.at(-1)!.widths = settled.map((i) => i.naturalWidth);
+        out.at(-1)!.decodedMB = +(settled.reduce((x, i) => x + i.naturalWidth * i.naturalHeight * 4, 0) / 1e6).toFixed(1);
+      }
+      editor.setCurrentPage(pages[0]!.id);
+      return out;
+    });
+    report.pageSwitch = { ms: mid(switches.map((s) => s.ms)), decodedMB: mid(switches.map((s) => s.decodedMB)), runs: switches };
+    console.log(`going to a page of 4 screenshots (6 pages): ${JSON.stringify(report.pageSwitch)}`);
+    // Shown 900 wide, a 1920 px screenshot is drawn from its 960 px copy:
+    // a quarter of the pixels decoded (was 33.2 MB a page, 219 ms).
+    for (const sw of switches) {
+      expect(sw.widths).toEqual([960, 960, 960, 960]);
+      expect(sw.decodedMB).toBeLessThan(10);
+      expect(sw.ms).toBeLessThan(1500);
+    }
+  }
 
   // ---- Drag, no save in play (no folder picked yet) ----
   await page.waitForTimeout(3000);
