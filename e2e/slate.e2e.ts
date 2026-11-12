@@ -664,7 +664,9 @@ test("Slate: one schedule request for every widget on every page; no timers or r
   const n = asked.length;
   await page.evaluate(() => ((window as any).__slateTimers.length = 0));
   await page.waitForTimeout(3000);
-  expect(asked.slice(n)).toEqual([]);
+  // (The backup worker is the save's, not the Slate's: its script is asked
+  // for once, when the page's first backup runs.)
+  expect(asked.slice(n).filter((p) => !/^\/assets\/worker-[^/]+\.js$/.test(p))).toEqual([]);
   expect(await page.evaluate(() => (window as any).__slateTimers)).toEqual([]);
   // One `storage` listener for the notes on the page, for all 4 widgets.
   expect(await page.evaluate(() => (window as any).__slateStorage)).toBe(1);

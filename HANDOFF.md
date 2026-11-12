@@ -46,10 +46,11 @@ Finished work goes to docs/HISTORY.md.
 
 ## Broken / known wrong
 
-- Linkkit's tree layout lets long card names overlap their neighbours
-  (a board's map, and Linkkit's own page): not changed.
-- Flaky, not chased: fullpage.e2e.ts:192 (zoom one wheel tick off after a
-  resize).
+- Linkkit's tree layout lets long card names overlap (not changed).
+- Flaky, not chased: fullpage.e2e.ts:192 (zoom a wheel tick off).
+- calendarkit moved on: /calendar serves v1.61.1, the Slate widget pins
+  v1.40.1; slate.e2e.ts:232 and :675 fail on it (2026-11-12). Bump the pin
+  with Slate work (speed session Part 3/4), not skipped.
 - Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms per
   run (limit 108; the board's is ~50); the test now judges the median of
   5 runs. Browser repaint, no DOM changes. For the speed session.
