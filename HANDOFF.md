@@ -19,16 +19,18 @@ Finished work goes to docs/HISTORY.md.
   LIVE (DECISIONS 2026-11-05; results in docs/HISTORY.md "Edges round").
   STOPPED for the owner's report and hand check (feel only).
 - SPEED SESSION (owner, 2026-11-12; request in docs/SPEED-SESSION.md,
-  Parts 0-8, one at a time, stop and report after each): PART 0 DONE
-  (e2e/perf-save.e2e.ts, measures only, no limits yet; numbers and cause in
-  docs/HISTORY.md "Speed session"). App unchanged. STOPPED for the owner:
-  Part 1 design choice (options in HISTORY). Parts 1-8 not started.
+  Parts 0-8, one at a time, stop and report after each): PARTS 0-1 DONE
+  (Part 1: split save, DECISIONS 2026-11-12; src/backup/ worker.ts,
+  snapshot.ts, client.ts, restore.ts; e2e/split-save.e2e.ts, perf-save
+  with limits; numbers in docs/HISTORY.md "Speed session"). STOPPED for the
+  owner's report. NEXT: Part 2 (images on the page). Parts 2-8 not started.
+- Real-disk save measurement, by hand only (a visible Edge for ~1 min):
+  `node scripts/local-e2e.mjs gauntlet "-c playwright.disk.config.ts"`.
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
   scripted "\n" replaces then silently miss. Use the Edit tool after one.
 ## Waiting for the owner
 
-- Feel of the map fixes: the dim while editing a map, the label, a dot
-  dragged far out, a board's Map and Both views.
+- Feel of the map fixes (dim, label, far dot, a board's Map/Both views).
 - Phase 3 hand test (feel only): placing and scaling a map, editing it in
   place, the List | Map | Both switch, one undo. Then "go to phase 4".
 
@@ -39,10 +41,8 @@ Finished work goes to docs/HISTORY.md.
   embed, markup .e2e.ts); waiting for the owner's hand check.
 - Live runs: no bypass secret exists (DECISIONS 2026-10-22); after a
   push, `node scripts/wait-deploy.mjs`. A 403 stops the run: tell the owner.
-- LINKS ROUND (owner, 2026-10-23): step 1 (leftover hidden windows) and
-  step 2 (links on everything: src/links/, e2e/links.e2e.ts; Boardkit
-  v0.0.105, Linkkit v0.0.113; DECISIONS) DONE. Waiting for the owner's
-  hand check (feel of the icons and the link field).
+- LINKS ROUND (owner, 2026-10-23): steps 1-2 DONE (DECISIONS); waiting
+  for the owner's hand check (feel of the icons and the link field).
 
 ## Broken / known wrong
 
@@ -95,6 +95,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- Speed session Part 1 (saving that scales) once the owner picks a design;
-  then Parts 2-8 in order (Part 4 = Slate step 3, the owner said go).
+- Speed session Part 2 (images on the page), then Parts 3-8 in order,
+  stopping to report after each (Part 4 = Slate step 3, the owner said go).
 - Phase 4 only after this round is live and the owner says "go".

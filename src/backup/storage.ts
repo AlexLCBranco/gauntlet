@@ -1,17 +1,8 @@
-// Reads this browser's storage into a backup file, and puts a backup file
-// back. The format is in `format.ts`.
+// Puts a backup file back into this browser's storage. Reading the storage
+// into a backup is `snapshot.ts` (in the backup worker); the format is in
+// `format.ts`.
 
-import {
-  CannotEncode,
-  decode,
-  encode,
-  FORMAT,
-  VERSION,
-  type BackupFile,
-  type DatabaseDump,
-  type Encoded,
-  type StoreDump,
-} from "./format";
+import { decode, type BackupFile, type DatabaseDump, type StoreDump } from "./format";
 
 const done = <T>(request: IDBRequest<T>): Promise<T> =>
   new Promise((resolve, reject) => {
@@ -52,59 +43,19 @@ export const FOLDER_NOTE = "gauntlet:folder-backup";
 
 /** Kept as they are here: never in a backup, never replaced by a restore. */
 const LOCAL_ONLY_KEYS = [AUTO_NOTE, FOLDER_NOTE];
-const LOCAL_ONLY_DBS = [AUTO_DB, FOLDER_DB];
+export const LOCAL_ONLY_DBS = [AUTO_DB, FOLDER_DB];
 
 export const OTHER_TABS = "Another tab of this site is open. Close every other gauntlet, Boardkit and Linkkit tab, then try again.";
 
-async function dumpDatabase(name: string): Promise<DatabaseDump> {
-  const db = await open(name);
-  try {
-    const stores: StoreDump[] = [];
-    for (const storeName of Array.from(db.objectStoreNames)) {
-      const store = db.transaction(storeName, "readonly").objectStore(storeName);
-      const [keys, values] = await Promise.all([done(store.getAllKeys()), done(store.getAll())]);
-      const records: { key: Encoded; value: Encoded }[] = [];
-      const skipped: Encoded[] = [];
-      for (let i = 0; i < keys.length; i++) {
-        const key = await encode(keys[i]);
-        try {
-          records.push({ key, value: await encode(values[i]) });
-        } catch (error) {
-          if (!(error instanceof CannotEncode)) throw error;
-          skipped.push(key);
-        }
-      }
-      stores.push({
-        name: storeName,
-        keyPath: store.keyPath,
-        autoIncrement: store.autoIncrement,
-        indexes: Array.from(store.indexNames, (indexName) => {
-          const index = store.index(indexName);
-          return { name: indexName, keyPath: index.keyPath, unique: index.unique, multiEntry: index.multiEntry };
-        }),
-        records,
-        skipped,
-      });
-    }
-    return { name, version: db.version, stores };
-  } finally {
-    db.close();
-  }
-}
-
-/** Everything this site keeps in this browser. */
-export async function makeBackup(now: Date): Promise<BackupFile> {
+/** The page's localStorage, without the backups' own notes: the part of a
+    backup only the page can read (a worker has no localStorage). */
+export function localSnapshot(): Record<string, string> {
   const local: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)!;
     if (!LOCAL_ONLY_KEYS.includes(key)) local[key] = localStorage.getItem(key)!;
   }
-  const names = (await indexedDB.databases())
-    .map((db) => db.name)
-    .filter((name): name is string => !!name && !LOCAL_ONLY_DBS.includes(name));
-  const databases: DatabaseDump[] = [];
-  for (const name of names.sort()) databases.push(await dumpDatabase(name));
-  return { format: FORMAT, version: VERSION, createdAt: now.toISOString(), site: location.origin, localStorage: local, indexedDB: databases };
+  return local;
 }
 
 function createStore(db: IDBDatabase, dump: StoreDump): void {
@@ -153,7 +104,8 @@ async function restoreDatabase(dump: DatabaseDump, exists: boolean): Promise<voi
 }
 
 /**
- * Puts this browser's storage back as it was in `file`. localStorage is
+ * Puts this browser's storage back as it was in `file` (a split copy
+ * first gets its pictures: `loadPictures`, restore.ts). localStorage is
  * replaced wholesale. Each database in the file gets exactly the file's
  * records, except those the file could not hold (a picked backup folder),
  * which stay as they are here. A database that is not in the file is left

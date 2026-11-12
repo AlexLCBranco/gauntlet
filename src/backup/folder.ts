@@ -7,13 +7,24 @@
 // computer). Same file as "Save a backup", same keeping rule as the
 // browser's backups (`folderNames.ts`).
 //
+// Since the speed session (Part 1) the folder's saves are split: a save is
+// a small file (everything but pictures), and each picture is a file of its
+// own in the folder's `gauntlet-images`, written once and shared by every
+// save that shows it. A picture file is deleted only when no save left in
+// the folder uses it. The first split save into a folder that already holds
+// old one-file saves first writes one complete backup in the old format
+// (`gauntlet-full-backup-…`, never deleted by this code).
+//
 // The browser keeps the picked folder (its handle, in IndexedDB
 // `FOLDER_DB`), but may ask again for permission to write to it after a
 // restart. Writing needs that permission; asking for it needs a click. So
 // when it's missing, a banner with a "Reconnect" button shows on the page,
 // and the backup page has the same button.
 
+import { fullBackup, picturesUsedBy } from "./client";
 import { folderDrops, folderFileName, folderFileTime } from "./folderNames";
+import { fileName, IMAGE_NAME, IMAGES_DIR } from "./format";
+import type { Snapshot } from "./snapshot";
 import { FOLDER_DB, FOLDER_NOTE } from "./storage";
 
 // The File System Access API's parts that TypeScript's DOM types lack.
@@ -179,14 +190,109 @@ export async function forgetFolder(): Promise<void> {
 
 export type FolderOutcome = "written" | "unchanged" | "none" | "needs-permission" | "failed";
 
+/** The complete old-format backup written before a folder's first split save. */
+export const FULL_PREFIX = "gauntlet-full-backup";
+
+/** One writer at a time, across this site's tabs: a save and the tidying
+    after it never run into another tab's. */
+const locked = <T>(fn: () => Promise<T>): Promise<T> =>
+  typeof navigator !== "undefined" && navigator.locks ? (navigator.locks.request("gauntlet-backup-folder", fn) as Promise<T>) : fn();
+
+async function writeFile(dir: FileSystemDirectoryHandle, name: string, data: string | Blob): Promise<void> {
+  const handle = await dir.getFileHandle(name, { create: true });
+  const writable = await handle.createWritable();
+  await writable.write(data);
+  await writable.close();
+}
+
+async function fileNames(dir: Folder): Promise<string[]> {
+  const names: string[] = [];
+  for await (const entry of dir.values()) if (entry.kind === "file") names.push(entry.name);
+  return names;
+}
+
+/** The folder's pictures folder (null: none yet, unless `create`). */
+async function picturesDir(folder: Folder, create: boolean): Promise<Folder | null> {
+  try {
+    return (await folder.getDirectoryHandle(IMAGES_DIR, { create })) as Folder;
+  } catch (error) {
+    if (!create && error instanceof DOMException && error.name === "NotFoundError") return null;
+    throw error;
+  }
+}
+
+/** Before a folder's first split save: if it already holds saves (made in
+    the old one-file format), one complete backup in that format first. */
+async function oldFormatFirst(folder: Folder, now: Date): Promise<void> {
+  if (await picturesDir(folder, false)) return;
+  const hadSaves = (await fileNames(folder)).some((n) => n === LATEST_FILE || folderFileTime(n) !== null);
+  if (hadSaves) await writeFile(folder, fileName(FULL_PREFIX, now), (await fullBackup(now)).blob);
+  await picturesDir(folder, true);
+}
+
+/** Writes the pictures the folder doesn't have yet. Returns how many. */
+async function writePictures(folder: Folder, images: Snapshot["images"]): Promise<number> {
+  const dir = (await picturesDir(folder, true))!;
+  const there = new Set(await fileNames(dir));
+  let written = 0;
+  for (const { name, blob } of images) {
+    if (there.has(name)) continue;
+    await writeFile(dir, name, blob);
+    written++;
+  }
+  return written;
+}
+
+/** One save: its new pictures first, then its file (so a file in the
+    folder never names a picture that isn't there). */
+async function writeCopy(folder: Folder, file: string, snap: Snapshot, now: Date): Promise<void> {
+  const t0 = performance.now();
+  await oldFormatFirst(folder, now);
+  const pictures = await writePictures(folder, snap.images);
+  await writeFile(folder, file, snap.json);
+  try {
+    performance.measure("gauntlet:folder-write", { start: t0, end: performance.now(), detail: { file, picturesWritten: pictures, chars: snap.json.length } });
+  } catch {
+    // Measuring is never why a save fails.
+  }
+}
+
+/** What each save in the folder uses, remembered while the file is unchanged. */
+let usedBy = new Map<string, string[]>();
+
 /**
- * Writes this backup (`json`, the backup file) to the picked folder, then
- * deletes the folder's old automatic backups (never other files). Skipped
- * when no folder is picked, or when the same data was the last written
- * (unless `force`). Never throws: a backup that can't be written is noted,
- * and the page shows it.
+ * Deletes the picture files no save in the folder uses any more: not this
+ * one, and not any save file left in the folder (every .json there is
+ * asked). If any of them can't be read, nothing is deleted. Only files
+ * this code named (`IMAGE_NAME`) are ever deleted.
  */
-export async function writeToFolder(json: string, print: string, now: Date, force = false): Promise<FolderOutcome> {
+async function tidyPictures(folder: Folder, snap: Snapshot): Promise<void> {
+  const dir = await picturesDir(folder, false);
+  if (!dir) return;
+  const used = new Set(snap.images.map((i) => i.name));
+  const seen = new Map<string, string[]>();
+  for await (const entry of folder.values()) {
+    if (entry.kind !== "file" || !entry.name.toLowerCase().endsWith(".json")) continue;
+    const file = await (entry as FileSystemFileHandle).getFile();
+    const key = `${entry.name}\0${file.size}\0${file.lastModified}`;
+    const names = usedBy.get(key) ?? (await picturesUsedBy(file));
+    seen.set(key, names);
+    for (const n of names) used.add(n);
+  }
+  usedBy = seen;
+  for (const name of await fileNames(dir)) {
+    if (IMAGE_NAME.test(name) && !used.has(name)) await dir.removeEntry(name).catch(() => {});
+  }
+}
+
+/**
+ * Writes this backup (`snap`) to the picked folder as a dated copy, then
+ * deletes the folder's old dated copies (never other files) and the
+ * pictures no save uses any more. Skipped when no folder is picked, or
+ * when the same data was the last written (unless `force`). Never throws:
+ * a backup that can't be written is noted, and the page shows it.
+ */
+export async function writeToFolder(snap: Snapshot, now: Date, force = false): Promise<FolderOutcome> {
   const folder = await backupFolder();
   if (!folder) return "none";
   const before = lastFolderNote();
@@ -194,31 +300,28 @@ export async function writeToFolder(json: string, print: string, now: Date, forc
     note({ at: now.getTime(), ok: false, folder: folder.name, problem: "needs-permission", print: before?.print });
     return "needs-permission";
   }
-  if (!force && before?.ok && before.folder === folder.name && before.print === print) return "unchanged";
-  try {
-    const file = folderFileName(now);
-    const handle = await folder.getFileHandle(file, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(json);
-    await writable.close();
-    note({ at: now.getTime(), ok: true, folder: folder.name, file, print });
-  } catch (error) {
-    console.error("Gauntlet: the backup could not be written to the folder", error);
-    note({ at: now.getTime(), ok: false, folder: folder.name, problem: "failed", detail: String(error), print: before?.print });
-    return "failed";
-  }
-  // Old ones out. A file that can't be deleted (gone already, locked by the
-  // sync app) is left for next time; the new backup is written either way.
-  try {
-    const names: string[] = [];
-    for await (const entry of folder.values()) if (entry.kind === "file") names.push(entry.name);
-    for (const name of folderDrops(names, now.getTime())) {
-      await folder.removeEntry(name).catch(() => {});
+  if (!force && before?.ok && before.folder === folder.name && before.print === snap.print) return "unchanged";
+  return locked(async () => {
+    try {
+      const file = folderFileName(now);
+      await writeCopy(folder, file, snap, now);
+      note({ at: now.getTime(), ok: true, folder: folder.name, file, print: snap.print });
+    } catch (error) {
+      console.error("Gauntlet: the backup could not be written to the folder", error);
+      note({ at: now.getTime(), ok: false, folder: folder.name, problem: "failed", detail: String(error), print: before?.print });
+      return "failed";
     }
-  } catch (error) {
-    console.warn("Gauntlet: old backups in the folder could not be tidied", error);
-  }
-  return "written";
+    // Old ones out. A file that can't be deleted (gone already, locked by the
+    // sync app) is left for next time; the new backup is written either way.
+    try {
+      const drops = folderDrops(await fileNames(folder), now.getTime());
+      for (const name of drops) await folder.removeEntry(name).catch(() => {});
+      if (drops.length > 0) await tidyPictures(folder, snap);
+    } catch (error) {
+      console.warn("Gauntlet: old backups in the folder could not be tidied", error);
+    }
+    return "written";
+  });
 }
 
 export const FOLDER_TEXT = {
@@ -290,27 +393,26 @@ export function showFolderBanner(kind: keyof typeof FOLDER_TEXT): void {
     when something changed, kept by folderNames.ts's rule). */
 export const LATEST_FILE = "gauntlet-save.json";
 
-/** Writes `json` as the folder's current save. Never throws. */
-export async function writeLatest(json: string, now: Date): Promise<FolderOutcome> {
+/** Writes `snap` as the folder's current save. Never throws. */
+export async function writeLatest(snap: Snapshot, now: Date): Promise<FolderOutcome> {
   const folder = await backupFolder();
   if (!folder) return "none";
   if ((await permission(folder)) !== "granted") {
     note({ ...lastFolderNote(), at: now.getTime(), ok: false, folder: folder.name, problem: "needs-permission" });
     return "needs-permission";
   }
-  try {
-    const handle = await folder.getFileHandle(LATEST_FILE, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(json);
-    await writable.close();
-  } catch (error) {
-    console.error("Gauntlet: the save could not be written to the folder", error);
-    note({ ...lastFolderNote(), at: now.getTime(), ok: false, folder: folder.name, problem: "failed", detail: String(error) });
-    return "failed";
-  }
-  const before = lastFolderNote();
-  note({ at: now.getTime(), ok: true, folder: folder.name, file: before?.file, print: before?.print });
-  return "written";
+  return locked(async () => {
+    try {
+      await writeCopy(folder, LATEST_FILE, snap, now);
+    } catch (error) {
+      console.error("Gauntlet: the save could not be written to the folder", error);
+      note({ ...lastFolderNote(), at: now.getTime(), ok: false, folder: folder.name, problem: "failed", detail: String(error) });
+      return "failed";
+    }
+    const before = lastFolderNote();
+    note({ at: now.getTime(), ok: true, folder: folder.name, file: before?.file, print: before?.print });
+    return "written";
+  });
 }
 
 export interface FolderCopy {
@@ -333,9 +435,26 @@ export async function listFolderCopies(): Promise<FolderCopy[]> {
   return out.sort((a, b) => b.at - a.at);
 }
 
-/** One of the folder's saves, as text. */
-export async function readFolderCopy(name: string): Promise<string> {
+/** One of the folder's saves, as a file. */
+export async function readFolderCopy(name: string): Promise<File> {
   const folder = await backupFolder();
   if (!folder) throw new Error("No save folder chosen");
-  return (await (await folder.getFileHandle(name)).getFile()).text();
+  return (await folder.getFileHandle(name)).getFile();
+}
+
+/** The folder's picture files among `wanted` (those it has), by name. */
+export async function folderPictures(wanted: readonly string[]): Promise<Map<string, File>> {
+  const found = new Map<string, File>();
+  const folder = await backupFolder();
+  if (!folder || (await permission(folder)) !== "granted") return found;
+  const dir = await picturesDir(folder, false).catch(() => null);
+  if (!dir) return found;
+  for (const name of wanted) {
+    try {
+      found.set(name, await (await dir.getFileHandle(name)).getFile());
+    } catch {
+      // Not there: the caller says so.
+    }
+  }
+  return found;
 }

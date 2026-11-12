@@ -7,9 +7,8 @@
 // all of it (`SaveStatus.tsx`). Ctrl+S writes it at once, with a dated
 // copy.
 
-import { fingerprint, sameDataText } from "./policy";
+import { takeSnapshot } from "./client";
 import { folderState, lastFolderNote, writeLatest, writeToFolder } from "./folder";
-import { makeBackup } from "./storage";
 
 /** How long after the last change the folder is written. */
 export const SAVE_DELAY_MS = 2500;
@@ -48,6 +47,10 @@ export const subscribeSave = (fn: () => void) => {
 
 /** An app reports its own saves failing (Boardkit's save health). */
 let appFailing = false;
+/** Why the last save could not be made (reading the site's data failed):
+    it shows as "Not saved" until a save works. A save that fails must
+    never read "Saved". */
+let buildError: string | undefined;
 export function setAppSaveFailing(failing: boolean) {
   if (failing === appFailing) return;
   appFailing = failing;
@@ -67,6 +70,7 @@ async function refresh(): Promise<void> {
   const folder = await folderState();
   const n = lastFolderNote();
   if (appFailing) return set({ phase: "failed", savedAt: n?.ok ? n.at : undefined, folder: n?.folder, detail: "A board change could not be saved in this browser." });
+  if (buildError && !writing) return set({ phase: "failed", savedAt: lastOkAt(), folder: n?.folder, detail: buildError });
   if (dirty || writing) return set({ ...state, phase: folder === "ready" ? "saving" : folder === "none" ? "no-folder" : "reconnect" });
   if (folder === "none") return set({ phase: "no-folder" });
   if (folder === "needs-permission") return set({ phase: "reconnect", folder: n?.folder, savedAt: lastOkAt() });
@@ -103,14 +107,15 @@ export async function saveNow({ dated = false } = {}): Promise<void> {
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     const now = new Date();
     try {
-      const file = await makeBackup(now);
-      const json = JSON.stringify(file);
-      const out = await writeLatest(json, now);
+      const snap = await takeSnapshot(now);
+      const out = await writeLatest(snap, now);
+      buildError = undefined;
       if (out === "written") okAt = now.getTime();
       // Ctrl+S: a dated copy too, even when nothing changed since the last.
-      if (dated && out === "written") wroteDated = (await writeToFolder(json, fingerprint(sameDataText(file)), now, true)) === "written";
+      if (dated && out === "written") wroteDated = (await writeToFolder(snap, now, true)) === "written";
     } catch (error) {
       console.error("Gauntlet: the save failed", error);
+      buildError = `The save could not be made: ${error instanceof Error ? error.message : String(error)}`;
     }
   })();
   writing = run;

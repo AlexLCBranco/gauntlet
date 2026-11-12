@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { fileOf, keepBackup, lastStatus, listAutoBackups, type AutoBackup } from "./auto";
+import { describeCopy, fullBackup, fullFromCopy, takeSnapshot } from "./client";
 import {
   backupFolder,
   canPickFolder,
@@ -9,27 +10,32 @@ import {
   folderState,
   forgetFolder,
   lastFolderNote,
+  LATEST_FILE,
+  listFolderCopies,
   pickFolder,
   readFolderCopy,
   reconnectFolder,
+  type FolderCopy,
   type FolderNote,
   type FolderState,
 } from "./folder";
-import { describe, fileName, readBackup, summarize, type BackupFile } from "./format";
+import { describe, fileName, IMAGES_DIR, readBackup, SPLIT_VERSION, summarize, type BackupFile } from "./format";
 import { WARNING_TEXT } from "./policy";
-import { makeBackup, restoreBackup } from "./storage";
+import { loadPictures } from "./restore";
+import { restoreBackup } from "./storage";
 import { PENDING_RESTORE } from "./restoreKey";
 
 /**
  * The backup page (/backup/): "Save a backup" downloads one file with
- * everything this site keeps in this browser; "Restore from a backup
- * file…" puts such a file back, after downloading a copy of what is here
- * now, so a restore can itself be undone. Below, the automatic backups
- * kept in this browser (`auto.ts`), each with "Restore this".
+ * everything this site keeps in this browser, pictures inside; "Restore
+ * from a backup file…" puts such a file back, after downloading a copy of
+ * what is here now, so a restore can itself be undone. Below, the backup
+ * folder with its saves, and the automatic backups kept in this browser
+ * (`auto.ts`), each with "Restore this" (a save's pictures, kept as files
+ * of their own, are restored with it: `restore.ts`).
  */
 
-function download(file: BackupFile, name: string): void {
-  const blob = new Blob([JSON.stringify(file)], { type: "application/json" });
+function download(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -61,8 +67,8 @@ export function BackupPage() {
   const picker = useRef<HTMLInputElement>(null);
 
   const refreshHere = () =>
-    makeBackup(new Date()).then(
-      (file) => setHere(describe(summarize(file))),
+    takeSnapshot(new Date()).then(
+      (snap) => setHere(snap.what),
       () => setHere(null),
     );
   // A restore picked in the whiteboard's Restore list (SaveStatus.tsx): it
@@ -82,10 +88,10 @@ export function BackupPage() {
       try {
         const file =
           pending.source === "folder"
-            ? readBackup(JSON.parse(await readFolderCopy(pending.key)))
+            ? readBackup(JSON.parse(await (await readFolderCopy(pending.key)).text()))
             : fileOf((await listAutoBackups()).find((b) => b.id === pending.key) ?? ({ json: "null" } as AutoBackup));
         if (!file) throw new Error("That copy could not be read.");
-        await restoreBackup(file);
+        await restoreBackup(await loadPictures(file));
         location.replace("/");
       } catch (error) {
         setStatus({ kind: "error", text: `The restore did not happen: ${error instanceof Error ? error.message : String(error)}` });
@@ -119,10 +125,10 @@ export function BackupPage() {
     setStatus({ kind: "busy", text: "Saving…" });
     try {
       const now = new Date();
-      const file = await makeBackup(now);
+      const { blob, what } = await fullBackup(now);
       const name = fileName("gauntlet-backup", now);
-      download(file, name);
-      setStatus({ kind: "saved", name, what: describe(summarize(file)) });
+      download(blob, name);
+      setStatus({ kind: "saved", name, what });
     } catch (error) {
       setStatus({ kind: "error", text: `The backup could not be made: ${String(error)}` });
     }
@@ -144,16 +150,43 @@ export function BackupPage() {
   const restore = async (file: BackupFile) => {
     setStatus({ kind: "busy", text: "Restoring…" });
     try {
+      // Its pictures first: a copy with one missing is refused here, with
+      // nothing changed yet.
+      const ready = await loadPictures(file);
       const now = new Date();
       const safety = fileName("gauntlet-before-restore", now);
       await keepBackup("before-restore");
-      download(await makeBackup(now), safety);
-      await restoreBackup(file);
+      download((await fullBackup(now)).blob, safety);
+      await restoreBackup(ready);
       setStatus({ kind: "restored", what: describe(summarize(file)), safety });
       void refreshHere();
     } catch (error) {
       setStatus({ kind: "error", text: error instanceof Error ? error.message : String(error) });
     }
+  };
+
+  /** A copy as one complete file: a split one gets its pictures put in. */
+  const downloadCopy = async (file: BackupFile, at: number) => {
+    setStatus({ kind: "busy", text: "Preparing the file…" });
+    try {
+      const blob = file.version === SPLIT_VERSION ? await fullFromCopy(await loadPictures(file)) : new Blob([JSON.stringify(file)], { type: "application/json" });
+      const name = fileName("gauntlet-backup", new Date(at));
+      download(blob, name);
+      setStatus({ kind: "saved", name, what: describe(summarize(file)) });
+    } catch (error) {
+      setStatus({ kind: "error", text: error instanceof Error ? error.message : String(error) });
+    }
+  };
+
+  const restoreFolderCopy = async (name: string) => {
+    setStatus({ kind: "busy", text: "Reading…" });
+    let file: BackupFile | null = null;
+    try {
+      file = readBackup(JSON.parse(await (await readFolderCopy(name)).text()));
+    } catch {
+      file = null;
+    }
+    setStatus(file ? { kind: "confirm", file } : { kind: "error", text: `“${name}” could not be read as a gauntlet save.` });
   };
 
   const busy = status.kind === "busy";
@@ -162,7 +195,7 @@ export function BackupPage() {
       <h1>Backup</h1>
       <p className="lead">
         One file with everything this site keeps in this browser: your Boardkit boards (with their background pictures and trash),
-        your Linkkit maps and the whiteboard.
+        your Linkkit maps and the whiteboard, pictures included. With many pictures it is big and takes a while to make.
       </p>
       <p className="here" data-testid="here">
         In this browser now: {here ?? "…"}
@@ -208,13 +241,14 @@ export function BackupPage() {
         )}
       </div>
 
-      <FolderSection busy={busy} onBackUpNow={() => void backUpNow()} />
+      <FolderSection busy={busy} onBackUpNow={() => void backUpNow()} onRestore={(name) => void restoreFolderCopy(name)} />
 
       <section className="autos" aria-labelledby="autos-title">
         <h2 id="autos-title">Automatic backups</h2>
         <p className="lead">
           Made by themselves when you open the whiteboard (the home page) or this page, and every 10 minutes while one is open, if
-          anything changed. The newest 30 and one a day for 90 days are kept, as room allows.
+          anything changed. The newest 30 and one a day for 90 days are kept, as room allows. They hold everything except
+          pictures, which are already in this browser (and, as files, in your backup folder).
         </p>
         <p className="warn">
           They are kept in this browser, next to your data: clearing this browser's data (or a new computer) loses them
@@ -259,7 +293,7 @@ export function BackupPage() {
                     disabled={busy}
                     onClick={() => {
                       const file = fileOf(a);
-                      if (file) download(file, fileName("gauntlet-backup", new Date(a.at)));
+                      if (file) void downloadCopy(file, a.at);
                     }}
                   >
                     Download
@@ -296,18 +330,33 @@ export function BackupPage() {
   );
 }
 
-/** The backup folder (`folder.ts`): every automatic backup is also written
-    there as a file, outside the browser. */
-function FolderSection({ busy, onBackUpNow }: { busy: boolean; onBackUpNow: () => void }) {
+/** The backup folder (`folder.ts`): every save and automatic backup is
+    written there as a file, outside the browser; its saves are listed, each
+    with "Restore this". */
+function FolderSection({ busy, onBackUpNow, onRestore }: { busy: boolean; onBackUpNow: () => void; onRestore: (name: string) => void }) {
+  const [copies, setCopies] = useState<(FolderCopy & { what?: string })[] | null>(null);
+  const said = useRef(new Map<string, string>());
   const [state, setState] = useState<FolderState | null>(null);
   const [name, setName] = useState<string | null>(null);
   const [last, setLast] = useState<FolderNote | null>(() => lastFolderNote());
   const [error, setError] = useState<string | null>(null);
 
   const refresh = async () => {
-    setState(await folderState());
+    const now = await folderState();
+    setState(now);
     setName((await backupFolder())?.name ?? null);
     setLast(lastFolderNote());
+    if (now !== "ready") return setCopies(null);
+    const list = (await listFolderCopies().catch(() => [])).slice(0, 40);
+    setCopies(list.map((c) => ({ ...c, what: said.current.get(`${c.name}:${c.at}`) })));
+    // What each holds, read once (in the backup worker).
+    for (const c of list) {
+      const key = `${c.name}:${c.at}`;
+      if (said.current.has(key)) continue;
+      const info = await readFolderCopy(c.name).then(describeCopy).catch(() => null);
+      said.current.set(key, info?.what ?? "");
+      setCopies((cs) => cs && cs.map((x) => (x.name === c.name && x.at === c.at ? { ...x, what: info?.what ?? "" } : x)));
+    }
   };
   useEffect(() => {
     void refresh();
@@ -343,9 +392,11 @@ function FolderSection({ busy, onBackUpNow }: { busy: boolean; onBackUpNow: () =
     <section className="autos" aria-labelledby="folder-title" data-testid="backup-folder">
       <h2 id="folder-title">Backup folder</h2>
       <p className="lead">
-        Every automatic backup is also saved as a file in a folder on your computer, outside the browser. Pick a folder
-        inside your Google Drive folder and the backups also leave this computer. The newest 30 and one a day for 90 days
-        are kept there; other files in the folder are never touched.
+        Everything is also saved as files in a folder on your computer, outside the browser. Pick a folder inside your
+        Google Drive folder and the saves also leave this computer. The newest 30 and one a day for 90 days are kept
+        there; other files in the folder are never touched. Each save is a small file; your pictures are kept once, as
+        files of their own, in its “{IMAGES_DIR}” folder, and a picture is deleted there only when no save uses it any
+        more.
       </p>
       {!canPickFolder() ? (
         <p className="bad">This browser can't save to a folder. Use Edge or Chrome on a computer.</p>
@@ -402,6 +453,24 @@ function FolderSection({ busy, onBackUpNow }: { busy: boolean; onBackUpNow: () =
         </>
       )}
       {error && <p className="bad">{error}</p>}
+      {copies && copies.length > 0 && (
+        <ol className="auto-list" aria-label="Saves in the folder">
+          {copies.map((c) => (
+            <li key={c.name}>
+              <div>
+                <strong>{new Date(c.at).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}</strong>
+                {c.name === LATEST_FILE && <span className="lead"> · current</span>}
+                <div className="lead">{c.what ?? "…"}</div>
+              </div>
+              <div className="actions">
+                <button type="button" disabled={busy} onClick={() => onRestore(c.name)}>
+                  Restore this
+                </button>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }

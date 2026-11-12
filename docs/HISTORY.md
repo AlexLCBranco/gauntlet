@@ -1288,3 +1288,28 @@ every change / every 10 min). Not the drawing itself.
 Part 1 options put to the owner: A pictures as own files, written once,
 main file without them (the owner's direction); B same plus the remaining
 dump in a worker; C keep one file, only move the work to a worker.
+
+Part 1, saving that scales (design B, DECISIONS 2026-11-12). Same fixture
+(76 pictures, 87 MB), same test, now with limits (e2e/perf-save.e2e.ts).
+Before -> after, browser's private folder:
+- Save after a small edit: pictures re-read 76 (87 MB) -> 0 (0.9 MB of
+  samples, in the worker); file 117 MB -> 76 KB; reading 3.2 s -> 0.12 s
+  (worker); folder write 0.6 s -> 6 ms; edit to "Saved" 6.7 s -> 2.9 s
+  (2.5 s of it is the wait after an edit); stalls 2-3 per save, up to
+  340-530 ms -> none (no task over 50 ms, 3 of 3 saves).
+- First save into a folder (writes the 76 pictures, once): 0.5 s, no stall.
+- Drag then its save: stalls up to 350-410 ms -> none. Drag while saves run
+  (Ctrl+S three times mid-drag): stalls up to 380-440 ms -> none, every
+  frame 17 ms.
+- Automatic backup after opening: 8.4 s, 1.6 s stalled, and its browser
+  copy FAILED -> 0.57 s, no stall, kept (76 KB).
+- Folder after 20 more saves (24 dated copies): 89.5 MB in all (pictures
+  87.4 MB once, 25 save files 2 MB together, the biggest 85 KB). Before:
+  25 x 117 MB = 2.9 GB.
+- Opening: unchanged (0.26 s editor, 0.31 s pictures).
+On a REAL disk folder (e2e/disk-save.manual.ts, C: drive, home folder; not
+Google Drive itself): first write of the 76 pictures 8.9 s, no stall; a
+save after a small edit 0.28-0.35 s (reading 0.16-0.21 s, write 0.12-0.16
+s), no stall, "Saved" 2.9 s after the edit. The old save's write alone
+(117 MB text) on the same folder: 0.9 s with an 84 ms stall.
+

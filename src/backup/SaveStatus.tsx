@@ -1,8 +1,9 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { keepBackup, listAutoBackups } from "./auto";
+import { describeCopy } from "./client";
 import { listFolderCopies, pickFolder, readFolderCopy, reconnectFolder, LATEST_FILE } from "./folder";
-import { readBackup, summarize, type Summary } from "./format";
+import { readBackup, shortWhat, summarize } from "./format";
 import { saveState, showsSavedToFolder, subscribeSave, type SaveState } from "./save";
 import { PENDING_RESTORE } from "./restoreKey";
 import "./save.css";
@@ -27,9 +28,7 @@ export function plainWhen(at: number, now = Date.now()): string {
   return `${d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })} ${t}`;
 }
 
-const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
-/** "14 pages · 6 boards · 2 maps". */
-export const shortWhat = (s: Summary) => [plural(s.whiteboardPages, "page"), plural(s.boards, "board"), plural(s.maps, "map")].join(" · ");
+export { shortWhat };
 
 function label(s: SaveState): string {
   if (s.phase !== "failed" && showsSavedToFolder()) return "Saved to folder";
@@ -95,23 +94,28 @@ function RestoreList({ onClose }: { onClose: () => void }) {
       const all: Copy[] = [
         ...folder.map((f) => ({ key: f.name, source: "folder" as const, at: f.at, current: f.name === LATEST_FILE })),
         ...browser.map((b) => {
-          let what: string | undefined;
-          try {
-            const file = readBackup(JSON.parse(b.json));
-            what = file ? shortWhat(summarize(file)) : undefined;
-          } catch {
-            what = undefined;
+          let what = b.short;
+          // Kept before 2026-11-12: said only by the file itself.
+          if (what === undefined) {
+            try {
+              const file = readBackup(JSON.parse(b.json));
+              what = file ? shortWhat(summarize(file)) : undefined;
+            } catch {
+              what = undefined;
+            }
           }
           return { key: b.id, source: "browser" as const, at: b.at, what, beforeRestore: b.reason === "before-restore" };
         }),
       ].sort((a, b) => b.at - a.at);
       if (!live) return;
       setCopies(all);
-      // The folder's files say what they hold only when read: newest first.
+      // The folder's files say what they hold only when read (in the
+      // backup worker: an old one-file save can be very big): newest first.
       for (const c of all.filter((c) => c.source === "folder").slice(0, 40)) {
+        if (!live) return;
         try {
-          const file = readBackup(JSON.parse(await readFolderCopy(c.key)));
-          if (file && live) setCopies((cs) => cs && cs.map((x) => (x === c || (x.key === c.key && x.source === "folder") ? { ...x, what: shortWhat(summarize(file)) } : x)));
+          const info = await describeCopy(await readFolderCopy(c.key));
+          if (info && live) setCopies((cs) => cs && cs.map((x) => (x === c || (x.key === c.key && x.source === "folder") ? { ...x, what: info.short } : x)));
         } catch {
           // Shown without what it holds.
         }

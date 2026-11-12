@@ -10,11 +10,23 @@
 // `storage.ts`.
 
 export const FORMAT = "gauntlet-backup";
+/** One complete file: every picture inside it, as text (base64). What
+    "Save a backup" downloads, and every backup made before 2026-11-12. */
 export const VERSION = 1;
+/** The split save (speed session, Part 1): the same file without the
+    pictures. Each picture is its own file beside it (the folder's
+    `IMAGES_DIR`), written once and shared by every copy; the file names
+    them (`images`, and a `picture` tag where each one goes). What the
+    folder's saves and the in-browser automatic backups are. */
+export const SPLIT_VERSION = 2;
+/** The folder inside the backup folder that holds the pictures. */
+export const IMAGES_DIR = "gauntlet-images";
 
 export interface BackupFile {
   readonly format: typeof FORMAT;
-  readonly version: typeof VERSION;
+  readonly version: typeof VERSION | typeof SPLIT_VERSION;
+  /** Version 2: the picture files this copy needs (names in `IMAGES_DIR`). */
+  readonly images?: readonly string[];
   /** When it was made (ISO time). */
   readonly createdAt: string;
   /** The address it was made on, e.g. https://gauntlet-home.vercel.app. */
@@ -78,8 +90,35 @@ export function base64ToBytes(data: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-/** A stored value as JSON. Async because a picture's bytes are read. */
-export async function encode(value: unknown): Promise<Encoded> {
+/** A picture kept outside the file (version 2): where it goes in a value. */
+export interface PictureRef {
+  readonly kind: "picture";
+  /** Its file's name in `IMAGES_DIR`. */
+  readonly file: string;
+  readonly type: string;
+  readonly size: number;
+  /** A File's own name and time, if it was one. */
+  readonly name?: string;
+  readonly lastModified?: number;
+}
+
+/** Names a picture's file (version 2): called for each Blob instead of
+    reading its bytes into the backup. */
+export type PictureNamer = (blob: Blob) => Promise<string>;
+
+const EXTENSIONS: Record<string, string> = {
+  "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg", "image/avif": "avif",
+  "image/apng": "png", "image/bmp": "bmp", "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov",
+};
+/** The file ending for a picture of this type ("bin" when unknown). */
+export const extensionOf = (type: string) => EXTENSIONS[type.toLowerCase().split(";")[0]!.trim()] ?? "bin";
+
+/** A picture file's name as this code writes it: 40 hex digits and an ending. */
+export const IMAGE_NAME = /^[0-9a-f]{40}\.[a-z0-9]{1,5}$/;
+
+/** A stored value as JSON. Async because a picture's bytes are read (or,
+    with `picture`, its file is named instead: version 2). */
+export async function encode(value: unknown, picture?: PictureNamer): Promise<Encoded> {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") {
     // JSON has no NaN or Infinity.
@@ -88,8 +127,18 @@ export async function encode(value: unknown): Promise<Encoded> {
   if (value === undefined) return { [TAG]: { kind: "undefined" } };
   if (typeof value !== "object") throw new CannotEncode(typeof value);
   if (value instanceof Blob) {
-    const data = bytesToBase64(new Uint8Array(await value.arrayBuffer()));
     const name = typeof File !== "undefined" && value instanceof File ? value.name : undefined;
+    if (picture) {
+      const ref: PictureRef = {
+        kind: "picture",
+        file: await picture(value),
+        type: value.type,
+        size: value.size,
+        ...(name === undefined ? {} : { name, lastModified: (value as File).lastModified }),
+      };
+      return { [TAG]: ref };
+    }
+    const data = bytesToBase64(new Uint8Array(await value.arrayBuffer()));
     return { [TAG]: { kind: "blob", type: value.type, data, ...(name === undefined ? {} : { name }) } };
   }
   if (value instanceof Date) return { [TAG]: { kind: "date", value: value.toISOString() } };
@@ -98,20 +147,88 @@ export async function encode(value: unknown): Promise<Encoded> {
     const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
     return { [TAG]: { kind: "bytes", view: value.constructor.name, data: bytesToBase64(bytes) } };
   }
-  if (Array.isArray(value)) return Promise.all(value.map(encode));
+  if (Array.isArray(value)) return Promise.all(value.map((v) => encode(v, picture)));
   if (!isPlain(value)) throw new CannotEncode(value.constructor?.name ?? "object");
   const out: Record<string, Encoded> = {};
-  for (const [k, v] of Object.entries(value)) out[k] = await encode(v);
+  for (const [k, v] of Object.entries(value)) out[k] = await encode(v, picture);
   return out;
+}
+
+const refOf = (value: unknown): PictureRef | null => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  const tagged = (value as Record<string, unknown>)[TAG] as PictureRef | undefined;
+  return tagged && tagged.kind === "picture" && Object.keys(value).length === 1 ? tagged : null;
+};
+
+/** Thrown when a version 2 copy's pictures can't all be found. */
+export class MissingPictures extends Error {
+  readonly missing: readonly string[];
+  readonly total: number;
+  constructor(missing: readonly string[], total: number) {
+    super(`${missing.length} of this copy's ${total} picture${total === 1 ? "" : "s"} could not be found, so nothing was restored.`);
+    this.missing = missing;
+    this.total = total;
+  }
+}
+
+/** Every picture file a copy needs, with its size in bytes (version 2;
+    none for version 1). */
+export function pictureSizes(file: BackupFile): Map<string, number | undefined> {
+  const sizes = new Map<string, number | undefined>();
+  if (file.version !== SPLIT_VERSION) return sizes;
+  for (const name of file.images ?? []) sizes.set(name, undefined);
+  const walk = (v: unknown) => {
+    if (v === null || typeof v !== "object") return;
+    if (v instanceof Blob) return;
+    const ref = refOf(v);
+    if (ref) return void sizes.set(ref.file, ref.size);
+    for (const x of Array.isArray(v) ? v : Object.values(v)) walk(x);
+  };
+  for (const db of file.indexedDB) for (const s of db.stores) for (const r of s.records) walk(r.value);
+  return sizes;
+}
+
+/** Every picture file a copy needs (version 2; none for version 1). */
+export const picturesOf = (file: BackupFile): string[] => [...pictureSizes(file).keys()];
+
+/**
+ * A version 2 copy with its pictures put back in (as Blobs, where each
+ * `picture` tag was): what `decode` and a restore take. `pictures` holds
+ * each file's bytes by name; one that is missing throws `MissingPictures`,
+ * so a copy is never restored without some of its pictures. A version 1
+ * file is returned as it is.
+ */
+export function withPictures(file: BackupFile, pictures: ReadonlyMap<string, Blob>): BackupFile {
+  if (file.version !== SPLIT_VERSION) return file;
+  const needed = picturesOf(file);
+  const missing = needed.filter((n) => !pictures.has(n));
+  if (missing.length > 0) throw new MissingPictures(missing, needed.length);
+  const walk = (v: Encoded): Encoded => {
+    if (v === null || typeof v !== "object" || v instanceof Blob) return v;
+    const ref = refOf(v);
+    if (ref) {
+      const bytes = pictures.get(ref.file)!;
+      return ref.name !== undefined && typeof File !== "undefined"
+        ? new File([bytes], ref.name, { type: ref.type, ...(ref.lastModified === undefined ? {} : { lastModified: ref.lastModified }) })
+        : new Blob([bytes], { type: ref.type });
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
+  };
+  return {
+    ...file,
+    indexedDB: file.indexedDB.map((db) => ({ ...db, stores: db.stores.map((s) => ({ ...s, records: s.records.map((r) => ({ key: r.key, value: walk(r.value) })) })) })),
+  };
 }
 
 const VIEWS: Record<string, new (buffer: ArrayBuffer) => ArrayBufferView> = {
   Uint8Array, Int8Array, Uint8ClampedArray, Uint16Array, Int16Array, Uint32Array, Int32Array, Float32Array, Float64Array,
 };
 
-/** The inverse of `encode`. */
+/** The inverse of `encode`. A Blob already there (`withPictures`) stays. */
 export function decode(value: Encoded): unknown {
   if (value === null || typeof value !== "object") return value;
+  if (value instanceof Blob) return value;
   if (Array.isArray(value)) return value.map(decode);
   const record = value as Record<string, unknown>;
   const tagged = record[TAG] as Record<string, string> | undefined;
@@ -134,6 +251,9 @@ export function decode(value: Encoded): unknown {
         const View = tagged.view === undefined ? undefined : VIEWS[tagged.view];
         return View ? new View(buffer) : buffer;
       }
+      case "picture":
+        // Its bytes are in a file of their own: `withPictures` comes first.
+        throw new Error("This copy's pictures were not loaded.");
     }
   }
   const out: Record<string, unknown> = {};
@@ -145,7 +265,7 @@ export function decode(value: Encoded): unknown {
 export function readBackup(data: unknown): BackupFile | null {
   if (typeof data !== "object" || data === null) return null;
   const file = data as Partial<BackupFile>;
-  if (file.format !== FORMAT || file.version !== VERSION) return null;
+  if (file.format !== FORMAT || (file.version !== VERSION && file.version !== SPLIT_VERSION)) return null;
   if (typeof file.localStorage !== "object" || file.localStorage === null || !Array.isArray(file.indexedDB)) return null;
   if (!Object.values(file.localStorage).every((v) => typeof v === "string")) return null;
   return file as BackupFile;
@@ -199,6 +319,9 @@ export function describe(summary: Summary): string {
     plural(summary.whiteboardPages, "whiteboard page"),
   ].join(", ");
 }
+
+/** "14 pages · 6 boards · 2 maps". */
+export const shortWhat = (s: Summary) => [plural(s.whiteboardPages, "page"), plural(s.boards, "board"), plural(s.maps, "map")].join(" · ");
 
 /** `gauntlet-backup-2026-10-19-1432.json`, in the owner's local time. */
 export function fileName(prefix: string, now: Date): string {

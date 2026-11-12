@@ -1023,6 +1023,52 @@ Changes to the plan, newest last. Each says what and why.
   them). Both survive a reload and a backup restored into a fresh browser.
   Moved to IDEAS: a sound on/off button on a video without opening it.
 
+- 2026-11-12 — Speed session, Part 1: saving that scales (owner; request
+  word for word in docs/SPEED-SESSION.md; numbers in docs/HISTORY.md).
+  Cause measured in Part 0: every save (2.5 s after any change) and every
+  automatic backup re-read and re-encoded every picture into one file (76
+  screenshots: 87 MB read, a 117 MB file, stalls up to 0.5 s). Owner's
+  choices: design B, and the rules below.
+  * Split save (src/backup/format.ts, version 2). A save in the folder is a
+    small file with everything but pictures (gauntlet-save.json and the
+    dated gauntlet-auto-… copies); each picture is a file of its own in the
+    folder's "gauntlet-images", written once and shared by every copy. A
+    picture's file name comes from where it is stored, its size, type and
+    three 4 KB samples of it, so "already in the folder" is "a file of that
+    name is there" and a small edit reads no picture whole.
+  * Reading the site for a save runs in a worker (src/backup/worker.ts,
+    snapshot.ts, client.ts), never on the page; if the worker can't start
+    it runs on the page rather than not saving. The folder writes stay on
+    the page (a picture is handed over as it is stored, not read there).
+  * A failed save never reads "Saved": any error while reading the site or
+    writing the file shows the red "Not saved" until a save works.
+  * In-browser automatic backups hold everything but pictures (owner: the
+    pictures are already in this browser; the folder is the real backup).
+    So they fit: at the fixture's size the browser used to refuse them.
+  * A picture file is deleted only when no save left in the folder uses it
+    (every .json there is asked; if one can't be read, nothing is deleted;
+    only files this code named are ever deleted). It happens when old
+    dated copies go.
+  * Restore: the backup page lists the folder's saves, each with "Restore
+    this": the save and its pictures in one action (src/backup/restore.ts).
+    Pictures are looked for in the folder, then in this browser, all read
+    before anything is changed; if one is missing the restore is refused
+    whole and says which and where it looked.
+  * "Save a backup" (and the copy downloaded before a restore, and
+    "Download" on an automatic backup) stays ONE complete file, pictures
+    inside (version 1), made on demand in the worker.
+  * Every older backup still restores (one-file saves, dated copies,
+    in-browser ones): e2e with a file made before the change
+    (e2e/fixtures/backup-v1-before-split.json).
+  * Before a folder's first split save, if it already holds saves, one
+    complete backup in the old format is written there first
+    (gauntlet-full-backup-<date>.json, never deleted by this code).
+  Agent's notes: two tabs never write the folder at once (a browser lock);
+  undoing a restore from the in-browser "before a restore" copy needs the
+  pictures it had to still be in the browser or in the folder (with no
+  folder picked and a restore that removed pictures, use the complete file
+  the backup page downloads before a restore).
+
 IDEAS
 
 Asks from the owner made during a phase that do not block daily use.

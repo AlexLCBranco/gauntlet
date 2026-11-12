@@ -75,7 +75,9 @@ group("readBackup", () => {
     expect(readBackup(null)).toBeNull();
     expect(readBackup({ format: "linkkit-maps", version: 1, maps: [] })).toBeNull();
     expect(readBackup({ version: 1, boards: [] })).toBeNull();
-    expect(readBackup({ ...backup(), version: 2 })).toBeNull();
+    expect(readBackup({ ...backup(), version: 3 })).toBeNull();
+    // Version 2 is the split save (speed session, Part 1).
+    expect(readBackup({ ...backup(), version: 2 })).not.toBeNull();
     expect(readBackup({ ...backup(), localStorage: { a: 1 } })).toBeNull();
   });
 });

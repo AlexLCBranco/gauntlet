@@ -107,10 +107,26 @@ test("opening the home page keeps a backup by itself; after the board is lost, '
 test("with the browser's storage nearly full, no backup is kept, the page warns, and Boardkit still saves boards and pictures", async ({ page, context }) => {
   const id = await seedBoard(context);
   await page.goto("/backup/");
-  // A 10 MB quota, with a 2.5 MB picture already stored: a backup (the
-  // picture as text, ~3.4 MB) is more than backups may take (20%, 2 MB).
+  // A 10 MB quota, with 2.5 MB of data already stored: a backup of it is
+  // more than backups may take (20%, 2 MB). Text, not a picture: since the
+  // speed session (Part 1) a backup in the browser holds no pictures, so a
+  // picture no longer makes it big.
   await setQuota(page, 10 * 1024 * 1024);
-  expect(await putPicture(page, "boardImage:e2e-big", 2.5 * 1024 * 1024)).toBe(true);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const r = indexedDB.open("boardkit", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("kv");
+        r.onsuccess = () => {
+          const tx = r.result.transaction("kv", "readwrite");
+          tx.objectStore("kv").put("x".repeat(2.5 * 1024 * 1024), "e2e-big-text");
+          tx.oncomplete = () => (r.result.close(), resolve());
+          tx.onabort = () => reject(tx.error);
+        };
+      }),
+  );
+  // A picture as big is no obstacle to the backup any more, and still saves.
+  expect(await putPicture(page, "boardImage:e2e-big", 1024 * 1024)).toBe(true);
 
   await page.goto("/");
   await expect(page.locator("[data-backup-warning]")).toContainText("Automatic backup skipped", { timeout: 15_000 });

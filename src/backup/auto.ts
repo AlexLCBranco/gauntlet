@@ -1,3 +1,8 @@
+// (Since the speed session, Part 1, a backup is the split kind: everything
+// but pictures. The pictures are already in this browser, and in the
+// folder as files of their own; a second copy of them here protected
+// nothing and made the backup too big to keep at all.)
+//
 // Automatic backups: on opening the whiteboard (the home page) or the
 // backup page, and every 10 minutes while one stays open, the same backup the
 // "Save a backup" button downloads is kept in this browser, if anything
@@ -10,9 +15,10 @@
 // written to the backup folder the owner picked, if any (`folder.ts`).
 
 import { folderState, lastFolderNote, showFolderBanner, writeToFolder } from "./folder";
-import { describe, readBackup, summarize, type BackupFile } from "./format";
-import { fingerprint, plan, sameDataText, WARNING_TEXT, type Kept, type Warning } from "./policy";
-import { AUTO_DB, AUTO_NOTE, makeBackup } from "./storage";
+import { takeSnapshot } from "./client";
+import { readBackup, type BackupFile } from "./format";
+import { plan, WARNING_TEXT, type Kept, type Warning } from "./policy";
+import { AUTO_DB, AUTO_NOTE } from "./storage";
 
 const STORE = "backups";
 export const EVERY_MS = 10 * 60 * 1000;
@@ -26,7 +32,10 @@ export interface AutoBackup extends Kept {
   readonly fingerprint: string;
   /** What it holds, in the owner's words (`describe`). */
   readonly what: string;
-  /** The backup file, as JSON (what "Save a backup" downloads). */
+  /** The same, short ("14 pages · 6 boards · 2 maps"); absent on older ones. */
+  readonly short?: string;
+  /** The backup file, as JSON: since 2026-11-12 the split kind, without
+      pictures (format.ts); older ones are complete. */
   readonly json: string;
 }
 
@@ -92,12 +101,11 @@ export async function keepBackup(reason: Reason = "auto"): Promise<Outcome> {
   let outcome: Outcome;
   try {
     const now = new Date();
-    const file = await makeBackup(now);
-    const json = JSON.stringify(file);
-    const print = fingerprint(sameDataText(file));
+    const snap = await takeSnapshot(now);
+    const { json, print } = snap;
     // Outside the browser first, and whatever happens in it: a browser too
     // full to keep a copy is exactly when the folder's copy matters.
-    await writeToFolder(json, print, now, reason === "before-restore");
+    await writeToFolder(snap, now, reason === "before-restore");
     const existing = await listAutoBackups();
     if (reason === "auto" && existing[0]?.fingerprint === print) {
       outcome = { kind: "unchanged" };
@@ -111,7 +119,8 @@ export async function keepBackup(reason: Reason = "auto"): Promise<Outcome> {
         size,
         reason,
         fingerprint: print,
-        what: describe(summarize(file)),
+        what: snap.what,
+        short: snap.short,
         json,
       };
       const db = await openAuto();
