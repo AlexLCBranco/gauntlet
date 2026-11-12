@@ -31,8 +31,7 @@ Finished work goes to docs/HISTORY.md.
 ## Waiting for the owner
 
 - Feel of the map fixes (dim, label, far dot, a board's Map/Both views).
-- Phase 3 hand test (feel only): placing and scaling a map, editing it in
-  place, the List | Map | Both switch, one undo. Then "go to phase 4".
+- Phase 3 hand test (feel only): a map placed, scaled, edited; the switch.
 
 ## Half-done
 
