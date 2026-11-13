@@ -103,6 +103,10 @@ test.describe("adding widgets", () => {
     await cornerAt(page, w, 400, 500);
     // A new map's name is ready to type (as "+ New map" always did): done.
     await page.keyboard.press("Enter");
+    // Then straight to typing its first box (owner, 2026-11-13): left blank.
+    await expect(page.getByRole("textbox", { name: "Box name" })).toBeFocused();
+    for (let i = 0; i < 4 && (await page.evaluate(() => (window as any).editor.getEditingShapeId())); i++) await page.keyboard.press("Escape");
+    await expect.poll(() => page.evaluate(() => (window as any).editor.getEditingShapeId())).toBeNull();
 
     // Most recently used first: the map, then the Slate night, then the board.
     await pickAt(page, 200, 200);

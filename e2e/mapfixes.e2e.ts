@@ -191,6 +191,9 @@ test("bug 2: the label says what adds a box: tree rules on, a box's + or its dot
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.type("Loose");
   await page.keyboard.press("Enter");
+  // It goes straight to typing its first box (owner, 2026-11-13): left blank.
+  await expect(page.getByRole("textbox", { name: "Box name" })).toBeFocused();
+  await escapeEditing(page);
   const loose = await page.evaluate(() => {
     const e = (window as any).editor;
     return e.getCurrentPageShapes().filter((s: any) => s.type === "linkkit-map").map((s: any) => s.id).find((id: string) => id !== e.getEditingShapeId() && true);

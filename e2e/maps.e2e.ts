@@ -35,6 +35,13 @@ async function openWhiteboard(page: Page) {
   await expect(page.getByTestId("sheet")).toBeVisible();
 }
 
+/** Escape until no widget is being edited. */
+async function leaveEditing(page: Page) {
+  const editing = () => page.evaluate(() => (window as any).editor.getEditingShapeId() as string | null);
+  for (let i = 0; i < 4 && (await editing()); i++) await page.keyboard.press("Escape");
+  await expect.poll(editing).toBeNull();
+}
+
 /** Map button -> "+ New map"; the name is kept (Enter); waits until the
     widget is drawn. Its shape. */
 async function newMap(page: Page): Promise<MapShape> {
@@ -42,9 +49,10 @@ async function newMap(page: Page): Promise<MapShape> {
   await page.getByTestId("tools.map").click();
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.press("Enter");
-  // Enter keeps the name; it starts nothing else (the widget is not edited).
-  await page.waitForTimeout(200);
-  expect(await page.evaluate(() => (window as any).editor.getEditingShapeId())).toBeNull();
+  // Enter keeps the name and goes straight to typing the first box (owner,
+  // 2026-11-13, mapsfast.e2e.ts): left blank here, and editing ended.
+  await expect(page.getByRole("textbox", { name: "Box name" })).toBeFocused();
+  await leaveEditing(page);
   let made: MapShape | undefined;
   await expect
     .poll(async () => {
@@ -99,6 +107,7 @@ test("+ New map: a real Linkkit map, named in place, placed in the middle of the
   await expect(field).toHaveValue("Untitled map");
   await page.keyboard.type("Plans");
   await page.keyboard.press("Enter");
+  await leaveEditing(page);
   const [made] = await mapShapes(page);
   expect(made).toBeTruthy();
   await expect.poll(async () => (await stored(page, made.mapId))?.name).toBe("Plans");

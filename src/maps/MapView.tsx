@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useEditor, type Editor } from "tldraw";
 
 import { portalEventsHandled } from "../whiteboard/widgetEvents";
-import { mapTakesEscape, WhiteboardMap, type PageRect } from "./linkkit";
+import { addWhiteboardMapBoxAtScreenPoint, mapTakesEscape, WhiteboardMap, type PageRect } from "./linkkit";
 import { onBarePage } from "./mapEditing";
 
 /** How far Linkkit moved every box right and down so one could go left of
@@ -19,7 +19,7 @@ export function MapView({ mapId, editing, onContent }: { mapId: string; editing:
   const editor = useEditor();
   const box = useRef<HTMLDivElement>(null);
   useEditingEvents(editor, box, editing);
-  useRenameWhereDoubleClicked(box, editing);
+  useRenameWhereDoubleClicked(box, editing, mapId);
   const onPage = useCallback((x: number, y: number) => onBarePage(editor, x, y), [editor]);
   return (
     <div
@@ -114,9 +114,11 @@ function doubleClickJustMade(): Press | null {
 /**
  * Editing began with a double-click on a box or an arrow's label: that
  * double-click does in place what it does in Linkkit (rename the box,
- * edit the label), once the map being edited is drawn.
+ * edit the label), once the map being edited is drawn. On a map with no
+ * boxes yet, the same double-click adds the first box there, its name open
+ * (owner, 2026-11-13: one gesture, not a second double-click).
  */
-function useRenameWhereDoubleClicked(box: React.RefObject<HTMLDivElement | null>, editing: boolean) {
+function useRenameWhereDoubleClicked(box: React.RefObject<HTMLDivElement | null>, editing: boolean, mapId: string) {
   useEffect(() => {
     if (!editing) return;
     const at = doubleClickJustMade();
@@ -128,11 +130,15 @@ function useRenameWhereDoubleClicked(box: React.RefObject<HTMLDivElement | null>
         if (tries < 30) frame = requestAnimationFrame(() => find(tries + 1));
         return;
       }
+      if (!box.current?.querySelector("[data-box-id]")) {
+        addWhiteboardMapBoxAtScreenPoint(mapId, at.x, at.y);
+        return;
+      }
       const hit = document.elementFromPoint(at.x, at.y);
       if (!hit || !box.current?.contains(hit) || !hit.closest("[data-box-id], [data-link-id]")) return;
       hit.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y }));
     };
     let frame = requestAnimationFrame(() => find(0));
     return () => cancelAnimationFrame(frame);
-  }, [editing, box]);
+  }, [editing, box, mapId]);
 }

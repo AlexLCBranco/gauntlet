@@ -46,6 +46,9 @@ async function newMap(page: Page): Promise<MapShape> {
   await page.getByTestId("tools.map").click();
   await expect(page.getByTestId("map-name-field")).toBeFocused();
   await page.keyboard.press("Enter");
+  // Straight to typing its first box (owner, 2026-11-13): left blank here.
+  await expect(field(page)).toBeFocused();
+  await escapeEditing(page);
   await expect.poll(async () => (await mapShapes(page))[0]?.scale ?? 0).toBeGreaterThan(0);
   return (await mapShapes(page))[0];
 }
@@ -58,6 +61,16 @@ async function startEditing(page: Page, shapeId: string) {
   // as a third and fourth click, not a double-click.
   await page.waitForTimeout(500);
   await page.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2);
+  await expect(editingMap(page)).toBeVisible();
+  expect(await editingId(page)).toBe(shapeId);
+}
+
+/** Editing started with Enter on the selected widget: on an empty map a
+    double-click would add its first box too (mapsfast.e2e.ts). */
+async function startEditingWithEnter(page: Page, shapeId: string) {
+  await expect(page.locator(`[id="${shapeId}"] [data-linkkit-map][data-editing="false"] [data-map-view][data-ready]`)).toBeVisible();
+  await page.evaluate((id) => void (window as any).editor.select(id), shapeId);
+  await page.keyboard.press("Enter");
   await expect(editingMap(page)).toBeVisible();
   expect(await editingId(page)).toBe(shapeId);
 }
@@ -201,7 +214,7 @@ test("the map's name sits above the widget, never on it; an empty map is small w
   const mapBox = await box(page.locator(`[id="${made.id}"] [data-map-view]`));
   expect(nameBox.y + nameBox.height).toBeLessThanOrEqual(mapBox.y + 0.5);
 
-  await startEditing(page, made.id);
+  await startEditingWithEnter(page, made.id);
   const hint = page.locator(`[id="${made.id}"]`).getByText("Double-click anywhere to add a box");
   await expect(hint).toBeVisible();
   const view = await box(page.locator(`[id="${made.id}"] [data-map-view]`));
@@ -227,7 +240,7 @@ test("the map's name sits above the widget, never on it; an empty map is small w
     e.updateShape({ id, type: "linkkit-map", x: 0, y: 0 });
     e.setCamera({ x: 0, y: 0, z: 1 });
   }, made.id);
-  await startEditing(page, made.id);
+  await startEditingWithEnter(page, made.id);
   const corner = await box(page.locator(`[id="${made.id}"] [data-map-view]`));
   // (Below the style panel, which shows at the top left while it's selected.)
   const spots = { Below: { x: corner.x + 300, y: 420 }, Beside: { x: corner.x + corner.width + 300, y: corner.y + 60 } };

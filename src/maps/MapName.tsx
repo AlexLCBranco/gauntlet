@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { atom, useEditor, useValue, type TLShapeId } from "tldraw";
+import { atom, useEditor, useValue, type Editor, type TLShapeId } from "tldraw";
 
 import { pageUndo } from "../whiteboard/pageUndo";
-import { renameWhiteboardMap } from "./linkkit";
+import { openWhiteboardMapWithFirstBox, renameWhiteboardMap } from "./linkkit";
 import { mapListChanged, useMapList } from "./mapList";
 
 /** The map widget whose name is being typed, just after "New map". */
@@ -16,6 +16,20 @@ export function MapName({ shapeId, mapId, shown }: { shapeId: TLShapeId; mapId: 
   const name = useMapList().find((m) => m.id === mapId)?.name;
   if (naming && name) return <NameField shapeId={shapeId} mapId={mapId} name={name} shown={shown} />;
   return name ? <div className="gm-name">{name}</div> : null;
+}
+
+/**
+ * A new map goes straight to typing (owner, 2026-11-13): once its name is
+ * kept with Enter, the widget is being edited and its first box's name is
+ * open (Linkkit's `openWhiteboardMapWithFirstBox`; a tree or flowchart has
+ * its own first box, and nothing is added). Editing starts as tldraw's own
+ * Enter on a selected item starts it: the select tool's editing state.
+ */
+function startTyping(editor: Editor, shapeId: TLShapeId, mapId: string) {
+  if (!editor.getShape(shapeId)) return;
+  editor.setEditingShape(shapeId);
+  editor.setCurrentTool("select.editing_shape", {});
+  openWhiteboardMapWithFirstBox(mapId);
 }
 
 /**
@@ -49,7 +63,11 @@ function NameField({ shapeId, mapId, name, shown }: { shapeId: TLShapeId; mapId:
       editor.markEventAsHandled(e);
       if (e.type !== "keydown" || e.isComposing) return;
       if (e.key === "Enter") {
+        // Not a new line in the first box's name, which takes the focus
+        // before this key is done.
+        e.preventDefault();
         finish(true);
+        startTyping(editor, shapeId, mapId);
         // Its key-up comes after the field has gone, on the whiteboard,
         // where Enter on the selected widget starts editing it: not this one.
         const upOnce = (k: KeyboardEvent) => {
