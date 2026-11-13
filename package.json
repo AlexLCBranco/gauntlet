@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:local": "vite --mode local",
+    "dev:local": "vite --mode local-apps",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run && node --test \"scripts/*.test.mjs\"",

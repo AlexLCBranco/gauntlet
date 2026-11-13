@@ -14,7 +14,8 @@ import { handleUnfurl } from "./api/_lib/unfurl.js";
  * everything shares one origin as on the live site.
  *
  *   npm run dev          # apps from their live deployments (everyday dev)
- *   npm run dev:local    # apps from their local dev servers (5181, 5173)
+ *   npm run dev:local    # apps from their local dev servers (5181, 5173);
+ *                        # its mode is "local-apps" (Vite refuses "local")
  *
  * The apps keep their data per origin, so localhost has its own maps and
  * boards, apart from the live site's.
@@ -25,7 +26,7 @@ function apps(mode: string): Plugin {
     configureServer(server) {
       const rewrites = readRewrites();
       const redirects = readRedirects();
-      const targets = mode === "local" ? localTargets() : null;
+      const targets = mode === "local-apps" ? localTargets() : null;
       server.middlewares.use((req, res, next) => {
         const { pathname, search } = new URL(req.url ?? "/", "http://dev");
         const to = redirect(redirects, pathname, search);
