@@ -34,7 +34,7 @@ async function seedLinked(context: BrowserContext, name: string): Promise<{ mapI
     for (const item of path) await lk.getByRole("menuitem", { name: new RegExp(`^${item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) }).click();
   };
   const field = lk.getByRole("textbox", { name: "Box name" });
-  await menu("+ New", "Map with tree rules");
+  await menu("+ New", "Decision tree");
   await expect(field).toBeFocused();
   await lk.keyboard.type(name);
   await lk.keyboard.press("Enter");

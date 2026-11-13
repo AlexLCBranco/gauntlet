@@ -70,7 +70,7 @@ export async function seedMap(context: BrowserContext, name: string): Promise<st
   await lk.goto("/linkkit/");
   await lk.getByRole("button", { name: /^Switch map/ }).click();
   await lk.getByRole("menuitem", { name: /^\+ New/ }).click();
-  await lk.getByRole("menuitem", { name: /^Map with tree rules/ }).click();
+  await lk.getByRole("menuitem", { name: /^Decision tree/ }).click();
   await expect(lk.getByRole("textbox", { name: "Box name" })).toBeFocused();
   await lk.keyboard.type(name);
   await lk.keyboard.press("Enter");

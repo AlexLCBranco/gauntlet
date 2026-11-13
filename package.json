@@ -16,7 +16,7 @@
     "@tldraw/utils": "5.5.2",
     "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/79ae65bf3a0365dc36355c516544730770f90cbd",
     "calendarkit": "https://codeload.github.com/AlexLCBranco/calendarkit/tar.gz/7c606c621592167d14e7ddff0554cb425f937323",
-    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/c032a8bfe51e9fd09fbd094f4d03a579202e9898",
+    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/7b6653bcb6fe1b1cffe738a819ac6ee87311bc33",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "shadcn": "file:src/boards/vendor/shadcn",

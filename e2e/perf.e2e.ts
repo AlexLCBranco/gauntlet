@@ -132,7 +132,7 @@ test("a big map (150 boxes, 100 arrows) stays smooth on the whiteboard: dragging
   await expect(lk.locator("[data-ready]")).toBeVisible({ timeout: 30_000 });
   await lk.getByRole("button", { name: /^Switch map/ }).click();
   await lk.getByRole("menuitem", { name: "+ New", exact: true }).click();
-  await lk.getByRole("menuitem", { name: /^Map(?! with)/ }).click();
+  await lk.getByRole("menuitem", { name: /^Free map/ }).click();
   await lk.keyboard.press("Escape");
   await lk.waitForTimeout(800);
   const mapId = await lk.evaluate(() => localStorage.getItem("linkkit:active")!);
