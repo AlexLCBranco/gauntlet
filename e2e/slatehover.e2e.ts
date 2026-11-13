@@ -198,6 +198,13 @@ test("Slate hover: the same popups as /calendar (record tooltip, streak, season 
   // it, so the browser sends no new hover): the popup doesn't stay behind.
   const sb = await box(streakEl);
   await page.evaluate(({ x, y }) => {
+    // Seen by the page itself the moment it happens: the browser may hover
+    // again (and reopen a popup) sooner than a test can look.
+    const w = window as unknown as { __closed?: boolean };
+    w.__closed = false;
+    new MutationObserver((_, o) => {
+      if (!document.querySelector("[data-testid=streak-popup]")) (w.__closed = true), o.disconnect();
+    }).observe(document.body, { childList: true, subtree: true });
     const editor = (window as any).editor;
     const c = editor.getCamera();
     const v = editor.getViewportScreenBounds();
@@ -205,7 +212,7 @@ test("Slate hover: the same popups as /calendar (record tooltip, streak, season 
     const z = c.z * 1.05;
     editor.setCamera({ x: (x - v.x) / z - p.x, y: (y - v.y) / z - p.y, z });
   }, { x: sb.x + sb.width / 2, y: sb.y + sb.height / 2 });
-  await expect(page.getByTestId("streak-popup")).toHaveCount(0, { timeout: 1000 });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __closed?: boolean }).__closed), { timeout: 1000 }).toBe(true);
   // The browser then hovers what is under the pointer now (as in /calendar):
   // a popup that opens again sits under that streak, not where the old one was.
   await page.waitForTimeout(1500);
