@@ -19,9 +19,8 @@ Finished work goes to docs/HISTORY.md.
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
   list paste). Item 6's mod+c "clash" is a dev-only Boardkit check that
   ignores `when`: harmless; fix in Boardkit next time. STOPPED for report.
-- EDGES ROUND (owner, 2026-11-05; docs/ROUND-EDGES.md): items 0-9 DONE and
-  LIVE (DECISIONS 2026-11-05; results in docs/HISTORY.md "Edges round").
-  STOPPED for the owner's report and hand check (feel only).
+- EDGES ROUND (2026-11-05, docs/ROUND-EDGES.md): DONE, LIVE (HISTORY);
+  waiting for the owner's hand check (feel only).
 - SPEED SESSION (owner, 2026-11-12; request in docs/SPEED-SESSION.md,
   Parts 0-11 (9-11 added 2026-11-13: board export, text scaling, date
   stamp), one at a time, stop and report after each): PARTS 0-3 DONE
@@ -85,11 +84,10 @@ Finished work goes to docs/HISTORY.md.
   real-data test (`e2e/realdata.e2e.ts`, owner's backup file read at run
   time from Downloads) runs only on localhost.
 - Dev tips: `node scripts/sync-linkkit.mjs` copies ~/linkkit/src into
-  node_modules/linkkit (as sync-boardkit and sync-calendarkit do). After `node scripts/sync-boardkit.mjs` restart the dev server
-  (and a browser that had the page open may keep the old Boardkit module
-  cached: use a fresh profile). `local-e2e.mjs` joins its arguments into a
-  shell line: use `file:line`. Never pipe test commands without pipefail;
-  use the real exit code.
+  node_modules/linkkit (so do sync-boardkit, sync-calendarkit); after
+  sync-boardkit restart the dev server and use a fresh browser profile.
+  `local-e2e.mjs` joins its arguments into a shell line: use `file:line`.
+  Never pipe test commands without pipefail; use the real exit code.
 - CI (GitHub Actions, gauntlet and Boardkit): lint, unit tests, build on
   every push. The e2e stays local.
 - Vercel Authentication is off for previews; turn back on with
