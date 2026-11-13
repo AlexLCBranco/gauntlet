@@ -13,8 +13,12 @@ Finished work goes to docs/HISTORY.md.
   step 1 done in calendarkit; STEP 2 (static widget) DONE: src/slate/,
   e2e/slate.e2e.ts (9), 2 Slate tests in perf.e2e.ts. STOPPED for the
   owner's report. Step 3 not started (←/→ date, keys vs nudge, ↗, tooltips).
-- Pinned: Boardkit v0.0.106 (`79ae65b`), Linkkit v0.0.114 (`c032a8b`),
+- Pinned: Boardkit v0.0.106 (`79ae65b`), Linkkit v0.0.117 (`3e802ab`),
   calendarkit v1.40.1 (`7c606c6`); all three on their main, live.
+- MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
+  items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
+  list paste). Item 6's mod+c "clash" is a dev-only Boardkit check that
+  ignores `when`: harmless; fix in Boardkit next time. STOPPED for report.
 - EDGES ROUND (owner, 2026-11-05; docs/ROUND-EDGES.md): items 0-9 DONE and
   LIVE (DECISIONS 2026-11-05; results in docs/HISTORY.md "Edges round").
   STOPPED for the owner's report and hand check (feel only).
@@ -58,14 +62,10 @@ Finished work goes to docs/HISTORY.md.
 
 ## Deadlines
 
-- tldraw license: the hobby key is installed in Vercel Production
-  (`VITE_TLDRAW_LICENSE_KEY`, project `gauntlet-home`), valid until
-  2027-10-20. Preview still has the evaluation key, which expires
-  2026-11-01: after that, previews lose the whiteboard (tldraw hides the
-  editor after 5 s). Test on localhost then. Swapping a key: edit the value
-  in Vercel → Settings → Environment Variables, then redeploy (Vite bakes it
-  into the build). Check: `BRIDGE_SITE=https://gauntlet-home.vercel.app npx
-  playwright test e2e/whiteboard.e2e.ts` ("license is accepted").
+- tldraw license: hobby key in Vercel Production (`VITE_TLDRAW_LICENSE_KEY`,
+  `gauntlet-home`) until 2027-10-20; Preview's evaluation key expired
+  2026-11-01 (previews lose the whiteboard: test on localhost). Swap: edit
+  it in Vercel env vars, redeploy; check e2e/whiteboard.e2e.ts on the live site.
 
 ## Standing notes
 
