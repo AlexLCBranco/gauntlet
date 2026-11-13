@@ -50,6 +50,13 @@
   z-index: 1;
   width: max-content;
 }
+/* React Flow hides what leaves its own box (an inline style), so a box at
+   the top of a map had its toolbar (the +, the colours) cut off at the
+   map's edge, out of reach. Linkkit already cuts React Flow's layer to the
+   map's area and a margin round it (its clip-path): that is enough. */
+.gm-map [data-linkkit-map] .react-flow {
+  overflow: visible !important;
+}
 .gm-name:not(.gm-name-field) {
   pointer-events: none;
 }

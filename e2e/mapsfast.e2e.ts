@@ -264,7 +264,12 @@ test("item 4: Ctrl+V of a text list while a map is edited goes to the map (one b
   await expect(boxes(page)).toHaveCount(4);
   await expect(arrows(page)).toHaveCount(3);
   for (const n of ["Milk", "Eggs", "Flour"]) await expect(boxOf(page, n)).toBeVisible();
-  await page.waitForTimeout(400);
+  // Laid out clear of each other once they settle (Linkkit's layout).
+  const apart = async () => {
+    const r = await Promise.all(["A", "Milk", "Eggs", "Flour"].map(async (n) => box(boxOf(page, n))));
+    return r.every((p, i) => r.every((q, j) => i === j || p.x + p.width <= q.x || q.x + q.width <= p.x || p.y + p.height <= q.y || q.y + q.height <= p.y));
+  };
+  await expect.poll(apart, { message: "the pasted boxes overlap nothing" }).toBe(true);
   await shot(page, "4c-list-paste");
   expect(await otherShapes(page), "no whiteboard shape made").toEqual([]);
   expect(await editingId(page)).toBe(made.id);
