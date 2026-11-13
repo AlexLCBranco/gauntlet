@@ -23,7 +23,8 @@ Finished work goes to docs/HISTORY.md.
   LIVE (DECISIONS 2026-11-05; results in docs/HISTORY.md "Edges round").
   STOPPED for the owner's report and hand check (feel only).
 - SPEED SESSION (owner, 2026-11-12; request in docs/SPEED-SESSION.md,
-  Parts 0-8, one at a time, stop and report after each): PARTS 0-2 DONE
+  Parts 0-11 (9-11 added 2026-11-13: board export, text scaling, date
+  stamp), one at a time, stop and report after each): PARTS 0-2 DONE
   (1: split save, src/backup/; 2: pictures, src/images/, src/stamps/;
   DECISIONS 2026-11-12; e2e split-save, pictures, perf-save; numbers in
   docs/HISTORY.md "Speed session"). STOPPED for the owner's report.

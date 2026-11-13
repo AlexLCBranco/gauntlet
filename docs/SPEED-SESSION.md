@@ -114,3 +114,42 @@ sync, anything not listed above. New ideas go to the IDEAS list.
 REPORTS: per part, what changed in one or two lines, test results in one line
 (e.g. "unit 88 ok, e2e 94 ok, live ok"), numbers before/after for Parts 0-2,
 and anything the owner must decide. Update HANDOFF.md after every part.
+
+# Parts 9-11 (owner's request, 2026-11-13, word for word)
+
+Done after Part 8, in order, one at a time, stopping to report after each like
+the other parts. Parts 3-8 are not reordered or skipped. Phase 4 stays NOT
+started.
+
+PART 9 - PAGE EXPORT DRAWS BOARDS WRONG (bug, owner 2026-11-09, still there)
+Exporting a page to PNG draws a Boardkit board wrong: list titles squeezed and
+wrapped, edit boxes with a white border visible around the list title and
+every card's text, and card text not using the card's full width. The Slate
+(calendar) widget exports correctly, so compare with how it is exported. The
+exported picture must look exactly like the board on screen. Find the cause
+(whiteboard export code or Boardkit's own components) and fix it in the right
+repo. Test: export a page with a board, a map and a Slate and compare each to
+an on-screen screenshot of the same page (pixel comparison with a tolerance).
+
+PART 10 - RESIZING A TEXT BOX SCALES ITS FONT
+Today changing a text box's size does not change the font size. Owner wants:
+dragging a text box's corner makes the text bigger or smaller with the box,
+like scaling an image. If dragging a side handle should keep changing only
+the width (re-wrapping), keep that, and say in the report which handle does
+what. tldraw is pinned at 5.5.2: check its own source for how text scaling
+works before building anything. Our font sizes live in meta (fontPx,
+lineHeight): keep those in sync with the scaled size so the style panel shows
+the real size. Undo restores the old size in one step. Tests for corner
+scaling, side resizing, undo, and that the size survives a reload.
+
+PART 11 - TODAY'S DATE IN ONE CLICK
+The owner makes a board every day and types the date by hand every time
+(e.g. "4/11", day/month). Add a "today's date" item to the stamps tray
+(src/stamps/): one click (or drag) drops today's date as normal text in the
+owner's time zone (America/Sao_Paulo), format d/m like "4/11". It is fixed
+text, editable like any text, and never changes by itself. If a better
+one-click place exists than the stamps tray, propose it in the report but
+build the stamp. Tests: the stamp drops the right date (mock the clock,
+including just after midnight), and the text is editable and saved.
+
+REPORTS: same format as the other parts. Update HANDOFF.md after every part.
