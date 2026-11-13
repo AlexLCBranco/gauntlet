@@ -19,7 +19,7 @@ import { useEditedMap } from "../maps/mapEditing";
 import { AddMapView, BoardMenu } from "./mapLink";
 import { MapView, type MapShift } from "../maps/MapView";
 import { pageBox } from "../pages/keepFilled";
-import { insideDelta } from "../pages/sheet";
+import { arrivalRoom, arriveDeltaNow } from "../pages/arrive";
 import { portalEventsHandled } from "../whiteboard/widgetEvents";
 import { BoardName } from "./BoardName";
 import { WhiteboardBoard, useSelectionStore } from "./boardkit";
@@ -186,17 +186,17 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
       const current = editor.getShape<BoardShape>(shape.id);
       if (!current) return;
       // Before the page is sized (first render), a board keeps its scale.
-      const fit = fitBoard({ w: el.offsetWidth, h: el.offsetHeight }, current.props.scale, pageBox.get() ?? { w: Infinity, h: Infinity });
+      // Placed new, it arrives inside the window at 100% (pages/arrive.ts).
+      const fit = fitBoard({ w: el.offsetWidth, h: el.offsetHeight }, current.props.scale, pageBox.get() ?? { w: Infinity, h: Infinity }, arrivalRoom(editor));
       const p = current.props;
       if (Math.abs(fit.w - p.w) < 0.5 && Math.abs(fit.h - p.h) < 0.5 && fit.scale === p.scale) return;
-      // Placed new: grow from the middle, where it was put, inside the page.
+      // Placed new: grow from the middle, where it was put, inside the window.
       let move = {};
       if (p.scale === 0) {
         // Placed by the widget picker or a paste (`meta.corner`): its
         // top-left corner stays at the cursor.
         const at = current.meta?.corner ? { x: current.x, y: current.y } : { x: current.x + (p.w - fit.w) / 2, y: current.y + (p.h - fit.h) / 2 };
-        const page = pageBox.get();
-        const d = page ? insideDelta({ ...at, w: fit.w, h: fit.h }, page) : { x: 0, y: 0 };
+        const d = pageBox.get() ? arriveDeltaNow(editor, { ...at, w: fit.w, h: fit.h }) : { x: 0, y: 0 };
         move = { x: at.x + d.x, y: at.y + d.y };
       }
       editor.run(() => editor.updateShape<BoardShape>({ id: shape.id, type: BOARD_TYPE, ...move, props: fit }), { history: "ignore" });

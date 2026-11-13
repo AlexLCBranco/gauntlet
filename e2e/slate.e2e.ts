@@ -97,7 +97,7 @@ function copyColumns(n: number, cardH: number, page: { w: number; h: number }) {
 /** Where the page's 100% view starts and how big it is (page units). */
 const view = (page: Page) => page.evaluate(() => { const b = (window as any).editor.getViewportPageBounds(); return { x: b.x, y: b.y, w: b.w, h: b.h }; });
 
-test("Slate: one click puts tonight's games on the page, in tip-off order, in the copies' columns, fitted to the page; one undo removes it", async ({ page, request }) => {
+test("Slate: one click puts tonight's games on the page, in tip-off order, in the copies' columns, a third of the window wide (speed session Part 3); one undo removes it", async ({ page, request }) => {
   const night = nightWith(await nights(request), 15);
   await openWhiteboard(page, noonOn(night.date));
   const v = await view(page);
@@ -105,16 +105,19 @@ test("Slate: one click puts tonight's games on the page, in tip-off order, in th
   expect(s.date).toBe(night.date);
   expect(await cardIds(page, s.id)).toEqual(night.ids);
 
+  // The room: a third of the window's width, 90% of its height (at 100%).
+  const room = { w: v.w / 3, h: v.h * 0.9 };
   const cardH = await widgetOf(page, s.id).locator(".ck-slate-card").evaluateAll((cs) => Math.max(...cs.map((c) => (c as HTMLElement).offsetHeight)));
-  expect(s.cols).toBe(copyColumns(night.ids.length, cardH, v));
+  expect(s.cols).toBe(copyColumns(night.ids.length, cardH, room));
   const grid = await widgetOf(page, s.id).locator(".ck-slate-copy").evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(" ").length);
   expect(grid).toBe(s.cols);
-  // The whole night inside the page, filling it one way.
+  // The whole night inside the window, filling the room one way.
   expect(s.x).toBeGreaterThanOrEqual(v.x - 0.5);
   expect(s.y).toBeGreaterThanOrEqual(v.y - 0.5);
   expect(s.x + s.w).toBeLessThanOrEqual(v.x + v.w + 0.5);
   expect(s.y + s.h).toBeLessThanOrEqual(v.y + v.h + 0.5);
-  expect(Math.max(s.w / v.w, s.h / v.h)).toBeGreaterThan(0.97);
+  expect(s.w).toBeLessThanOrEqual(room.w + 0.5);
+  expect(Math.max(s.w / room.w, s.h / room.h)).toBeGreaterThan(0.97);
   // Selected, as a board placed new is.
   expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([s.id]);
 

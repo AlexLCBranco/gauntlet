@@ -51,10 +51,13 @@ async function cornerNow(page: Page, w: W, x: number, y: number) {
     const a = e.pageToScreen({ x: r.x, y: r.y });
     const c = e.pageToScreen({ x: r.maxX, y: r.maxY });
     const p = e.getViewportPageBounds();
-    return { x: a.x, y: a.y, maxX: c.x, maxY: c.y, pageRight: e.pageToScreen({ x: p.maxX, y: 0 }).x, pageBottom: e.pageToScreen({ x: 0, y: p.maxY }).y, cam: JSON.stringify(e.getCamera()) };
+    // Pulled in, its far side stops 5% of the view short of the view's edge (speed session Part 3, src/pages/arrive.ts).
+    const v0 = e.pageToScreen({ x: p.x, y: p.y });
+    const v1 = e.pageToScreen({ x: p.maxX, y: p.maxY });
+    return { x: a.x, y: a.y, maxX: c.x, maxY: c.y, pageRight: v1.x - (v1.x - v0.x) * 0.05, pageBottom: v1.y - (v1.y - v0.y) * 0.05, cam: JSON.stringify(e.getCamera()) };
   }, w.id);
   const info = `${w.type} at ${Math.round(b.x)},${Math.round(b.y)} to ${Math.round(b.maxX)},${Math.round(b.maxY)}, camera ${b.cam}`;
-  // Too big to fit from there: pulled back inside the page (its far side on the page's edge).
+  // Too big to fit from there: pulled back inside the window (its far side at the window's 5% margin).
   if (Math.abs(b.x - x) >= 25) expect(b.x < x && Math.abs(b.maxX - b.pageRight) < 2, `x: at the cursor or pulled inside: ${info}`).toBe(true);
   if (Math.abs(b.y - y) >= 25) expect(b.y < y && Math.abs(b.maxY - b.pageBottom) < 2, `y: at the cursor or pulled inside: ${info}`).toBe(true);
 }

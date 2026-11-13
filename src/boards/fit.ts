@@ -10,15 +10,18 @@ import type { Box } from "../pages/sheet";
 
 type Size = { w: number; h: number };
 
-/** A board placed new (`scale` 0) starts at full size, or smaller if that
-    wouldn't fit in most of the sheet. */
+/** A board placed new (`scale` 0) with no `room` given starts at full
+    size, or smaller if that wouldn't fit in most of the sheet. */
 const FIRST_ROOM = 0.9;
 
-export function fitBoard(natural: Size, scale: number, sheet: Pick<Box, "w" | "h">): { scale: number; w: number; h: number } {
+/** `room` (pages/arrive.ts): the most a board placed new may measure, so
+    it arrives inside the window at 100% (speed session Part 3). */
+export function fitBoard(natural: Size, scale: number, sheet: Pick<Box, "w" | "h">, room?: Size): { scale: number; w: number; h: number } {
   const nw = Math.max(1, natural.w);
   const nh = Math.max(1, natural.h);
   const most = Math.min(sheet.w / nw, sheet.h / nh);
-  let s = scale > 0 ? scale : Math.min(1, most * FIRST_ROOM);
+  let s = scale;
+  if (!(s > 0)) s = room ? Math.min(1, room.w / nw, room.h / nh) : Math.min(1, most * FIRST_ROOM);
   if (s > most) s = most;
   return { scale: s, w: nw * s, h: nh * s };
 }

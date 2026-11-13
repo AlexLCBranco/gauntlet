@@ -23,3 +23,14 @@ it("shrinks a board that grew past the sheet back inside it", () => {
   expect(r.scale).toBe(0.5);
   expect(r.h).toBe(1080);
 });
+
+it("a new board with a room (the window) starts inside it", () => {
+  const r = fitBoard({ w: 3000, h: 800 }, 0, { w: 4000, h: 3000 }, { w: 1200, h: 700 });
+  expect(r.scale).toBeCloseTo(0.4);
+  expect(r.w).toBeCloseTo(1200);
+  expect(fitBoard({ w: 600, h: 400 }, 0, sheet, { w: 1200, h: 700 })).toEqual({ scale: 1, w: 600, h: 400 });
+});
+
+it("a room never changes a board the user already scaled", () => {
+  expect(fitBoard({ w: 3000, h: 800 }, 1, { w: 4000, h: 3000 }, { w: 1200, h: 700 })).toEqual({ scale: 1, w: 3000, h: 800 });
+});

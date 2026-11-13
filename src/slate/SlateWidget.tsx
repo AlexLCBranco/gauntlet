@@ -3,7 +3,8 @@ import { useEditor, type Editor } from "tldraw";
 
 import { fitBoard } from "../boards/fit";
 import { pageBox } from "../pages/keepFilled";
-import { insideDelta, SHEET } from "../pages/sheet";
+import { arriveDeltaNow, roomForWindow, windowSize } from "../pages/arrive";
+import { SHEET } from "../pages/sheet";
 import {
   liveOddsStore,
   loadCalendarData,
@@ -165,6 +166,14 @@ function Message({ date, text, size, retry }: { date: string; text: string; size
   );
 }
 
+/** A new Slate's room: a third of the window's width (owner, speed
+    session Part 3: fitted to the whole page was far too big), and the
+    height a new thing may take (pages/arrive.ts). */
+export const SLATE_WIDTH_SHARE = 1 / 3;
+export function slateRoom(win: { w: number; h: number }) {
+  return { w: win.w * SLATE_WIDTH_SHARE, h: roomForWindow(win).h };
+}
+
 function fit(editor: Editor, id: SlateShape["id"], el: HTMLElement, n: number) {
   const cur = editor.getShape<SlateShape>(id);
   if (!cur || el.offsetWidth === 0) return;
@@ -172,22 +181,24 @@ function fit(editor: Editor, id: SlateShape["id"], el: HTMLElement, n: number) {
   const page = pageBox.get() ?? SHEET;
   const natural = { w: el.offsetWidth, h: el.offsetHeight };
   if (p.cols === 0) {
-    // First sizing: the columns whose cards come out largest on the page,
-    // and the night fitted to the page; placed new, it grows from where
-    // it was put, inside the page.
+    // First sizing (speed session Part 3): the night fitted to a third of
+    // the window's width (and its height), in the columns whose cards come
+    // out largest there (calendarkit's rule); placed new, it grows from
+    // where it was put, inside the window.
+    const room = slateRoom(windowSize(editor));
     let next: { cols: number; scale: number; w: number; h: number };
     if (n > 0) {
       const cards = [...el.querySelectorAll<HTMLElement>(".ck-slate-card")];
       const card = { width: SLATE_CARD_WIDTH, height: Math.max(...cards.map((c) => c.offsetHeight)) };
-      const c = slateCopyColumns(n, card, { width: page.w, height: page.h });
+      const c = slateCopyColumns(n, card, { width: room.w, height: room.h });
       const size = slateImageSize(n, c, card);
-      const s = Math.min(page.w / size.width, page.h / size.height);
+      const s = Math.min(room.w / size.width, room.h / size.height);
       next = { cols: c, scale: s, w: size.width * s, h: size.height * s };
     } else {
-      next = { cols: 1, ...fitBoard(natural, 1, page) };
+      next = { cols: 1, ...fitBoard(natural, 0, page, room) };
     }
     const at = cur.meta?.corner ? { x: cur.x, y: cur.y } : { x: cur.x + (p.w - next.w) / 2, y: cur.y + (p.h - next.h) / 2 };
-    const d = insideDelta({ ...at, w: next.w, h: next.h }, page);
+    const d = arriveDeltaNow(editor, { ...at, w: next.w, h: next.h });
     editor.run(() => editor.updateShape<SlateShape>({ id, type: SLATE_TYPE, x: at.x + d.x, y: at.y + d.y, props: next }), { history: "ignore" });
     return;
   }

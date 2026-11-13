@@ -15,6 +15,7 @@ import { WebEmbedDialog } from "../embed/WebEmbedDialog";
 import { WebEmbedShapeUtil, webEmbeds } from "../embed/WebEmbedShape";
 import { ImportNotice } from "../import/excalidraw/ImportNotice";
 import { ourExcalidrawImport } from "../import/excalidraw/importExcalidraw";
+import { picturesArriveInside } from "../pages/arrive";
 import { takeBackEmptyNewBoards } from "../boards/emptyNewBoards";
 import { BoardkitParts } from "../boards/BoardkitParts";
 import { LassoOverlay } from "../lasso/LassoOverlay";
@@ -297,7 +298,10 @@ function setUp(editor: Editor) {
   const stopApps = appsTogether();
   // Excalidraw pastes and .excalidraw files: our own import (src/import/excalidraw/).
   ourExcalidrawImport(editor);
+  // Pasted or inserted pictures arrive inside the window (src/pages/arrive.ts).
+  const stopArrive = picturesArriveInside(editor);
   return () => {
+    stopArrive();
     stopApps();
     stopTakeBackMaps();
     stopTakeBack();

@@ -9,6 +9,7 @@ import {
   type VecLike,
 } from "tldraw";
 
+import { placingPictures } from "../../pages/arrive";
 import { pageBox, sizePage } from "../../pages/keepFilled";
 import { SHEET } from "../../pages/sheet";
 import { convertExcalidraw, parseExcalidraw, type ExcData, type ExcFile, type Measure } from "./convert";
@@ -177,7 +178,8 @@ export function ourExcalidrawImport(editor: Editor) {
         window.dispatchEvent(new CustomEvent(IMPORT_EVENT, { detail: { source: "file", count: 0, notConverted: [(err as Error).message] } }));
       }
     }
-    if (rest.length > 0 && tldrawFiles) await tldrawFiles({ ...content, files: rest });
+    // Pictures arrive inside the window (pages/arrive.ts).
+    if (rest.length > 0 && tldrawFiles) await placingPictures(() => tldrawFiles({ ...content, files: rest }));
   });
 }
 

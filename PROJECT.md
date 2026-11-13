@@ -1101,6 +1101,22 @@ Changes to the plan, newest last. Each says what and why.
     stays JPEG.
   * Only the current page's shapes are mounted: confirmed (4 of 76 shapes
     and 4 <img> in the page on the fixture), now asserted by tests.
+- 2026-11-13 — Speed session, Part 3: nothing arrives too big (owner).
+  A pasted, dropped or inserted picture or video, a new Slate, board or
+  map arrives with all four corners inside the window at 100% zoom
+  (src/pages/arrive.ts). Agent's choices: "inside" means within 90% of the
+  window, centred where it was put and pulled in by the spare 5% on each
+  side (clear of the toolbar and page arrows); a picture keeps its shape,
+  is shrunk only when bigger, in the paste's own undo step; the rule is for
+  things placed new (a board or map already on a page, copied or pasted
+  inside the whiteboard, keeps its size: Part 6's subject); zoomed in past
+  the thing's size it lands at the view's corner, still inside the page.
+  Replaces "a new board starts at 90% of the page" (2026-10-18): the page
+  can be far bigger than the window. A new Slate starts at a third of the
+  window's width (owner: fitted to the page was far too big), at most 90%
+  of its height, in calendarkit's column rule applied to that room. A new
+  map's size waits for Linkkit's map to be laid out (it first draws a
+  ~260 x 72 box, which fixed big maps at full size), 3 s at most.
 
 IDEAS
 
