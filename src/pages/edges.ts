@@ -217,7 +217,7 @@ export function trackBoxKey(): () => void {
 }
 
 /** Our own floating controls (never tldraw's watermark: see above). */
-const CONTROLS = [".gk-toolbar", ".gk-more", ".gauntlet-pages", ".gauntlet-zoom-undo .gauntlet-island", ".tlui-menu-zone", ".gk-style-panel", ".tlui-contextual-toolbar", ".gk-panel-tab", ".gs-tray"];
+export const CONTROLS = [".gk-toolbar", ".gk-more", ".gauntlet-pages", ".gauntlet-zoom-undo .gauntlet-island", ".tlui-menu-zone", ".gk-style-panel", ".tlui-contextual-toolbar", ".gk-panel-tab", ".gs-tray"];
 
 /**
  * The page's floating controls give way to a selection's handles under

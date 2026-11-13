@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import { expect, test, type APIRequestContext, type Browser, type Page } from "./test";
 
-import { box, whiteboardSaved } from "./helpers";
+import { box, showCalendarNotes, whiteboardSaved } from "./helpers";
 
 /**
  * calendarkit's Slate as a whiteboard widget (Slate widget step 2, static;
@@ -197,6 +197,7 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
   );
   await page.clock.setFixedTime(noonOn(night.date));
   await page.goto("/calendar/?view=league&layout=slate");
+  await showCalendarNotes(page);
   await expect(page.locator('[data-testid="slate"] .ck-slate-card')).toHaveCount(night.ids.length);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
@@ -208,7 +209,7 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
       const o = root.getBoundingClientRect();
       w.__stage = [...root.querySelectorAll(".ck-slate-card, .ck-gnote")].map((e) => {
         const r = e.getBoundingClientRect();
-        return { x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height, text: (e as HTMLElement).innerText };
+        return { x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height, text: (e as HTMLElement).innerText.replace(/↗s*/g, "") };
       });
       obs.disconnect();
     });
@@ -232,7 +233,7 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
   return { png, ratio, stage, stageShot };
 }
 
-test("Slate: at 100% the widget is calendarkit's copy of that night: same cards and note boxes at the same places and sizes, same text, near-identical pixels; nothing between them; no ↗ or ⇄", async ({ browser, baseURL, request }) => {
+test("Slate: at 100% the widget is calendarkit's copy of that night: same cards and note boxes at the same places and sizes, same text, near-identical pixels; nothing between them; no ⇄ (the ↗ of step 3 aside)", async ({ browser, baseURL, request }) => {
   test.setTimeout(240_000);
   const night = nightWith(await nights(request), 5);
   const notes = notesFor(night.ids);
@@ -258,15 +259,17 @@ test("Slate: at 100% the widget is calendarkit's copy of that night: same cards 
   await expect.poll(async () => (await box(w)).width).toBeCloseTo(copy.png ? (await sizeOf(page, copy.png)).w / copy.ratio : 0, 0);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
-  // No controls of steps 3-4 yet: no ↗, no ⇄, no field.
-  await expect(w.locator('[data-testid="game-link"], [data-testid="note-switch"], textarea, a, button')).toHaveCount(0);
+  // No controls of step 4 yet: no ⇄, no field. Step 3's ↗ is on every
+  // card (speed session Part 4); hidden for the comparison (copies have none).
+  await expect(w.locator('[data-testid="note-switch"], textarea, button')).toHaveCount(0);
+  await expect(w.getByTestId("game-link")).toHaveCount(night.ids.length);
   // Slot labels as saved.
   const slots = await w.locator('[data-testid="note-slot"]').allTextContents();
   expect(slots.slice(0, 3)).toEqual(["PRE", "LIVE", "POST"]);
   // Nothing drawn behind the cards: no background on the widget or its grid.
   for (const sel of [".gs-slate", ".ck-slate-copy"])
     expect(await page.locator(`[id="${s.id}"] ${sel}`).evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
-  await page.addStyleTag({ content: ".tlui-layout, .tl-user-indicator-bounds, [data-testid='backup-banner'] { visibility: hidden !important; }" });
+  await page.addStyleTag({ content: ".tlui-layout, .tl-user-indicator-bounds, [data-testid='backup-banner'], [data-testid='game-link'] { visibility: hidden !important; }" });
 
   const { w: pw, h: ph } = await sizeOf(page, copy.png);
   const shot = (await page.screenshot({ clip: { x: 0, y: 0, width: pw / copy.ratio, height: ph / copy.ratio }, animations: "disabled", caret: "hide" })).toString("base64");
@@ -393,6 +396,7 @@ test("Slate: notes are read only: one typed in calendarkit (same browser) shows 
   const ck = await context.newPage();
   await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), night.date);
     await ck.goto("/calendar/?view=league&layout=slate");
+  await showCalendarNotes(ck);
   const box1 = ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[0]}"]`);
   await box1.getByTestId("note-text").fill("Typed in calendarkit");
   await box1.getByTestId("note-text").blur();
@@ -684,7 +688,7 @@ test("Slate pin: the calendarkit the whiteboard draws with is the one /calendar 
   expect(served.version, `whiteboard pins calendarkit ${pinned}, /calendar serves ${served.version} (${served.commit})`).toBe(pinned);
 });
 
-test("Slate: tight cards (calendarkit round 14): a 68 px strip, short info, the season-series chip; teams stay plain text (no team links before Slate step 3)", async ({ page, request }) => {
+test("Slate: tight cards (calendarkit round 14): a 68 px strip, short info, the season-series chip; team names are links since Slate step 3", async ({ page, request }) => {
   const night = nightWith(await nights(request), 5);
   await openWhiteboard(page, noonOn(night.date));
   const s = await insertSlate(page);
@@ -694,7 +698,8 @@ test("Slate: tight cards (calendarkit round 14): a 68 px strip, short info, the 
   expect(info.strip).toBe(68);
   expect(info.h).toBeLessThanOrEqual(62); // a 78 px card less 2 × (8 px padding + 1 px border); the old cards were 117 px
   await expect(w.getByTestId("series-chip").first()).toBeVisible();
-  await expect(w.locator("a, [data-team-link]")).toHaveCount(0);
+  // Step 3 (speed session Part 4; slatehover.e2e.ts clicks them)
+  await expect(w.locator(".ck-slate-name[data-team-link]")).toHaveCount(night.ids.length * 2);
 });
 
 test("Slate: odds (calendarkit's /calendar/api/odds) show on the cards; one request per night however many widgets; none on failure, nothing breaks", async ({ page, request }) => {
@@ -756,6 +761,7 @@ test("Slate: notes stored before the pin move (ck:notes:v1) show in the widget a
   const ck = await context.newPage();
   await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), night.date);
   await ck.goto("/calendar/?view=league&layout=slate");
+  await showCalendarNotes(ck);
   await expect(ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[0]}"] [data-testid="note-text"]`)).toHaveValue(before[night.ids[0]!]!.pre);
   // Opening calendarkit rewrote nothing.
   expect(await ck.evaluate(() => localStorage.getItem("ck:notes:v1"))).toBe(raw);

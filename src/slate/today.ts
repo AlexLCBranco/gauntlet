@@ -20,3 +20,18 @@ export function slateDateLabel(date: string): string {
   if (!isSlateDate(date)) return date;
   return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric", year: "numeric" }).format(new Date(`${date}T12:00:00Z`));
 }
+
+/** The night before (`dir` -1) or after (+1) `date`, as calendarkit's
+    Slate steps with ← / →: every calendar day, game-less days included,
+    kept within the season (`first`..`last`, the schedule's first and last
+    game days) when known. Slate step 3 (owner, 2026-10-31 / speed session
+    Part 4). */
+export function stepSlateDate(date: string, dir: -1 | 1, first?: string, last?: string): string {
+  if (!isSlateDate(date)) return date;
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dir);
+  let next = d.toISOString().slice(0, 10);
+  if (first && next < first) next = dir > 0 ? first : date < first ? date : first;
+  if (last && next > last) next = dir < 0 ? last : date > last ? date : last;
+  return next;
+}

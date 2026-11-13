@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "./test";
 
-import { box, seedBoard, seedMap } from "./helpers";
+import { box, seedBoard, seedMap, showCalendarNotes } from "./helpers";
 
 /**
  * Two-way sync as a rule for every widget (owner, Edges round item 8). An
@@ -169,6 +169,7 @@ test("Slate widget: a note typed in /calendar with the whiteboard closed shows i
   const ck = await context.newPage();
   await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), date);
   await ck.goto("/calendar/?view=league&layout=slate");
+  await showCalendarNotes(ck);
   const note = ck.locator(`[data-testid="slate"] [data-game-id="${first}"] [data-testid="note-text"]`);
   await note.fill("Typed alone 44");
   await note.blur();

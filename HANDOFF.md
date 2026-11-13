@@ -4,17 +4,17 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-11-12)
+## Current state (2026-11-13)
 
 - PHASE 3 DONE; phase 4 NOT started (owner: don't start it). Earlier rounds
   (hand-test fixes, Excalidraw parity, move cursor, map fixes, toolbar
   rework, links round): done, see docs/HISTORY.md and DECISIONS.
 - SLATE WIDGET (owner, 2026-10-31; separate track, steps 1-5, DECISIONS):
   step 1 done in calendarkit; STEP 2 (static widget) DONE: src/slate/,
-  e2e/slate.e2e.ts (9), 2 Slate tests in perf.e2e.ts. STOPPED for the
-  owner's report. Step 3 not started (←/→ date, keys vs nudge, ↗, tooltips).
+  e2e/slate.e2e.ts (9), 2 Slate tests in perf.e2e.ts. STEP 3 DONE as
+  speed session Part 4 (e2e/slatehover.e2e.ts). Steps 4-5 not started.
 - Pinned: Boardkit v0.0.106 (`79ae65b`), Linkkit v0.0.117 (`3e802ab`),
-  calendarkit v1.40.1 (`7c606c6`); all three on their main, live.
+  calendarkit v1.63.0 (`cce027b`); all three on their main, live.
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
   list paste). Item 6's mod+c "clash" is a dev-only Boardkit check that
@@ -23,11 +23,11 @@ Finished work goes to docs/HISTORY.md.
   waiting for the owner's hand check (feel only).
 - SPEED SESSION (owner, 2026-11-12; request in docs/SPEED-SESSION.md,
   Parts 0-11 (9-11 added 2026-11-13: board export, text scaling, date
-  stamp), one at a time, stop and report after each): PARTS 0-3 DONE
+  stamp), one at a time, stop and report after each): PARTS 0-4 DONE
   (1: split save, src/backup/; 2: pictures, src/images/; 3: arrivals,
-  src/pages/arrive.ts, e2e/arrive.e2e.ts; DECISIONS 2026-11-12/13;
-  numbers in docs/HISTORY.md "Speed session"). STOPPED for the owner's
-  report. NEXT: Part 4 (Slate step 3). Parts 4-11 not started.
+  src/pages/arrive.ts; 4: Slate step 3, src/slate/hover.tsx; DECISIONS
+  2026-11-12/13; numbers in docs/HISTORY.md "Speed session"). STOPPED
+  for the owner's report. NEXT: Part 5. Parts 5-11 not started.
 - Real-disk save measurement, by hand only (a visible Edge for ~1 min):
   `node scripts/local-e2e.mjs gauntlet "-c playwright.disk.config.ts"`.
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
@@ -51,10 +51,10 @@ Finished work goes to docs/HISTORY.md.
 
 - Linkkit's tree layout lets long card names overlap (not changed).
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom a wheel tick off).
-- calendarkit moved on: /calendar serves v1.61.1, the Slate widget pins
-  v1.40.1; slate.e2e.ts:235, :680 fail on it; since calendarkit v1.62.0
-  (Slate opens with notes hidden) also :374, :739, sync.e2e.ts:160 (they
-  type in /calendar's note field). Fix with the pin bump in Part 4.
+- Toolbar buttons keep the keyboard focus after a click (tldraw then
+  ignores keys: no nudge/Delete until the page is clicked). Fixed for the
+  Slate only (DECISIONS Part 4); Board, Map and the rest still have it.
+- perf.e2e.ts:259 hover p95 with 3 Slates: 24-26 ms since Part 4 (limit 25).
 - Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms per
   run (limit 108; the board's is ~50); the test now judges the median of
   5 runs. Browser repaint, no DOM changes. For the speed session.
@@ -95,6 +95,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- Speed session Part 4 (Slate step 3, owner said go; bump the calendarkit
-  pin with it), then Parts 5-11 in order, stopping to report after each.
+- Speed session Part 5 (widget parity check), then Parts 6-11 in order,
+  stopping to report after each.
   Phase 4 only after this round is live and the owner says "go".

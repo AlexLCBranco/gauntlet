@@ -89,6 +89,15 @@ export async function seedMap(context: BrowserContext, name: string): Promise<st
 
 export const box = async (l: Locator) => (await l.boundingBox())!;
 
+/** /calendar's Slate opens with its notes hidden (calendarkit v1.62.0, never
+    stored): shows them, so a test can type in a note box there. */
+export async function showCalendarNotes(ck: Page) {
+  const b = ck.getByTestId("notes-hide");
+  await expect(b).toBeVisible();
+  if ((await b.getAttribute("aria-pressed")) === "true") await b.click();
+  await expect(b).toHaveAttribute("aria-pressed", "false");
+}
+
 /** The list of Boardkit's boards: main menu → "Add existing board…" (the
     toolbar's Board button makes a new one). */
 export async function openBoardList(page: Page) {

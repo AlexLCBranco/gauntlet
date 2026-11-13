@@ -1,11 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import { useEditor, type Editor } from "tldraw";
+import { useEditor, useValue, type Editor } from "tldraw";
 
 import { fitBoard } from "../boards/fit";
 import { pageBox } from "../pages/keepFilled";
 import { arriveDeltaNow, roomForWindow, windowSize } from "../pages/arrive";
 import { SHEET } from "../pages/sheet";
+import { CONTROLS } from "../pages/edges";
 import {
+  hoopsjunkieLink,
   liveOddsStore,
   loadCalendarData,
   localNotesStore,
@@ -14,13 +16,16 @@ import {
   slateImageSize,
   SlateCopy,
   SLATE_GRID_GAP,
+  TeamLinkContext,
   type CalendarData,
   type DayOdds,
   type SlateOdds,
   type SlateNotes,
 } from "./calendarkit";
 import { SLATE_TYPE, type SlateShape } from "./SlateShape";
-import { SLATE_TIME_ZONE, slateDateLabel } from "./today";
+import { barPlace } from "./barPlace";
+import { InLayer, useSlateHover } from "./hover";
+import { SLATE_TIME_ZONE, slateDateLabel, stepSlateDate } from "./today";
 
 // The Slate widget's content, calendarkit's code: loaded (lazily, by
 // SlateShape.tsx) with the first Slate widget a page shows.
@@ -111,6 +116,9 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   // null until the schedule is here, or on a night without games: nothing asked
   const allOver = games?.length ? games.every((g) => g.status === "final") : null;
   const dayOdds = useDayOdds(date, allOver);
+  const hover = useSlateHover(editor, d.status === "ready" ? d.data : undefined, date);
+  // The date bar (‹ date ›) and ← / →: while this widget alone is selected.
+  const lone = useValue("slate alone selected", () => editor.getOnlySelectedShapeId() === shape.id && editor.isIn("select.idle") && !editor.getEditingShapeId(), [editor, shape.id]);
 
   // Keep the box the size of the cards (boards/fit.ts). The first time
   // (cols 0), calendarkit's copies' rule picks the columns and the whole
@@ -126,6 +134,19 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
     return () => ro.disconnect();
   }, [editor, shape.id, games, cols]);
 
+  // The cards, made again only when what they show changes: a popup
+  // opening or closing (hover state, kept in this component) never redraws
+  // them (perf.e2e.ts: hovering a page of Slates).
+  const ready = d.status === "ready" ? d.data : undefined;
+  const cards = useMemo(
+    () =>
+      ready && games ? (
+        <TeamLinkContext.Provider value={hover.teamLinks}>
+          <SlateCopy data={ready} games={games} cols={cols || 1} cardWidth={SLATE_CARD_WIDTH} timeZone={SLATE_TIME_ZONE} notes={store} odds={dayOdds} gameLink={hoopsjunkieLink} />
+        </TeamLinkContext.Provider>
+      ) : null,
+    [ready, games, cols, store, dayOdds, hover.teamLinks],
+  );
   const z = scale || 1;
   const keep = { width: w / z, height: h / z };
   const state = d.status === "ready" ? (games!.length ? "ready" : "empty") : d.status;
@@ -137,9 +158,10 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
       data-date={date}
       data-state={state}
       style={{ transform: `scale(${z})`, visibility: scale && cols ? "visible" : "hidden" }}
+      {...hover.handlers}
     >
       {state === "ready" ? (
-        <SlateCopy data={(d as { data: CalendarData }).data} games={games!} cols={cols || 1} cardWidth={SLATE_CARD_WIDTH} timeZone={SLATE_TIME_ZONE} notes={store} odds={dayOdds} />
+        cards
       ) : state === "empty" ? (
         <Message date={date} text="No games" />
       ) : state === "failed" ? (
@@ -147,7 +169,100 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
       ) : (
         <div style={keep} />
       )}
+      {hover.node}
+      {lone && scale > 0 && <DateBar editor={editor} id={shape.id} />}
     </div>
+  );
+}
+
+/** The night before or after, one undo step (Slate step 3); within the
+    season once the schedule is here. */
+export function stepSlate(editor: Editor, id: SlateShape["id"], dir: -1 | 1) {
+  const cur = editor.getShape<SlateShape>(id);
+  if (!cur) return;
+  const days = data.status === "ready" ? data.data.dates : undefined;
+  const next = stepSlateDate(cur.props.date, dir, days?.[0], days?.at(-1));
+  if (next === cur.props.date) return;
+  editor.markHistoryStoppingPoint("slate date");
+  editor.updateShape<SlateShape>({ id, type: SLATE_TYPE, props: { date: next } });
+}
+
+const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+const inMenu = (t: EventTarget | null) => t instanceof Element && !!t.closest('.tlui-popover__content, [role="menu"], [role="dialog"], [role="listbox"]');
+
+/** The whiteboard's floating controls (toolbar, style panel, page arrows…)
+    and where they are; read at most every 300 ms (reading a box makes the
+    browser lay out: the bar follows the camera). */
+let controls: { at: number; rects: DOMRect[] } = { at: -Infinity, rects: [] };
+function controlRects() {
+  const now = performance.now();
+  if (now - controls.at > 300) controls = { at: now, rects: CONTROLS.flatMap((sel) => [...document.querySelectorAll(sel)].map((el) => el.getBoundingClientRect())) };
+  return controls.rects;
+}
+
+
+/**
+ * The selected widget's night, "‹ Thu, Nov 13, 2026 ›", just above its
+ * top-left corner at reading size (in the popups' layer). ‹ › and the
+ * ← / → keys step the night as calendarkit's Slate does; Shift+← / →
+ * and ↑ / ↓ still nudge the widget, and with anything else selected the
+ * arrows nudge as always (owner's step 3 "arrow keys vs nudging").
+ */
+function DateBar({ editor, id }: { editor: Editor; id: SlateShape["id"] }) {
+  const date = useValue("slate date", () => editor.getShape<SlateShape>(id)?.props.date ?? "", [editor, id]);
+  const at = useValue(
+    "slate bar place",
+    () => {
+      const b = editor.getShapePageBounds(id);
+      if (!b) return null;
+      const p = editor.pageToScreen({ x: b.minX, y: b.minY });
+      const q = editor.pageToScreen({ x: b.maxX, y: b.maxY });
+      return { x: Math.round(p.x), y: Math.round(p.y), r: Math.round(q.x), b: Math.round(q.y) };
+    },
+    [editor, id],
+  );
+  const bar = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = bar.current;
+    if (!el || !at) return;
+    const win = { w: document.documentElement.clientWidth, h: window.innerHeight };
+    const p = barPlace(at, el.offsetWidth, el.offsetHeight, win, controlRects());
+    el.style.left = `${p.left}px`;
+    el.style.top = `${p.top}px`;
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (typing(e.target) || inMenu(e.target) || editor.getOnlySelectedShapeId() !== id) return;
+      e.preventDefault();
+      e.stopPropagation();
+      stepSlate(editor, id, e.key === "ArrowLeft" ? -1 : 1);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [editor, id]);
+  if (!at) return null;
+  // A press on the bar keeps the keys on the whiteboard (the bar is outside
+  // tldraw's box: a click there would leave the whiteboard unfocused, and
+  // tldraw then stops nudging with the arrows).
+  const keepFocus = (e: { preventDefault(): void }) => e.preventDefault();
+  const step = (dir: -1 | 1) => {
+    stepSlate(editor, id, dir);
+    editor.getContainer().focus({ preventScroll: true });
+    editor.focus();
+  };
+  return (
+    <InLayer>
+      <div ref={bar} className="gs-slate-bar" data-testid="slate-date-bar" onPointerDown={keepFocus}>
+        <button type="button" aria-label="Previous night" title="Previous night (←)" data-testid="slate-prev" onClick={() => step(-1)}>
+          ‹
+        </button>
+        <span data-testid="slate-date">{slateDateLabel(date)}</span>
+        <button type="button" aria-label="Next night" title="Next night (→)" data-testid="slate-next" onClick={() => step(1)}>
+          ›
+        </button>
+      </div>
+    </InLayer>
   );
 }
 

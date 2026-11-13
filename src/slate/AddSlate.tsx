@@ -32,5 +32,11 @@ export function insertSlate(editor: Editor, date = slateToday(), corner?: { x: n
   editor.createShape<SlateShape>({ id, type: SLATE_TYPE, x: at.x + d.x, y: at.y + d.y, props: { date }, meta: corner ? { corner: true } : {} });
   editor.setCurrentTool("select");
   editor.select(id);
+  // The keys go to the whiteboard (← / → step the night, Shift+arrows
+  // nudge, Delete): a click on the toolbar's button would otherwise keep
+  // the focus, and tldraw ignores keys while a button has it (its
+  // editor.focus() alone does nothing while it counts itself focused).
+  editor.getContainer().focus({ preventScroll: true });
+  editor.focus();
   return id;
 }

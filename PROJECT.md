@@ -1117,6 +1117,43 @@ Changes to the plan, newest last. Each says what and why.
   of its height, in calendarkit's column rule applied to that room. A new
   map's size waits for Linkkit's map to be laid out (it first draws a
   ~260 x 72 box, which fixed big maps at full size), 3 s at most.
+- 2026-11-13 — Speed session, Part 4: Slate step 3 (owner: hovering a
+  Slate feels like hovering it in /calendar, same popups, no selecting
+  first; never clipped or covered; reading size at any scale; calendarkit's
+  own component). calendarkit v1.63.0 (`cce027b`, pin moved from v1.40.1):
+  SlateCopy takes a gameLink; teamCalendarUrl and the team-link context
+  are exported. Built (src/slate/hover.tsx, SlateWidget.tsx DateBar,
+  barPlace.ts; agent's choices within the owner's):
+  * Hover: calendarkit's useTooltip, useStreakPopup and useSeriesPopup,
+    the hooks /calendar's CalendarView uses. The cards take the pointer
+    (the gaps stay the page's); a press still goes to the whiteboard.
+    The popups are drawn in one layer on the page itself, outside the
+    canvas (`.gs-slate-pops`, z 550): fixed to the window, above every
+    item, at calendarkit's size. A pan/zoom or a press elsewhere closes
+    them. The layer sets line-height normal (the whiteboard's body sets
+    21 px, which made popup rows taller than in /calendar).
+  * Links: ↗ (hoopsjunkie), a final score and team names (that team's
+    /calendar Team Calendar on the widget's night) open in a NEW tab on a
+    click; a press that moves still moves the widget (a team name is a
+    big part of a card). Links in the popups behave the same.
+  * ← / →, arrow keys vs nudging: while ONE Slate is selected (nothing
+    else), ← / → step its night one calendar day (calendarkit's rule:
+    game-less days included, kept within the season), one undo step each;
+    Shift+arrows and ↑ / ↓ still nudge it; with anything else selected,
+    or several items, the arrows nudge as always; with nothing selected
+    they still turn pages. The widget keeps its columns and scale; its
+    height follows the night's games.
+  * Date bar: "‹ Thu, Nov 13, 2026 ›" while one Slate is selected, at
+    reading size in the popups' layer, 14 px above the widget's top-left
+    (clear of its resize zones); under it, or just inside its top, when
+    above would leave the window or cover a floating control (toolbar,
+    style panel…).
+  * Found on the way: a click on a toolbar button leaves the keyboard focus
+    on that button, and tldraw ignores keys while a button has it (no
+    nudge, no Delete until the page is clicked); tldraw's editor.focus()
+    does nothing while it counts itself focused. Fixed for the Slate
+    (insert and the bar's ‹ › give the focus back); the other one-click
+    inserts (Board, Map…) still have it (reported).
 
 IDEAS
 
