@@ -16,6 +16,9 @@
     { "source": "/linkkit/:path+", "destination": "https://linkkit-lake.vercel.app/linkkit/:path+" },
     { "source": "/calendar", "destination": "https://calendarkit-brown.vercel.app/calendar/" },
     { "source": "/calendar/", "destination": "https://calendarkit-brown.vercel.app/calendar/" },
-    { "source": "/calendar/:path+", "destination": "https://calendarkit-brown.vercel.app/calendar/:path+" }
+    { "source": "/calendar/:path+", "destination": "https://calendarkit-brown.vercel.app/calendar/:path+" },
+    { "source": "/football", "destination": "https://footykit.vercel.app/football/" },
+    { "source": "/football/", "destination": "https://footykit.vercel.app/football/" },
+    { "source": "/football/:path+", "destination": "https://footykit.vercel.app/football/:path+" }
   ]
 }

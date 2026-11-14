@@ -108,6 +108,8 @@ try {
       "https://linkkit-lake.vercel.app": `http://localhost:${apps[0].port}`,
       "https://boardkit-iota.vercel.app": `http://localhost:${apps[1].port}`,
       "https://calendarkit-brown.vercel.app": `http://localhost:${apps[2].port}`,
+      // footykit isn't started here (no gauntlet test opens /football): its `npm run preview` port, if one runs
+      "https://footykit.vercel.app": "http://localhost:4190",
     },
   });
   const site = `http://localhost:${proxyPort}`;

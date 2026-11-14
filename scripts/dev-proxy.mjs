@@ -40,6 +40,8 @@ export function localTargets(env = process.env) {
     "https://boardkit-iota.vercel.app": env.BOARDKIT_DEV ?? "http://localhost:5173",
     // calendarkit (gauntlet-home.vercel.app/calendar): its `npm run preview` (a build served under /calendar/)
     "https://calendarkit-brown.vercel.app": env.CALENDARKIT_DEV ?? "http://localhost:4180",
+    // footykit (gauntlet-home.vercel.app/football): its `npm run preview` (a build served under /football/)
+    "https://footykit.vercel.app": env.FOOTYKIT_DEV ?? "http://localhost:4190",
   };
 }
 
