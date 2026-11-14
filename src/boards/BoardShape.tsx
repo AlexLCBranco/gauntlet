@@ -230,7 +230,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         return;
       }
       if (control) {
-        root.querySelector<HTMLElement>(controlSelector(control))?.click();
+        pressControl(root.querySelector<HTMLElement>(controlSelector(control)));
         if (control.add) frame = requestAnimationFrame(() => typeHeldKeys(root, 0));
         return;
       }
@@ -255,7 +255,8 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   // Not editing, the board ignores the pointer (it is moved as a whole), and
   // some of its controls sit just outside its box. One press on a control
   // that is showing (a "+" to add a card or a list, a list header's
-  // buttons, "⋯" included) starts editing and does that control's part at
+  // buttons, "⋯" included, a card's buttons since speed session Part 5)
+  // starts editing and does that control's part at
   // once (owner, 2026-10-21: one click, not two). Which control is noted
   // here by its markers: once editing starts the board is drawn anew, and
   // its hover-only controls hide again until the pointer moves. A press
@@ -266,7 +267,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     if (!el) return;
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0 || editor.getCurrentToolId() !== "select") return;
-      const hit = [...el.querySelectorAll<HTMLElement>("[data-boardkit-board] [data-add], [data-boardkit-board] [data-list-header] [data-control]")].find((b) => {
+      const hit = [...el.querySelectorAll<HTMLElement>("[data-boardkit-board] [data-add], [data-boardkit-board] [data-list-header] [data-control], [data-boardkit-board] article[data-card-id] [data-control]")].find((b) => {
         const style = getComputedStyle(b);
         if (Number(style.opacity) < 0.05 || style.visibility === "hidden") return false;
         const r = b.getBoundingClientRect();
@@ -278,6 +279,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         add: hit.dataset.add ?? null,
         control: hit.dataset.control ?? null,
         listId: hit.closest<HTMLElement>("section[data-list-id]")?.dataset.listId ?? null,
+        cardId: hit.closest<HTMLElement>("article[data-card-id]")?.dataset.cardId ?? null,
       };
       // A "+": its field opens a moment from now; typing that starts at once
       // is kept for it.
@@ -371,7 +373,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
 }
 
 /** The control a press started editing on (see above), by its markers. */
-type PressedControl = { readonly add: string | null; readonly control: string | null; readonly listId: string | null };
+type PressedControl = { readonly add: string | null; readonly control: string | null; readonly listId: string | null; readonly cardId: string | null };
 let pressedControl: PressedControl | null = null;
 
 /**
@@ -434,9 +436,21 @@ function releaseHeldKeys(field: HTMLTextAreaElement) {
 }
 
 /** The same control on the board being edited. */
-function controlSelector({ add, control, listId }: PressedControl): string {
+function controlSelector({ add, control, listId, cardId }: PressedControl): string {
   const inList = listId ? `section[data-list-id="${CSS.escape(listId)}"] ` : "";
-  return add ? `${inList}[data-add="${add}"]` : `${inList}[data-list-header] [data-control="${control}"]`;
+  if (add) return `${inList}[data-add="${add}"]`;
+  if (cardId) return `${inList}article[data-card-id="${CSS.escape(cardId)}"] [data-control="${control}"]`;
+  return `${inList}[data-list-header] [data-control="${control}"]`;
+}
+
+/** Does a control's part, as a press on it would: a menu button (Radix
+    opens its menu on the press, not the click) gets the press. */
+function pressControl(el: HTMLElement | null) {
+  if (!el) return;
+  if (el.getAttribute("aria-haspopup") === "menu") {
+    const at = el.getBoundingClientRect();
+    el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, button: 0, pointerType: "mouse", clientX: at.left + at.width / 2, clientY: at.top + at.height / 2 }));
+  } else el.click();
 }
 
 /** A card or list of a board is being dragged: Boardkit's lifted copy is up. */

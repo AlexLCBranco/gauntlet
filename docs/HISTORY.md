@@ -1337,3 +1337,11 @@ off by more than 64 on a channel, before -> after:
 - Map: 0% after (not measured on its own before the fix).
 - Export time, one widget (getSvgString): board 0.36 -> 0.42 s, Slate
   0.90 -> 1.23 s; picture file +56 KB / +30 KB of style sheet.
+
+Part 5, widget parity on hover (DECISIONS 2026-11-14). Hovered with nothing
+selected (e2e probe, then tests):
+- /boardkit card: ring + lift, 4 buttons -> on the whiteboard nothing;
+  now the same (Boardkit v0.0.107). List title: only the header controls
+  (already); the rename highlight left out on purpose.
+- /linkkit box: shadow, dots, toolbar, notes preview -> on the whiteboard
+  nothing; now the shadow and the notes preview (Linkkit v0.0.118).

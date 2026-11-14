@@ -1187,6 +1187,25 @@ Changes to the plan, newest last. Each says what and why.
   columns still follow the Part 3 rule (a third of the window). Tests: the
   slot label is read from the card; the copy comparison sets the widget to
   the copy's columns first.
+- 2026-11-14 — Speed session, Part 5: widget parity on hover (owner).
+  * Checked by hovering in /boardkit, /linkkit and on the whiteboard with
+    nothing selected. Working already: a board's "+ Add a card" / "+ Add
+    a list" and its list-header controls (Boardkit's pointer marks).
+  * Fixed (small): a board's card gets /boardkit's hover look and its four
+    buttons, and one press on a button does its part (move opens its menu;
+    Boardkit v0.0.107, src/boards/BoardShape.tsx); a map's box gets
+    Linkkit's hover look and its notes preview (Linkkit v0.0.118). Tests:
+    boardwidget.e2e.ts "speed session Part 5", hoverparity.e2e.ts.
+  * Left on purpose: a title's rename highlight (a click on the whiteboard
+    selects; renaming is a double-click, so it would mislead); a map box's
+    dots and toolbar (editing: not redesigned, Part 5's own rule).
+  * Not done, with sizes: (1) the browser's own tooltips (a link's address,
+    a button's name, Linkkit's "N hidden", "Has notes") need a tooltip
+    layer of the whiteboard's own, as the Slate's popups: ~half a day for
+    both apps. (2) Hover looks of a card's link, check circle, thots
+    toggle, a collapsed list's strip, a map's arrow label and its ×: ~1 h
+    for the looks, ~1-2 h more for one-press actions on them. (3) A box's
+    link icon (opens the address): ~1 h with its one-press action.
 
 IDEAS
 

@@ -269,6 +269,64 @@ test("17: a list header shows its title and count; the other controls only while
   await expect.poll(() => visibility(controls(b).first())).toBe("visible");
 });
 
+test("speed session Part 5: hovering a card (nothing selected) gives it /boardkit's hover look and shows its buttons; one press on a button does its part (delete; move opens its menu)", async ({ page, context }) => {
+  const id = await setUp(page, context);
+  await leaveBoard(page);
+  const card = lists(page).first().locator("article[data-card-id]").first();
+  const cardId = (await card.getAttribute("data-card-id"))!;
+  const buttons = card.locator("[data-control]");
+  expect(await buttons.count()).toBeGreaterThanOrEqual(3);
+  const look = (l: Locator) => l.evaluate((el) => ({ shadow: getComputedStyle(el).boxShadow, transform: getComputedStyle(el).transform }));
+  const resting = await look(card);
+  for (const b of await buttons.all()) expect(await opacity(b)).toBe(0);
+  const hoverCard = async () => {
+    const c = await box(card);
+    await page.mouse.move(c.x + c.width / 3, c.y + c.height / 2, { steps: 3 });
+  };
+  await hoverCard();
+  await expect.poll(async () => Promise.all((await buttons.all()).map(opacity))).not.toContain(0);
+  await expect.poll(async () => (await look(card)).transform).not.toBe(resting.transform);
+  const hovered = await look(card);
+  expect(hovered.shadow).not.toBe(resting.shadow);
+  // The same look as in /boardkit itself.
+  const bk = await context.newPage();
+  await bk.setViewportSize(page.viewportSize()!);
+  await bk.goto("/boardkit/");
+  const own = bk.locator(`article[data-card-id="${cardId}"]`);
+  await expect(own).toBeVisible();
+  const ob = await box(own);
+  await bk.mouse.move(ob.x + ob.width / 3, ob.y + ob.height / 2, { steps: 3 });
+  await expect.poll(async () => (await look(own)).transform).toBe(hovered.transform);
+  expect((await look(own)).shadow).toBe(hovered.shadow);
+  await bk.close();
+  // Off the card: back to rest.
+  await leaveBoard(page);
+  await expect.poll(() => opacity(buttons.first())).toBe(0);
+
+  // Move: one press opens its menu (and starts editing the board).
+  await hoverCard();
+  const move = card.locator('[data-control="move"]');
+  await expect.poll(() => opacity(move)).toBe(1);
+  let m = await box(move);
+  await page.mouse.click(m.x + m.width / 2, m.y + m.height / 2);
+  await expect(editingEl(page)).toHaveCount(1);
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(editingEl(page)).toHaveCount(0);
+
+  // Delete: one press deletes that card.
+  await leaveBoard(page);
+  await hoverCard();
+  const del = card.locator('[data-control="delete"]');
+  await expect.poll(() => opacity(del)).toBe(1);
+  m = await box(del);
+  await page.mouse.click(m.x + m.width / 2, m.y + m.height / 2);
+  await saved(page, id, (r) => !Object.values(r.board.cardOrder).some((ids) => ids.includes(cardId)));
+  await expect(page.locator(`article[data-card-id="${cardId}"]`)).toHaveCount(0);
+});
+
 test("18: the header's x is gone; '⋯' opens the list's menu with Delete list…; Ctrl+Z brings a deleted list back", async ({ page, context }) => {
   const id = await setUp(page, context);
   const a = lists(page).first();
