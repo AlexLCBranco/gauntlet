@@ -1178,6 +1178,15 @@ Changes to the plan, newest last. Each says what and why.
     by more than 64 on a channel: under 2%).
   * Relies on tldraw's export internals as above (StyleEmbedder's rules):
     a tldraw update must re-run e2e/export.e2e.ts.
+- 2026-11-14 — calendarkit pin v1.63.0 -> v1.65.1 (`0a6cb17`; owner, after
+  Part 9: /calendar served v1.65.1 and the Slate tests failed live).
+  v1.64-1.65 put the notes under the team rows and the PRE/LIVE/POST label
+  in the card's top-right corner, and make copies with notes on narrower
+  cards (slateCopyCardWidth). The widget's cards now use that same copy
+  width (src/slate/SlateWidget.tsx), so they wrap as the copies do; its
+  columns still follow the Part 3 rule (a third of the window). Tests: the
+  slot label is read from the card; the copy comparison sets the widget to
+  the copy's columns first.
 
 IDEAS
 

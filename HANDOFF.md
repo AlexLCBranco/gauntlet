@@ -11,7 +11,7 @@ Finished work goes to docs/HISTORY.md.
 - SLATE WIDGET (owner, 2026-10-31; steps 1-5, DECISIONS): steps 1-3
   DONE (src/slate/, e2e/slate + slatehover.e2e.ts); 4-5 not started.
 - Pinned: Boardkit v0.0.106 (`79ae65b`), Linkkit v0.0.117 (`3e802ab`),
-  calendarkit v1.63.0 (`cce027b`); all three on their main, live.
+  calendarkit v1.65.1 (`0a6cb17`, 2026-11-14); all three on their main.
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
   list paste). Item 6's mod+c "clash" is a dev-only Boardkit check that

@@ -13,7 +13,9 @@ import {
   liveOddsStore,
   loadCalendarData,
   localNotesStore,
+  slateCopyCardWidth,
   slateCopyColumns,
+  slateCopyCup,
   slateGames,
   slateImageSize,
   SlateCopy,
@@ -32,10 +34,12 @@ import { SLATE_TIME_ZONE, slateDateLabel, stepSlateDate } from "./today";
 // The Slate widget's content, calendarkit's code: loaded (lazily, by
 // SlateShape.tsx) with the first Slate widget a page shows.
 
-/** A card's width: calendarkit's on-screen Slate card in the owner's
-    1920 px window (a 1840 px grid in two columns: 914 px), the width its
-    copies are made at, so the cards wrap their text as in the copies. */
+/** calendarkit's on-screen Slate card in the owner's 1920 px window (a
+    1840 px grid in two columns: 914 px). Its copies (with notes) are made
+    narrower from it (slateCopyCardWidth, calendarkit v1.64+): the widget's
+    cards are that copy width, so they wrap their text as in the copies. */
 export const SLATE_CARD_WIDTH = (1840 - SLATE_GRID_GAP) / 2;
+const copyCardWidth = (data: CalendarData, games: Parameters<typeof slateCopyCup>[1]) => slateCopyCardWidth(SLATE_CARD_WIDTH, slateCopyCup(data, games));
 
 // The schedule: fetched and parsed once per page (loadCalendarData keeps
 // the one promise), shared by every Slate widget on every page. The font
@@ -146,7 +150,7 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
     () =>
       ready && games ? (
         <TeamLinkContext.Provider value={hover.teamLinks}>
-          <SlateCopy data={ready} games={games} cols={cols || 1} cardWidth={SLATE_CARD_WIDTH} timeZone={SLATE_TIME_ZONE} notes={store} odds={dayOdds} gameLink={hoopsjunkieLink} />
+          <SlateCopy data={ready} games={games} cols={cols || 1} cardWidth={copyCardWidth(ready, games)} timeZone={SLATE_TIME_ZONE} notes={store} odds={dayOdds} gameLink={hoopsjunkieLink} />
         </TeamLinkContext.Provider>
       ) : null,
     [ready, games, cols, store, dayOdds, hover.teamLinks],
@@ -308,7 +312,7 @@ function fit(editor: Editor, id: SlateShape["id"], el: HTMLElement, n: number) {
     let next: { cols: number; scale: number; w: number; h: number };
     if (n > 0) {
       const cards = [...el.querySelectorAll<HTMLElement>(".ck-slate-card")];
-      const card = { width: SLATE_CARD_WIDTH, height: Math.max(...cards.map((c) => c.offsetHeight)) };
+      const card = { width: cards[0]!.offsetWidth, height: Math.max(...cards.map((c) => c.offsetHeight)) };
       const c = slateCopyColumns(n, card, { width: room.w, height: room.h });
       const size = slateImageSize(n, c, card);
       const s = Math.min(room.w / size.width, room.h / size.height);

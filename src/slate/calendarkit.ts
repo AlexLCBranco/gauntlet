@@ -12,6 +12,7 @@ export {
   loadCalendarData,
   liveOddsStore,
   localNotesStore,
+  slateCopyCardWidth,
   slateCopyColumns,
   slateGames,
   slateImageSize,
@@ -30,3 +31,4 @@ export {
   type TeamLinks,
 } from "calendarkit/src/slate";
 export { SLATE_GRID_GAP } from "calendarkit/src/slate/layout";
+export { slateCopyCup } from "calendarkit/src/slate/SlateCard";

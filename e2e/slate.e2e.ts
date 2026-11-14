@@ -223,6 +223,9 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
   await page.addStyleTag({ content: ".ck-capture-stage { left: 0 !important; top: 0 !important; z-index: 2147483647; }" });
   await page.mouse.move(1919, 1079);
   const stageShot = (await page.locator(".ck-capture .ck-slate-copy").screenshot({ animations: "disabled", caret: "hide" })).toString("base64");
+  // The copy's columns (its own rule, from its card size: since calendarkit
+  // v1.64 its cards are narrower than on screen, so often more columns).
+  const cols = await page.locator(".ck-capture .ck-slate-copy").evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(" ").length);
   const png = await page.evaluate(async () => {
     const bytes = new Uint8Array(await (await (window as any).__png as Blob).arrayBuffer());
     let s = "";
@@ -230,7 +233,7 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
     return btoa(s);
   });
   await ctx.close();
-  return { png, ratio, stage, stageShot };
+  return { png, ratio, stage, stageShot, cols };
 }
 
 test("Slate: at 100% the widget is calendarkit's copy of that night: same cards and note boxes at the same places and sizes, same text, near-identical pixels; nothing between them; no ⇄ (the ↗ of step 3 aside)", async ({ browser, baseURL, request }) => {
@@ -247,6 +250,10 @@ test("Slate: at 100% the widget is calendarkit's copy of that night: same cards 
   await page.clock.install({ time: noonOn(night.date) });
   await openWhiteboard(page);
   const s = await insertSlate(page);
+  // In the copy's columns (the widget picks its own when placed, for a
+  // third of the window), then at scale 1.
+  await page.evaluate(({ id, cols }) => (window as any).editor.updateShape({ id, type: "calendarkit-slate", props: { cols } }), { id: s.id, cols: copy.cols });
+  await expect.poll(() => widgetOf(page, s.id).locator(".ck-slate-copy").evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(" ").length)).toBe(copy.cols);
   await page.evaluate((id) => {
     const editor = (window as any).editor;
     editor.selectNone();
@@ -390,7 +397,9 @@ test("Slate: notes are read only: one typed in calendarkit (same browser) shows 
   await openWhiteboard(page, noonOn(night.date));
   const s = await insertSlate(page);
   const firstNote = widgetOf(page, s.id).locator(`[data-game-id="${night.ids[0]}"] [data-testid="note"]`);
-  await expect(firstNote.getByTestId("note-slot")).toHaveText("PRE");
+  // The slot label is the card's, in its top-right corner (calendarkit v1.64+).
+  const firstSlot = widgetOf(page, s.id).locator(`[data-game-id="${night.ids[0]}"] [data-testid="note-slot"]`);
+  await expect(firstSlot).toHaveText("PRE");
   await expect(firstNote.getByTestId("note-text")).toHaveText("");
 
   const ck = await context.newPage();
@@ -404,7 +413,7 @@ test("Slate: notes are read only: one typed in calendarkit (same browser) shows 
   await box1.getByTestId("note-switch").click();
   await box1.getByTestId("note-text").fill("Live one");
   await box1.getByTestId("note-text").blur();
-  await expect(firstNote.getByTestId("note-slot")).toHaveText("LIVE");
+  await expect(firstSlot).toHaveText("LIVE");
   await expect(firstNote.getByTestId("note-text")).toHaveText("Live one");
   await ck.close();
 
@@ -755,8 +764,10 @@ test("Slate: notes stored before the pin move (ck:notes:v1) show in the widget a
   const s = await insertSlate(page);
   const note = (i: number) => widgetOf(page, s.id).locator(`[data-game-id="${night.ids[i]}"] [data-testid="note"]`);
   await expect(note(0).getByTestId("note-text")).toHaveText(before[night.ids[0]!]!.pre);
-  await expect(note(1).getByTestId("note-slot")).toHaveText("LIVE");
-  await expect(note(2).getByTestId("note-slot")).toHaveText("POST");
+  // The slot label is the card's, in its top-right corner (calendarkit v1.64+).
+  const slot = (i: number) => widgetOf(page, s.id).locator(`[data-game-id="${night.ids[i]}"] [data-testid="note-slot"]`);
+  await expect(slot(1)).toHaveText("LIVE");
+  await expect(slot(2)).toHaveText("POST");
 
   const ck = await context.newPage();
   await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), night.date);
