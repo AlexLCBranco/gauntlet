@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { ExportStyles } from "../whiteboard/exportStyles";
 import { BaseBoxShapeUtil, HTMLContainer, T, resizeBox, type RecordProps, type TLResizeInfo, type TLShape } from "tldraw";
 
 export const SLATE_TYPE = "calendarkit-slate";
@@ -63,6 +64,7 @@ export class SlateShapeUtil extends BaseBoxShapeUtil<SlateShape> {
   override component(shape: SlateShape) {
     return (
       <HTMLContainer id={shape.id} style={{ pointerEvents: "none", overflow: "visible" }}>
+        <ExportStyles shapeId={shape.id} />
         <Suspense fallback={null}>
           <SlateWidget shape={shape} />
         </Suspense>

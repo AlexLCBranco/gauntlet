@@ -1154,6 +1154,30 @@ Changes to the plan, newest last. Each says what and why.
     does nothing while it counts itself focused. Fixed for the Slate
     (insert and the bar's ‹ › give the focus back); the other one-click
     inserts (Board, Map…) still have it (reported).
+- 2026-11-14 — Speed session, Part 9: page export draws widgets as the
+  screen does (owner, done first by his order change of 2026-11-14).
+  * Cause: tldraw's export (pinned 5.5.2, @tldraw/editor exports/
+    StyleEmbedder.ts, cssRules.ts), not Boardkit. It copies each element's
+    styles into the picture but leaves some out, guessing wrong in four
+    places: an inherited style equal to an ancestor's (buttons and fields
+    have the browser's own font, line-height, centred text); a style equal
+    to the tag's default when the parent's differs; a 0-wide border (a
+    button's 2 px default border shows: the white edit boxes); and every
+    ::before / ::after style (written as "0: ;1: ;…"). Boardkit's list
+    titles and card texts are buttons; the Slate's note box sizes itself
+    with an ::after (its rows came out taller; the owner had not noticed).
+  * Fix in the whiteboard, public tldraw API only (src/whiteboard/
+    exportStyles.tsx): each widget (board, map, Slate, web embed), when
+    drawn for an export, works out tldraw's same decisions and puts the
+    screen's value of every style the picture would get wrong in a style
+    sheet in the picture (as tldraw adds its fonts). Boardkit unchanged
+    (no pin bump). Drawn for an export, widgets no longer measure and
+    resize their live shape.
+  * Test: e2e/export.e2e.ts, a board, a map and a Slate exported as
+    "Export as PNG" does it, each compared with a screenshot (pixels off
+    by more than 64 on a channel: under 2%).
+  * Relies on tldraw's export internals as above (StyleEmbedder's rules):
+    a tldraw update must re-run e2e/export.e2e.ts.
 
 IDEAS
 

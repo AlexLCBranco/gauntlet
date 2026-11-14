@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useEditor, useValue, type Editor } from "tldraw";
 
+import { useInExport } from "../whiteboard/exportStyles";
+
 import { fitBoard } from "../boards/fit";
 import { pageBox } from "../pages/keepFilled";
 import { arriveDeltaNow, roomForWindow, windowSize } from "../pages/arrive";
@@ -112,6 +114,8 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   const store = useMemo(readOnly, [version]);
   const content = useRef<HTMLDivElement>(null);
   const { date, w, h, scale, cols } = shape.props;
+  // Drawn for an export: the shape is left as it is (exportStyles.tsx).
+  const inExport = useInExport();
   const games = d.status === "ready" ? slateGames(d.data, date) : null;
   // null until the schedule is here, or on a night without games: nothing asked
   const allOver = games?.length ? games.every((g) => g.status === "final") : null;
@@ -126,13 +130,13 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   // here (or when it can't load) the box keeps its place and size.
   useLayoutEffect(() => {
     const el = content.current;
-    if (!games || !el) return;
+    if (!games || !el || inExport) return;
     const measure = () => fit(editor, shape.id, el, games.length);
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [editor, shape.id, games, cols]);
+  }, [editor, shape.id, games, cols, inExport]);
 
   // The cards, made again only when what they show changes: a popup
   // opening or closing (hover state, kept in this component) never redraws

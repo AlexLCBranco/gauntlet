@@ -20,6 +20,7 @@ import {
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta, SHEET } from "../pages/sheet";
 import "./embed.css";
+import { ExportStyles } from "../whiteboard/exportStyles";
 
 export const WEB_EMBED_TYPE = "web-embed";
 
@@ -180,6 +181,7 @@ function WebEmbed({ shape }: { shape: WebEmbedShape }) {
 
   return (
     <HTMLContainer className="gk-embed" style={{ width: w, height: h }} data-testid="web-embed" data-state={isLive ? "live" : "preview"} data-url={url}>
+      <ExportStyles shapeId={shape.id} />
       {isLive && frameable !== "no" ? (
         <iframe
           className="gk-embed__frame"

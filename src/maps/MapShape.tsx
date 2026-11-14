@@ -20,6 +20,7 @@ import { MapName } from "./MapName";
 import { useEditedMap } from "./mapEditing";
 import { MapView, type MapShift } from "./MapView";
 import "./maps.css";
+import { ExportStyles, useInExport } from "../whiteboard/exportStyles";
 
 export const MAP_TYPE = "linkkit-map";
 
@@ -100,11 +101,13 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
   );
   const content = useRef<HTMLDivElement>(null);
   const { mapId, scale } = shape.props;
+  // Drawn for an export: the shape is left as it is (exportStyles.tsx).
+  const inExport = useInExport();
 
   // Keep the box the size of the content (boards/fit.ts). Not an undo step.
   useLayoutEffect(() => {
     const el = content.current;
-    if (!el) return;
+    if (!el || inExport) return;
     let waited = false;
     const measure = () => {
       const current = editor.getShape<MapShape>(shape.id);
@@ -142,7 +145,7 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
       ready.disconnect();
       ro.disconnect();
     };
-  }, [editor, shape.id]);
+  }, [editor, shape.id, inExport]);
 
   // The part of Linkkit's page shown moved its top-left corner (a box
   // further left or up, or the left-most one moved in): the widget moves by
@@ -152,7 +155,7 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
   const onContent = useCallback(
     (box: PageRect, shift: MapShift) => {
       const current = editor.getShape<MapShape>(shape.id);
-      if (!current) return;
+      if (!current || inExport) return;
       const p = current.props;
       const left = box.left - shift.x;
       const top = box.top - shift.y;
@@ -166,13 +169,14 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
         history: "ignore",
       });
     },
-    [editor, shape.id],
+    [editor, shape.id, inExport],
   );
   // While edited, the whole page is the map's (mapEditing.tsx).
   useEditedMap(editing ? { shapeId: shape.id, mapId } : null);
 
   return (
     <HTMLContainer id={shape.id} style={{ pointerEvents: editing ? "all" : "none", overflow: "visible" }}>
+      <ExportStyles shapeId={shape.id} />
       <div
         ref={content}
         className="gm-scaled"

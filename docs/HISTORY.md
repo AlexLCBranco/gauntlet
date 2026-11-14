@@ -1325,3 +1325,15 @@ screenshots of a page are shown 900 px wide (47% of their 1920).
 - Mounted: 4 of 76 shapes, 4 <img> (unchanged; now asserted).
 - Saving, drags, opening: as after Part 1 (save 0.12 s, no stall).
 
+
+Part 9, page export draws widgets as the screen does (DECISIONS
+2026-11-14; done before Parts 5-8 by the owner's order). e2e/export.e2e.ts:
+each widget exported at 100% and laid over its screenshot; share of pixels
+off by more than 64 on a channel, before -> after:
+- Board (Boardkit's first-visit board): 3.1-5.5% (white edit boxes round
+  every title and card text, wrong font, wrapped) -> 0.7% (text
+  antialiasing only; layout identical).
+- Slate: 9.7% (rows taller: its note boxes' ::after lost) -> 0.3%.
+- Map: 0% after (not measured on its own before the fix).
+- Export time, one widget (getSvgString): board 0.36 -> 0.42 s, Slate
+  0.90 -> 1.23 s; picture file +56 KB / +30 KB of style sheet.

@@ -20,6 +20,7 @@ import { AddMapView, BoardMenu } from "./mapLink";
 import { MapView, type MapShift } from "../maps/MapView";
 import { pageBox } from "../pages/keepFilled";
 import { arrivalRoom, arriveDeltaNow } from "../pages/arrive";
+import { ExportStyles, useInExport } from "../whiteboard/exportStyles";
 import { portalEventsHandled } from "../whiteboard/widgetEvents";
 import { BoardName } from "./BoardName";
 import { WhiteboardBoard, useSelectionStore } from "./boardkit";
@@ -94,6 +95,8 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   const content = useRef<HTMLDivElement>(null);
   const mapHalf = useRef<HTMLDivElement>(null);
   const { boardId, scale } = shape.props;
+  // Drawn for an export: the shape is left as it is (exportStyles.tsx).
+  const inExport = useInExport();
   // A list widget (Edges round item 3c): one list of the board, the same
   // record; no map views of its own.
   const listId = typeof shape.meta?.listId === "string" ? shape.meta.listId : undefined;
@@ -161,7 +164,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   const onMapContent = useCallback(
     (box: PageRect, shift: MapShift) => {
       const current = editor.getShape<BoardShape>(shape.id);
-      if (!current) return;
+      if (!current || inExport) return;
       const crop = current.meta?.crop as { x: number; y: number } | undefined;
       const left = box.left - shift.x;
       const top = box.top - shift.y;
@@ -173,7 +176,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
         { history: "ignore" },
       );
     },
-    [editor, shape.id],
+    [editor, shape.id, inExport],
   );
   // While its map is edited, the whole page is the map's (maps/mapEditing.tsx).
   useEditedMap(mapEditing && linkedMap ? { shapeId: shape.id, mapId: linkedMap } : null);
@@ -181,7 +184,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   // Keep the box the size of the content (fit.ts). Not an undo step.
   useLayoutEffect(() => {
     const el = content.current;
-    if (!el) return;
+    if (!el || inExport) return;
     const measure = () => {
       const current = editor.getShape<BoardShape>(shape.id);
       if (!current) return;
@@ -205,7 +208,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [editor, shape.id]);
+  }, [editor, shape.id, inExport]);
 
   // Editing began with a press on one of the board's controls (below): that
   // control does its part now, as if pressed while editing. Or with a
@@ -335,6 +338,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
 
   return (
     <HTMLContainer id={shape.id} style={{ pointerEvents: editing ? "all" : "none", overflow: "visible" }}>
+      <ExportStyles shapeId={shape.id} />
       <div
         ref={content}
         className="gb-scaled"
