@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { atom, createShapeId, useEditor, useValue, type Editor, type TLUiToolItem } from "tldraw";
+import { placingLive } from "../widgets/copies";
 
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta, SHEET } from "../pages/sheet";
@@ -146,7 +147,8 @@ export function placeMap(editor: Editor, mapId: string, step: string, meta: Reco
     const d = insideDelta({ ...at, w: 1, h: 1 }, pageBox.get() ?? SHEET);
     const id = createShapeId();
     editor.markHistoryStoppingPoint(step);
-    editor.createShape<MapShape>({ id, type: MAP_TYPE, x: at.x + d.x, y: at.y + d.y, props: { mapId }, meta: { ...meta, corner: Date.now() } });
+    // The live map itself, even if another widget shows it (copies.ts).
+    placingLive(() => editor.createShape<MapShape>({ id, type: MAP_TYPE, x: at.x + d.x, y: at.y + d.y, props: { mapId }, meta: { ...meta, corner: Date.now() } }));
     editor.setCurrentTool("select");
     editor.select(id);
     pickerOpen.set(false);
@@ -167,7 +169,7 @@ export function placeMap(editor: Editor, mapId: string, step: string, meta: Reco
   const d = insideDelta(at, pageBox.get() ?? SHEET);
   const id = createShapeId();
   editor.markHistoryStoppingPoint(step);
-  editor.createShape<MapShape>({ id, type: MAP_TYPE, x: at.x + d.x, y: at.y + d.y, props: { mapId }, meta });
+  placingLive(() => editor.createShape<MapShape>({ id, type: MAP_TYPE, x: at.x + d.x, y: at.y + d.y, props: { mapId }, meta }));
   editor.setCurrentTool("select");
   editor.select(id);
   pickerOpen.set(false);

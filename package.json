@@ -14,9 +14,9 @@
   "dependencies": {
     "@tldraw/tlschema": "5.5.2",
     "@tldraw/utils": "5.5.2",
-    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/5911499b5474006df6f9cded43a63c7fd2202ff6",
+    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/886f83d03527fbe53940a08f2d33e8af4da54182",
     "calendarkit": "https://codeload.github.com/AlexLCBranco/calendarkit/tar.gz/0a6cb176bfb943bd1e419bd74b2fb5b8bb064ce5",
-    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/f2c8d0bb706d2c410826d0ca58a269eb11a2895c",
+    "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/f41cbe8bf889513a68a708aeb14ee40349d37492",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "shadcn": "file:src/boards/vendor/shadcn",

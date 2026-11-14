@@ -326,6 +326,18 @@ test(`real data: opening each Linkkit map at ${size.width}x${size.height} change
 // has a linked map shown as Map and as Both. Showing a map writes nothing:
 // after all of it, every linkkit:* and boardkit:* key is byte for byte what
 // it was.
+/** Removes a page set up here, with its widget, before the next one is
+    placed: a widget made while another shows the same board or map is a
+    copy (speed session Part 6), and this test places, it doesn't copy. */
+async function dropPage(page: Page, pageId: string) {
+  await page.evaluate((id) => {
+    const e = (window as any).editor;
+    const other = e.getPages().find((p: { id: string }) => p.id !== id);
+    if (other) e.setCurrentPage(other.id);
+    e.deletePage(id);
+  }, pageId);
+}
+
 test("real data: each Linkkit map placed as a widget, and each linked board in Map and Both, changes no byte of linkkit:* or boardkit:*", async ({ page }) => {
   const b = backup();
   await restore(page, b);
@@ -352,6 +364,7 @@ test("real data: each Linkkit map placed as a widget, and each linked board in M
     if (nodes > 0 && !m.hideCut && !(m.collapsed?.length ?? 0) && m.kind !== "bracket")
       await expect.poll(() => widget.locator("[data-box-id]").count(), { message: `map ${name} (${id})` }).toBe(nodes);
     await expect(() => expectPageRules(page)).toPass({ timeout: 5_000 });
+    await dropPage(page, `page:map-${id}`);
   }
 
   const linked = registry.maps.map(({ id }) => ({ mapId: id, boardId: mapOf(id).linkedBoard })).filter((l): l is { mapId: string; boardId: string } => !!l.boardId);
@@ -369,6 +382,7 @@ test("real data: each Linkkit map placed as a widget, and each linked board in M
       await expect(widget.locator("[data-boardkit-board]")).toHaveCount(view === "both" ? 1 : 0);
       await expect.poll(() => widget.locator("[data-linkkit-map] [data-box-id]").count(), { message: `map ${mapId}` }).toBeGreaterThan(0);
       await expect(() => expectPageRules(page)).toPass({ timeout: 5_000 });
+      await dropPage(page, `page:linked-${boardId}-${view}`);
     }
   }
 

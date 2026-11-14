@@ -1345,3 +1345,8 @@ selected (e2e probe, then tests):
   (already); the rename highlight left out on purpose.
 - /linkkit box: shadow, dots, toolbar, notes preview -> on the whiteboard
   nothing; now the shadow and the notes preview (Linkkit v0.0.118).
+
+Part 6, copies are independent (DECISIONS 2026-11-14). Before: a board or
+map widget copied on the whiteboard showed the same board or map (an edit
+on one showed on both). After: its own board or map ("X (copy)"), a linked
+pair copied as a pair; one Ctrl+Z takes it away. e2e/copies.e2e.ts (5).

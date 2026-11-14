@@ -10,7 +10,7 @@ Finished work goes to docs/HISTORY.md.
   rounds done: docs/HISTORY.md and DECISIONS.
 - SLATE WIDGET (owner, 2026-10-31; steps 1-5, DECISIONS): steps 1-3
   DONE (src/slate/, e2e/slate + slatehover.e2e.ts); 4-5 not started.
-- Pinned: Boardkit v0.0.107 (`5911499`), Linkkit v0.0.118 (`f2c8d0b`),
+- Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.65.1 (`0a6cb17`); all three on their main (2026-11-14).
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
@@ -24,9 +24,9 @@ Finished work goes to docs/HISTORY.md.
   src/pages/arrive.ts; 4: Slate step 3, src/slate/hover.tsx). Owner's
   order change 2026-11-14: Part 9 first, then 5, 6, 7, 8, 10, 11. PART 9
   DONE (export styles, src/whiteboard/exportStyles.tsx, e2e/export.e2e.ts).
-  PART 5 DONE (card and map-box hover; e2e/hoverparity.e2e.ts; what's
-  left, with sizes, in DECISIONS 2026-11-14). STOPPED for the owner's
-  report. NEXT: Part 6. Parts 6-8, 10, 11 not started.
+  PART 5 DONE (hover; what's left, with sizes, in DECISIONS 2026-11-14).
+  PART 6 DONE (copies independent, src/widgets/copies.ts). STOPPED for
+  the owner's report. NEXT: Part 7. Parts 7, 8, 10, 11 not started.
 - Real-disk save measurement, by hand only (a visible Edge for ~1 min):
   `node scripts/local-e2e.mjs gauntlet "-c playwright.disk.config.ts"`.
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);
@@ -95,6 +95,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- Speed session Part 6 (independent copies), then 7, 8, 10, 11 in
-  order (9 and 5 done), stopping to report after each.
+- Speed session Part 7 (broken widget never breaks the page), then 8,
+  10, 11 in order, stopping to report after each.
   Phase 4 only after this round is live and the owner says "go".

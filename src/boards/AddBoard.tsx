@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { atom, createShapeId, useEditor, useValue, type Editor, type TLUiToolItem } from "tldraw";
+import { placingLive } from "../widgets/copies";
 
 import { pageBox } from "../pages/keepFilled";
 import { insideDelta, SHEET } from "../pages/sheet";
@@ -147,7 +148,8 @@ export function place(editor: Editor, boardId: string, step: string, meta: Recor
   const d = insideDelta(corner ? { ...at, w: 1, h: 1 } : at, pageBox.get() ?? SHEET);
   const id = createShapeId();
   editor.markHistoryStoppingPoint(step);
-  editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: at.x + d.x, y: at.y + d.y, props: { boardId }, meta: corner ? { ...meta, corner: true } : meta });
+  // The live board itself, even if another widget shows it (copies.ts).
+  placingLive(() => editor.createShape<BoardShape>({ id, type: BOARD_TYPE, x: at.x + d.x, y: at.y + d.y, props: { boardId }, meta: corner ? { ...meta, corner: true } : meta }));
   editor.setCurrentTool("select");
   editor.select(id);
   pickerOpen.set(false);

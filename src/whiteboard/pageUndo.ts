@@ -31,6 +31,10 @@ export const pageHistory = atom<PageHistory>("page history", { done: [], undone:
 /** Set while this file undoes or redoes, so that is never a new step. */
 let acting = false;
 
+/** True while the page's undo or redo is putting things back (a widget
+    coming back then is not a new copy: widgets/copies.ts). */
+export const undoingOrRedoing = () => acting;
+
 function push(step: Step) {
   const { done } = pageHistory.get();
   pageHistory.set({ done: [...done, step].slice(-500), undone: [] });

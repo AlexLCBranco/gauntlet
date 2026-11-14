@@ -27,6 +27,7 @@ import { editSelectedLink } from "../links/targets";
 import { MapPicker, mapToolItem } from "../maps/AddMap";
 import { appsTogether } from "../maps/appsTogether";
 import { takeBackEmptyNewMaps } from "../maps/emptyNewMaps";
+import { keepCopiesIndependent } from "../widgets/copies";
 import { MapParts } from "../maps/linkkit";
 import { MapShapeUtil } from "../maps/MapShape";
 import { slateToolItem } from "../slate/AddSlate";
@@ -295,6 +296,7 @@ function setUp(editor: Editor) {
   const stopPageHistory = keepPageHistory(editor);
   const stopTakeBack = takeBackEmptyNewBoards(editor);
   const stopTakeBackMaps = takeBackEmptyNewMaps(editor);
+  const stopCopies = keepCopiesIndependent(editor);
   const stopApps = appsTogether();
   // Excalidraw pastes and .excalidraw files: our own import (src/import/excalidraw/).
   ourExcalidrawImport(editor);
@@ -304,6 +306,7 @@ function setUp(editor: Editor) {
     stopArrive();
     stopApps();
     stopTakeBackMaps();
+    stopCopies();
     stopTakeBack();
     stopPageHistory();
     stopUndo();

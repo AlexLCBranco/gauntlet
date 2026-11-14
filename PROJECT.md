@@ -1206,6 +1206,22 @@ Changes to the plan, newest last. Each says what and why.
     toggle, a collapsed list's strip, a map's arrow label and its ×: ~1 h
     for the looks, ~1-2 h more for one-press actions on them. (3) A box's
     link icon (opens the address): ~1 h with its one-press action.
+- 2026-11-14 — Speed session, Part 6: copies are independent (owner).
+  * A board or map widget copied inside the whiteboard (Ctrl+C / Ctrl+V,
+    Ctrl+D, Alt-drag, a page duplicated, a stamp dropped) shows a new board
+    or map, made by Boardkit's and Linkkit's own code ("X (copy)"); a
+    linked board and map are copied as a new linked pair from either
+    widget (src/widgets/copies.ts; Boardkit v0.0.108, Linkkit v0.0.119).
+  * A copy = a widget made while another widget shows that board or map.
+    Never: one placed from a picker or "+ New", pasted from /boardkit or
+    /linkkit (the live one), brought back by undo/redo, or cut with Ctrl+X
+    and pasted (it moves).
+  * One Ctrl+Z removes the copy and its data, if the data is as copied
+    (a map's layout aside: Linkkit lays a map out again when drawn);
+    Ctrl+Y puts both back, same ids. Deleting an untouched copy's widget
+    takes its data too; a copy with changes keeps it, as any board.
+  * A copied Slate keeps its own night and size (its props); games live.
+  * Test: e2e/copies.e2e.ts (5).
 
 IDEAS
 
