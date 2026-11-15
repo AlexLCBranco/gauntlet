@@ -39,18 +39,22 @@ Three lists, never mixed:
 
 The owner's messages (always `git pull` first):
 - "what's planned" / "what's in the backlog": read `FEATURE_BACKLOG.md` only. List each item as
-  `BK-n — title — one plain sentence on what changes in the app`. Build nothing.
+  `GT-n — title — one plain sentence on what changes in the app`. Build nothing.
 - "what's built" / "what shipped" (maybe "since <date>" or "last N"): read `BUILT.md` only and list it.
 - "ideas" / "what ideas": read `IDEAS.md` only and list it as `I-n — idea`.
-- "next batch" / "build the backlog": every item, top to bottom. "next": the top item only. "build BK-n": that item only.
+- "next batch" / "build the backlog": every item, top to bottom. "next": the top item only. "build GT-n": that item only.
 - "promote I-n": cut it from `IDEAS.md` and add it at the bottom of Ready in `FEATURE_BACKLOG.md` with the next free
-  BK ID and a `From I-n` line. Build it only if the owner also asks for that.
+  GT ID and a `From I-n` line. Build it only if the owner also asks for that.
 
 Before building, list the IDs and titles you are about to build, in plain words.
 
 When an item ships: in the same commit/PR as the code, cut it from `FEATURE_BACKLOG.md` and add it at the top of
-`BUILT.md` under `## <YYYY-MM-DD> — v<version>` as `- BK-n — title`. An item is never in both files. IDs are never
-reused. Work shipped without a backlog item (a direct request, a fix) also gets a `BUILT.md` line, without an ID.
+`BUILT.md` under that day's `## <YYYY-MM-DD>` heading (one heading per day, newest first) as
+`- GT-n — title`, then at most one plain sentence on what the owner sees. An item is never in both files. IDs are
+never reused. Work shipped without a backlog item (a direct request, a fix) gets the same line without the ID:
+`- title`. Housekeeping the owner can't see (handoff notes, pins, test-only or CI fixes, docs) goes under a
+`### Internal` subheading at the bottom of that day, not in the main list. The same format is used in every one of
+the owner's repos, so `gauntlet` can merge them into one `ALL_BUILT.md`.
 Follow this file's other rules (branches, tests, version bump) as usual.
 
 When the owner mentions something that isn't to be built now (an aside, "later", "someday", "maybe"), add it at the
@@ -64,3 +68,6 @@ hand (only what couldn't be automated). A pasted prompt overrides this section.
 
 Guard: `scripts/check-lists.mjs` runs with the checks (before `npm test`) and fails if an ID is both planned and built, an
 ID repeats, or package.json's version has no `BUILT.md` entry. Fix the lists, never the check.
+
+`ALL_BUILT.md` merges every repo's `BUILT.md` (repo list in `scripts/all-built.mjs`): the `all-built` workflow
+rebuilds it daily and on demand. Never edit it by hand; a new repo is added to `REPOS` there.

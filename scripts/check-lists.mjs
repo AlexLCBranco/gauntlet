@@ -1,5 +1,6 @@
 // Guard for the owner's lists (CLAUDE.md, "Feature backlog, built list and ideas").
-// Fails when an ID is planned and built at once, an ID repeats, or package.json's version has no BUILT.md entry
+// Fails when an ID is planned and built at once, an ID repeats, an ID lacks this repo's prefix (the "Item IDs are XX-1"
+// line in FEATURE_BACKLOG.md), or package.json's version has no BUILT.md entry
 // (skipped where BUILT.md says "No version numbers here").
 import { existsSync, readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -8,10 +9,15 @@ export function checkLists(dir = '.') {
   const read = (file) => (existsSync(`${dir}/${file}`) ? readFileSync(`${dir}/${file}`, 'utf8') : '')
   const ids = (text, re) => [...text.matchAll(re)].map((m) => m[1])
   const built = read('BUILT.md')
-  const planned = ids(read('FEATURE_BACKLOG.md'), /^###\s+(BK-\d+[a-z]?)\b/gm)
-  const shipped = ids(built, /^-\s+(BK-\d+[a-z]?)\b/gm)
+  const backlog = read('FEATURE_BACKLOG.md')
+  const prefix = backlog.match(/Item IDs are ([A-Z]{2})-1\b/)?.[1]
+  const planned = ids(backlog, /^###\s+([A-Z]{2}-\d+[a-z]?)\b/gm)
+  const shipped = ids(built, /^-\s+([A-Z]{2}-\d+[a-z]?)\b/gm)
   const ideas = ids(read('IDEAS.md'), /^-\s+(I-\d+)\b/gm)
   const errors = []
+  if (backlog && !prefix) errors.push('FEATURE_BACKLOG.md has no "Item IDs are XX-1" line naming this repo\'s prefix')
+  for (const id of [...planned, ...shipped])
+    if (prefix && !id.startsWith(`${prefix}-`)) errors.push(`${id} does not use this repo's prefix ${prefix}-`)
   for (const [file, list] of [['FEATURE_BACKLOG.md', planned], ['BUILT.md', shipped], ['IDEAS.md', ideas]])
     for (const id of new Set(list.filter((x, i) => list.indexOf(x) !== i))) errors.push(`${id} appears twice in ${file}`)
   for (const id of planned)
