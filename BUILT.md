@@ -2,7 +2,9 @@
 
 Shipped work only, newest first. Planned work is in `FEATURE_BACKLOG.md`, never here.
 Entries dated before 2026-11-16 were backfilled from the git commit messages (data, docs, test-only, merge and
-spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Feature backlog and built list").
+spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Feature backlog, built list and ideas").
+
+No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-14
 - Serve footykit at /football (rewrites to footykit.vercel.app, like /calendar); the local dev proxy and its tests know it

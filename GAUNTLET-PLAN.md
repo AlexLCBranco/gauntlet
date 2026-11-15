@@ -1,5 +1,7 @@
 # Gauntlet canvas plan (v0)
 
+> **History.** Planned work: `FEATURE_BACKLOG.md`. Shipped: `BUILT.md`. Ideas: `IDEAS.md`.
+
 > **The canvas this describes was deleted on 2026-10-20** (PROJECT.md,
 > DECISIONS): the whiteboard is the home page now. Kept as history only.
 
