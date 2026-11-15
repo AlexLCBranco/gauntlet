@@ -37,7 +37,13 @@ Three lists, never mixed:
 - `BUILT.md`: shipped work only, newest first.
 - `IDEAS.md`: ideas the owner mentioned that are not planned (maybe later, maybe never). Never built from directly.
 
-The owner's messages (always `git pull` first):
+The owner's messages. Always read the lists from `main` on GitHub, never from your local checkout or branch
+(Claude Code sessions run on a branch made at session start, so `git pull` there does NOT bring in backlog
+items added later): run `git fetch origin main`, then read with `git show origin/main:FEATURE_BACKLOG.md`
+(same for `BUILT.md` and `IDEAS.md`). Before building, merge `origin/main` into your branch.
+- "build what's planned" / "build the backlog": build only the items under Ready in `FEATURE_BACKLOG.md` on
+  `origin/main`. If there are none, say "Backlog is empty" and stop. Never build from `IDEAS.md`, `PLAN.md` or
+  any other doc, and never fill gaps in a spec with your own defaults: ask.
 - "what's planned" / "what's in the backlog": read `FEATURE_BACKLOG.md` only. List each item as
   `GT-n — title — one plain sentence on what changes in the app`. Build nothing.
 - "what's built" / "what shipped" (maybe "since <date>" or "last N"): read `BUILT.md` only and list it.
