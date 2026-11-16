@@ -95,6 +95,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- Speed session Part 7 (broken widget never breaks the page), then 8,
-  10, 11 in order, stopping to report after each.
-  Phase 4 only after this round is live and the owner says "go".
+- The plan is FEATURE_BACKLOG.md on origin/main (GT-1..GT-5 Ready; GT-6
+  phase 4 held for the owner's "go"). SPEED-SESSION.md Parts 7, 10, 11
+  and Slate steps 4-5 moved there (2026-11-16); Part 8 folded into GT-6.

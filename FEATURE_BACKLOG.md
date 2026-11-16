@@ -3,6 +3,70 @@
 Planned work only, nothing built. Shipped items move to `BUILT.md` (rules: CLAUDE.md, "Feature backlog, built list and ideas").
 Specs are written here from Claude chat. Item IDs are GT-1, GT-2, ... (never reused; GT is this repo's prefix, unique across the owner's repos).
 
+Moved here 2026-11-16 from the open parts of `docs/SPEED-SESSION.md` (Parts 7, 10, 11), the Slate track in PROJECT.md
+DECISIONS (2026-10-31, steps 4-5) and PROJECT.md section 6 (phase 4). Those docs are now history; this file is the plan.
+Speed session Part 8 (write phase 4 decisions, no code) is dropped: its decisions are inside GT-6 below.
+
+General rules for every item: one item at a time, stop and report after each (what changed in one or two lines, test
+results in one line), update HANDOFF.md. Testing policy in CLAUDE.md: everything automatable is automated, no manual
+checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its own source before relying on behaviour.
+
 ## Ready
 
-_(empty)_
+### GT-1 — One broken widget never breaks the page
+(was speed session Part 7)
+Check whether each widget (board, map, Slate, web embed) is wrapped so an error inside it shows a small
+"this widget failed" box and the rest of the whiteboard keeps working. Add it where missing, with a test per widget
+type that forces an error and checks the rest of the page still works (select, drag, type, change page).
+
+### GT-2 — Resizing a text box scales its font
+(was speed session Part 10)
+Today changing a text box's size does not change the font size. Dragging a text box's corner makes the text bigger
+or smaller with the box, like scaling an image. If dragging a side handle should keep changing only the width
+(re-wrapping), keep that, and say in the report which handle does what. Check tldraw 5.5.2's own source for how text
+scaling works before building. Our font sizes live in meta (fontPx, lineHeight): keep them in sync with the scaled
+size so the style panel shows the real size. Undo restores the old size in one step. Tests: corner scaling, side
+resizing, undo, size survives a reload.
+
+### GT-3 — Today's date in one click
+(was speed session Part 11)
+The owner makes a board every day and types the date by hand (e.g. "4/11", day/month). Add a "today's date" item to
+the stamps tray (src/stamps/): one click (or drag) drops today's date as normal text in America/Sao_Paulo, format d/m
+like "4/11". Fixed text, editable like any text, never changes by itself. If a better one-click place than the stamps
+tray exists, propose it in the report, but build the stamp. Tests: right date (mock the clock, including just after
+midnight), text is editable and saved.
+
+### GT-4 — Slate step 4: notes on the whiteboard
+(Slate track, PROJECT.md DECISIONS 2026-10-31, step 4)
+Today a Slate's game notes are read-only on the whiteboard. Step 4 as planned: typing notes in the Slate on the
+whiteboard, ⇄, notes in the backups. Owner's rules still apply: notes belong to the GAME (calendarkit's localStorage
+`ck:notes:v1`, shared, same site), so a note typed on the whiteboard shows in /calendar and the other way round.
+Clicking outside the note box saves, like Enter (owner's rule for every widget). Use calendarkit's own component, not
+a whiteboard copy. Tests: type on the whiteboard → seen in /calendar and after reload; typed in /calendar → seen on
+the whiteboard; notes restored from a backup.
+
+### GT-5 — Slate step 5: live scores and changes reach the widget
+(Slate track, PROJECT.md DECISIONS 2026-10-31, step 5)
+Final scores show on a Slate once games end; changes to a game card in calendarkit reach the widget on the
+whiteboard without a reload. The widget stays pinned to its date and still stores only date and size, never games.
+Tests across both repos (gauntlet and calendarkit).
+
+## Held (needs the owner's "go"; never built from "build the backlog")
+
+### GT-6 — Phase 4: things connect (cards go anywhere)
+Start only when the owner says "go" for GT-6; then move it to Ready. Plan it in steps first (stop after the plan),
+then build one step at a time, stopping to report after each.
+Owner's decisions (2026-10-20, 2026-11-12):
+- Cards become real whiteboard objects: directly clickable, draggable, selectable by box and lasso, no double-click
+  to enter a board first. No interim "two clicks" mode.
+- A board works like a frame: a named container, moved by its title AND by the gaps between its lists, or by
+  selecting it. Dragging a board's corner still scales everything together.
+- A card dropped on the empty page leaves its list and lives only on the whiteboard until dropped into a list again.
+- A copied card is a new, independent card.
+- While dragging a card, a line shows where it will land and the target list is highlighted.
+- Ctrl+Z on the whiteboard undoes a card move that also changed Boardkit data, in one step.
+- Arrows attach to a single card inside a board and a single box inside a map, and stay attached when things move.
+- Things attached to a card follow it when it moves; when a card is deleted, arrows and things attached to it go with it.
+- Every card change on the whiteboard saves to Boardkit too (same live board in /boardkit).
+Open question for the owner before step 1: the original plan said "notes stick to cards", but sticky notes were removed
+from the toolbar (2026-10-22). What gets attached to a card: text, rectangles, anything? Ask; do not pick a default.
