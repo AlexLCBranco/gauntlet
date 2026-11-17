@@ -69,3 +69,29 @@ export function shared<T>(values: readonly T[]): T | "mixed" | undefined {
   if (values.length === 0) return undefined;
   return values.every((v) => v === values[0]) ? values[0] : "mixed";
 }
+
+/** The font size (px) a text is drawn at: its meta's, else its tldraw size
+    (s–xl are tldraw's own text sizes, FONT_STEPS), times tldraw's scale. */
+export function textFontPx(meta: Record<string, unknown> | undefined, size: string, scale = 1): number {
+  const base = metaFontPx(meta) ?? FONT_STEPS.find((s) => s.id === size)?.px ?? 24;
+  return base * (scale || 1);
+}
+
+/** GT-2: a text scaled from a corner by `factor` gets this font size (px),
+    rounded to a tenth so the panel reads cleanly, never below 2 px. */
+export function scaledFontPx(px: number, factor: number): number {
+  return Math.max(2, Math.round(px * factor * 10) / 10);
+}
+
+/** The font step whose size is exactly `px`, or null (an in-between size). */
+export function stepOfPx(px: number): FontStep | null {
+  return FONT_STEPS.find((s) => s.px === px)?.id ?? null;
+}
+
+/** The font step the panel marks for a shape: none for an exact size that
+    is no step's (a corner-scaled text, an import), else fontStepOf's. */
+export function shownFontStep(meta: Record<string, unknown> | undefined, size: string): FontStep | null {
+  const exact = metaNumber(meta, "fontPx");
+  if (exact) return stepOfPx(exact);
+  return fontStepOf(meta, size);
+}

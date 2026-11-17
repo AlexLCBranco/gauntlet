@@ -8,12 +8,13 @@ import {
   getColorValue,
   type TLDefaultFillStyle,
   type TLGeoShape,
+  type TLResizeInfo,
   type TLTextShape,
 } from "tldraw";
 
 import { shownHex, withAlpha } from "./colors";
 import { caseOf, shownInCase } from "./textCase";
-import { fillColorOf, metaFontPx, metaNumber } from "./styleMeta";
+import { fillColorOf, metaFontPx, metaNumber, scaledFontPx, textFontPx } from "./styleMeta";
 
 type Mode = "dark" | "light";
 
@@ -147,6 +148,26 @@ class TextUtil extends withCase(TextWithMeta) {
   }
   override onBeforeUpdate(prev: TLTextShape, next: TLTextShape) {
     return remeasureOnFontStep(prev, next, (p, n) => super.onBeforeUpdate(p, n));
+  }
+  /** GT-2: a corner drag scales the text like a picture, and the new size
+      is its real font size (meta fontPx, so the style panel shows it), not
+      tldraw's props.scale, which stays 1. A side handle still changes only
+      the width (the text re-wraps), as in tldraw. One drag is one undo
+      step (tldraw's resize). */
+  override onResize(shape: TLTextShape, info: TLResizeInfo<TLTextShape>) {
+    const out = super.onResize(shape, info);
+    const side = info.mode !== "scale_shape" && (info.handle === "left" || info.handle === "right");
+    const scaled = (out.props as { scale?: number } | undefined)?.scale;
+    if (side || scaled === undefined) return out;
+    // tldraw's scale for this drag, from where it started (resizeScaled).
+    const factor = scaled / (shape.props.scale || 1);
+    const from = info.initialShape;
+    const fontPx = scaledFontPx(textFontPx(from.meta, from.props.size, from.props.scale), factor);
+    return {
+      ...out,
+      props: { scale: 1, ...(from.props.autoSize ? {} : { w: from.props.w * (from.props.scale || 1) * factor }) },
+      meta: { ...shape.meta, fontPx },
+    };
   }
 }
 

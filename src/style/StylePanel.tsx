@@ -22,7 +22,7 @@ import { caseOf } from "./textCase";
 import { setPlace, usePanelPlace } from "./panelPlace";
 import { metaHex, normalizeHex, type ColorKey } from "./colors";
 import { TEXT_TYPES } from "./shapeUtils";
-import { FONT_STEPS, fontStepOf, shared, type FontStep, type StyleMeta } from "./styleMeta";
+import { FONT_STEPS, fontStepOf, shared, shownFontStep, textFontPx, type FontStep, type StyleMeta } from "./styleMeta";
 import "./style-panel.css";
 
 /** tldraw doesn't export the label colour style by name; it's the geo
@@ -255,8 +255,13 @@ export function StylePanel() {
         fillColor: row("fillHex"),
         textColor: row("textHex"),
         fontStep: shapes.length
-          ? shared(texty.map((s) => fontStepOf(s.meta, (s.props as { size: string }).size)))
+          ? shared(texty.map((s) => shownFontStep(s.meta, (s.props as { size: string }).size)))
           : next.fontStep,
+        // GT-2: the real size of the selected texts (corner scaling sets an
+        // in-between one), shown next to "Font size"; texts only.
+        fontPx: texty.length && texty.every((s) => s.type === "text")
+          ? shared(texty.map((s) => { const p = s.props as { size: string; scale: number }; return Math.round(textFontPx(s.meta, p.size, p.scale) * 10) / 10; }))
+          : undefined,
         opacity: editor.getSharedOpacity(),
         textCase: shared(texty.map((s) => caseOf(s.meta) ?? ("as" as const))),
         // One unlocked picture: the Actions row offers Crop.
@@ -444,9 +449,9 @@ export function StylePanel() {
         </Section>
       )}
       {hasText && (
-        <Section title="Font size">
+        <Section title={typeof view.fontPx === "number" ? `Font size · ${view.fontPx} px` : "Font size"}>
           {FONT_STEPS.map((f) => (
-            <Choice key={f.id} label={`Font size ${f.label} (${f.px} px)`} value={f.id} current={view.fontStep} onPick={pickFont} testId={`font-${f.id}`}>
+            <Choice key={f.id} label={`Font size ${f.label} (${f.px} px)`} value={f.id} current={view.fontStep ?? undefined} onPick={pickFont} testId={`font-${f.id}`}>
               <span className="gk-text-choice">{f.label}</span>
             </Choice>
           ))}

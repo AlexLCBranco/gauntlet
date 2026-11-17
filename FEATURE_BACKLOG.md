@@ -13,15 +13,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-2 — Resizing a text box scales its font
-(was speed session Part 10)
-Today changing a text box's size does not change the font size. Dragging a text box's corner makes the text bigger
-or smaller with the box, like scaling an image. If dragging a side handle should keep changing only the width
-(re-wrapping), keep that, and say in the report which handle does what. Check tldraw 5.5.2's own source for how text
-scaling works before building. Our font sizes live in meta (fontPx, lineHeight): keep them in sync with the scaled
-size so the style panel shows the real size. Undo restores the old size in one step. Tests: corner scaling, side
-resizing, undo, size survives a reload.
-
 ### GT-3 — Today's date in one click
 (was speed session Part 11)
 The owner makes a board every day and types the date by hand (e.g. "4/11", day/month). Add a "today's date" item to

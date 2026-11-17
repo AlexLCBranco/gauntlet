@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FONT_STEPS, fillColorOf, fontStepOf, metaFontPx, shared } from "./styleMeta";
+import { FONT_STEPS, fillColorOf, fontStepOf, metaFontPx, scaledFontPx, shared, shownFontStep, textFontPx } from "./styleMeta";
 
 describe("font steps", () => {
   it("go smaller than tldraw's smallest (s, 18 px)", () => {
@@ -36,5 +36,25 @@ describe("shared", () => {
     expect(shared(["a", "a"])).toBe("a");
     expect(shared(["a", "b"])).toBe("mixed");
     expect(shared([])).toBeUndefined();
+  });
+});
+
+describe("GT-2: corner-scaled text sizes", () => {
+  it("a text's size: meta first, else its tldraw size, times its scale", () => {
+    expect(textFontPx({}, "m")).toBe(24);
+    expect(textFontPx({}, "xl", 2)).toBe(88);
+    expect(textFontPx({ fontStep: "xxs" }, "m")).toBe(10);
+    expect(textFontPx({ fontPx: 31, fontStep: "s" }, "m")).toBe(31);
+  });
+  it("scaling rounds to a tenth and never goes below 2 px", () => {
+    expect(scaledFontPx(24, 1.5)).toBe(36);
+    expect(scaledFontPx(24, 1.3333)).toBe(32);
+    expect(scaledFontPx(18, 0.01)).toBe(2);
+  });
+  it("the panel marks a step only when the size is exactly one", () => {
+    expect(shownFontStep({ fontPx: 36 }, "m")).toBe("l");
+    expect(shownFontStep({ fontPx: 31 }, "m")).toBeNull();
+    expect(shownFontStep({ fontStep: "xs" }, "m")).toBe("xs");
+    expect(shownFontStep({}, "l")).toBe("l");
   });
 });

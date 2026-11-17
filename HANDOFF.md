@@ -6,10 +6,10 @@ Finished work goes to docs/HISTORY.md.
 
 ## Current state (2026-11-17)
 
-- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1 DONE (2026-11-17:
-  src/widgets/WidgetBoundary.tsx, e2e/widgetfail.e2e.ts; test hook
-  `window.__gkFailWidgets`). Owner said "build the backlog": next in Ready
-  order GT-2, GT-3, GT-5, GT-10, GT-11, one at a time, report after each. Phase 3 done; phase 4 = GT-6, held.
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, GT-2 DONE (2026-11-17:
+  WidgetBoundary + e2e/widgetfail; text corner scaling = meta fontPx,
+  TextUtil.onResize, e2e/textscale). "Build the backlog": next GT-3, GT-5,
+  GT-10, GT-11, one at a time, report after each. Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.75.0 (`448cd3c`); all three on their main (2026-11-14).
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
