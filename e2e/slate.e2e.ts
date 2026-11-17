@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-import { expect, test, type APIRequestContext, type Browser, type Page } from "./test";
+import { expect, test, type APIRequestContext, type Browser, type BrowserContext, type Page } from "./test";
 
 import { box, showCalendarNotes, whiteboardSaved } from "./helpers";
 
@@ -156,6 +156,11 @@ function notesFor(ids: string[]) {
   };
 }
 
+/** No odds in either browser of the copy comparison: the live odds answer
+    at their own pace, so one side could show them and the other not (the
+    odds column is kept either way; odds have their own test). */
+const noOdds = (ctx: BrowserContext) => ctx.route("**/calendar/api/odds*", (r) => r.abort());
+
 /** The copies' pixel ratio for a 5-game night in a 1920 × 1080 window
     (calendarkit's slatePixelRatio: 4 unless fitted larger than 2×). */
 const COPY_RATIO = 4;
@@ -168,6 +173,7 @@ const COPY_RATIO = 4;
     the stage stays while it is shot. */
 async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, notes: object, { hide = false, height = 1080, dpr = COPY_RATIO } = {}) {
   const ctx = await browser.newContext({ baseURL, viewport: { width: 1920, height }, deviceScaleFactor: dpr, timezoneId: TZ });
+  await noOdds(ctx);
   const page = await ctx.newPage();
   await page.addInitScript(
     ({ date, notes }) => {
@@ -254,6 +260,7 @@ test(`Slate: at 100% the widget is calendarkit's copy of that night, notes ${hid
 
   // The widget, at the copy's pixel ratio, scale 1, at the page's corner (set up).
   const ctx = await browser.newContext({ baseURL, viewport: { width: 1920, height }, deviceScaleFactor: copy.ratio, timezoneId: TZ });
+  await noOdds(ctx);
   const page = await ctx.newPage();
   await page.addInitScript((n) => localStorage.setItem("ck:notes:v1", n), JSON.stringify(notes));
   await page.clock.install({ time: noonOn(night.date) });

@@ -14,6 +14,7 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 ### Internal
 - test: the Slate odds-request check picks a night not over (an over night's odds are asked once; the data now has finals)
 - test: edges e2e places its Slate at a whole height (the text under it sat on tldraw's 16 px side-handle limit at 50%, by float rounding)
+- test: the Slate copy comparisons block odds in both browsers (live odds arrived in one side only)
 
 ## 2026-11-14
 - Serve footykit at /football (rewrites to footykit.vercel.app, like /calendar); the local dev proxy and its tests know it
