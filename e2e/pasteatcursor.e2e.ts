@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "./test";
 
+import { copyKey } from "./helpers";
+
 /**
  * Paste at the cursor (owner, Edges round item 4): tldraw's own "Paste at
  * cursor" preference, on by default; the copied items keep their layout;
@@ -44,7 +46,7 @@ test("Ctrl+C, move the mouse, Ctrl+V: the copy lands at the cursor, its items' l
   expect(await page.evaluate(() => (window as any).editor.user.getIsPasteAtCursorMode())).toBe(true);
   await twoBoxes(page);
   await page.mouse.move(400, 300);
-  await page.keyboard.press("Control+c");
+  await copyKey(page, "Control+c");
   await page.mouse.move(1100, 650, { steps: 4 });
   await page.keyboard.press("Control+v");
   await expect.poll(async () => (await pasted(page)).n).toBe(2);
@@ -61,7 +63,7 @@ test("with the cursor off the page (on the toolbar), the paste goes to the middl
   await open(page);
   await twoBoxes(page);
   await page.mouse.move(400, 300);
-  await page.keyboard.press("Control+c");
+  await copyKey(page, "Control+c");
   const bar = (await page.getByTestId("toolbar").boundingBox())!;
   await page.mouse.move(bar.x + 10, bar.y + bar.height / 2, { steps: 4 });
   await page.keyboard.press("Control+v");

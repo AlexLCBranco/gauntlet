@@ -112,3 +112,29 @@ export async function openMapList(page: Page) {
   await page.getByRole("menuitem", { name: "Add existing map…" }).click();
   await expect(page.getByTestId("map-picker")).toBeVisible();
 }
+
+/** Presses `key` (Control+c or Control+x) and waits until the clipboard
+    holds what it wrote. The clipboard is the system's, kept from test to
+    test, and the apps write it asynchronously: a Ctrl+V sent before the
+    write lands pasted what an earlier test had copied (a rectangle: no
+    widget; another board's copy: a copy instead of the live board). A
+    marker put there first shows when the write has landed. */
+export async function copyKey(page: Page, key: "Control+c" | "Control+x") {
+  const marker = `gauntlet-test-marker-${Math.random()}`;
+  await page.evaluate((m) => navigator.clipboard.writeText(m), marker);
+  await page.keyboard.press(key);
+  const now = () =>
+    page.evaluate(async (m) => {
+      try {
+        for (const item of await navigator.clipboard.read()) {
+          if (!item.types.includes("text/plain")) return "written";
+          if ((await (await item.getType("text/plain")).text()) !== m) return "written";
+        }
+        return "marker";
+      } catch {
+        // "Clipboard data has changed" mid-read: the write is landing; read again
+        return "changing";
+      }
+    }, marker);
+  await expect.poll(now, { message: `${key} wrote the clipboard` }).toBe("written");
+}

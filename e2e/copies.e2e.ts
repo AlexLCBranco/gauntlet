@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "./test";
 
-import { openBoardList, openMapList, seedBoard, seedMap } from "./helpers";
+import { copyKey, openBoardList, openMapList, seedBoard, seedMap } from "./helpers";
 
 /**
  * Copies are independent (speed session Part 6, owner 2026-11-12): a board
@@ -124,7 +124,7 @@ test("a board widget copied and pasted shows a new board with the same lists and
   const names = await boardNames(page);
   const before = (await widgets(page)).map((s) => s.id);
   await select(page, original.id);
-  await page.keyboard.press("Control+c");
+  await copyKey(page, "Control+c");
   await bareSpot(page);
   await page.keyboard.press("Control+v");
   const copy = await newWidget(page, before, "boardkit-board");
@@ -238,7 +238,7 @@ test("still the live board: one placed again from the picker, one pasted from /b
   await bk.goto("/boardkit/");
   await expect(bk.getByRole("button", { name: "Switch board" })).toBeVisible();
   await bk.locator("body").click({ position: { x: 5, y: 600 } });
-  await bk.keyboard.press("Control+c");
+  await copyKey(bk, "Control+c");
   await bk.close();
   await page.bringToFront();
   const before = (await widgets(page)).map((s) => s.id);
@@ -248,7 +248,7 @@ test("still the live board: one placed again from the picker, one pasted from /b
   expect(pasted.boardId).toBe(boardId);
   // Cut and pasted again: the same board, moved.
   await select(page, first.id);
-  await page.keyboard.press("Control+x");
+  await copyKey(page, "Control+x");
   await expect.poll(async () => (await widgets(page)).some((s) => s.id === first.id)).toBe(false);
   const left = (await widgets(page)).map((s) => s.id);
   await page.keyboard.press("Control+v");
