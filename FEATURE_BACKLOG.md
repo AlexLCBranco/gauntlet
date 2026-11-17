@@ -62,6 +62,15 @@ schedule is mocked to change; editing a frozen list leaves the live Boardkit boa
 live data and undo restores the frozen copy; badge shows on frozen widgets only; perf.e2e.ts passes without raising
 any limit.
 
+### GT-11 — Slate notes box: fixed 3 lines, scroll inside
+(owner, 2026-11-17, chat)
+Today a game's notes box grows with its text, so cards in a Slate end up different heights. Make every notes box
+exactly 3 lines tall, empty or not. Longer notes scroll inside the box (its own scroll bar), so every card in the
+Slate stays the same size. Applies to the Slate in the whiteboard and in calendarkit (/calendar): the notes field is
+calendarkit's own component (SlateCopy editNotes, `ck:notes:v1`), so change it there and have both use it. Typing,
+clicking away to save and hover popups still work. Tests in both repos: a short note and a long note give the same
+card height; a long note scrolls inside the box and is saved in full.
+
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-6 — Phase 4: things connect (cards go anywhere)
