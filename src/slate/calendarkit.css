@@ -106,6 +106,15 @@
   line-height: 1;
   cursor: pointer;
 }
+/* GT-7: show / hide the notes, after the night's arrows */
+.gs-slate-bar button.gs-slate-notes {
+  width: auto;
+  margin-left: 4px;
+  padding: 0 8px;
+  border-left: 1px solid var(--ck-border);
+  border-radius: 0 5px 5px 0;
+  font-size: 12px;
+}
 .gs-slate-bar button:hover {
   background: var(--ck-surface-2);
   color: var(--ck-text);

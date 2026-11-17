@@ -1222,6 +1222,24 @@ Changes to the plan, newest last. Each says what and why.
     takes its data too; a copy with changes keeps it, as any board.
   * A copied Slate keeps its own night and size (its props); games live.
   * Test: e2e/copies.e2e.ts (5).
+- 2026-11-16 — GT-7: the Slate looks like calendarkit's copy-paste (owner).
+  Replaces 2026-10-31's "columns chosen once at insert".
+  * Always 2 columns (a one-game night: its one card). The `cols` prop is
+    gone; `hideNotes` (false = shown, a new Slate's) comes. A props
+    migration moves saved Slates and backups to it as they load.
+  * Notes shown: calendarkit's SlateCopy with notes, its copy card width
+    (slateCopyCardWidth). Hidden: SlateCopy without notes, its info-only
+    card width (slateCardWidth), as its copySlate does with hideNotes (the
+    backlog's "wide cards"; they are narrower than the cards with notes).
+  * "Hide notes" / "Show notes" in the date bar (one Slate selected): one
+    undo step; the box follows the cards at the same scale (text keeps its
+    size, the box grows or shrinks from its top-left corner). Notes in
+    `ck:notes:v1` are never touched.
+  * The wider bar no longer fits inside a small Slate (it covered the
+    right resize edge, edges.e2e.ts): there it goes beside the Slate, or
+    over a control rather than the Slate's own edge (barPlace.ts).
+  * Tests: e2e/slate.e2e.ts (visual check per state, toggle, migration),
+    barPlace.test.ts.
 
 IDEAS
 

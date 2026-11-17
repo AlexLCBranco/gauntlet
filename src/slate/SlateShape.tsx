@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { ExportStyles } from "../whiteboard/exportStyles";
-import { BaseBoxShapeUtil, HTMLContainer, T, resizeBox, type RecordProps, type TLResizeInfo, type TLShape } from "tldraw";
+import { BaseBoxShapeUtil, HTMLContainer, T, createShapePropsMigrationIds, createShapePropsMigrationSequence, resizeBox, type RecordProps, type TLResizeInfo, type TLShape } from "tldraw";
 
 export const SLATE_TYPE = "calendarkit-slate";
 
@@ -15,15 +15,36 @@ declare module "tldraw" {
       h: number;
       /** How much the cards are scaled; 0 until first sized. */
       scale: number;
-      /** Columns of cards, chosen once by calendarkit's copies' rule
-          (largest cards on the page); 0 until first sized. Kept, so notes
-          growing a card never reflow the night under the drawings. */
-      cols: number;
+      /** The notes hidden (GT-7): the info-only cards of calendarkit's copy
+          with notes hidden; shown (false, a new Slate's): the copy's cards with
+          their note boxes. Always 2 columns, so notes growing a card never
+          reflow the night under the drawings. Hiding never touches a note. */
+      hideNotes: boolean;
     };
   }
 }
 
 export type SlateShape = TLShape<typeof SLATE_TYPE>;
+
+const versions = createShapePropsMigrationIds(SLATE_TYPE, { TwoColumns: 1 });
+/** GT-7: `cols` (columns chosen once at insert) goes, always 2 columns;
+    `hideNotes` comes, notes shown. Saved Slates (and backups) switch to
+    the new layout as they load. */
+export const slateMigrations = createShapePropsMigrationSequence({
+  sequence: [
+    {
+      id: versions.TwoColumns,
+      up(props: Record<string, unknown>) {
+        delete props.cols;
+        props.hideNotes = false;
+      },
+      down(props: Record<string, unknown>) {
+        delete props.hideNotes;
+        props.cols = 2;
+      },
+    },
+  ],
+});
 
 /** calendarkit's code, loaded with the first Slate widget a page shows. */
 const SlateWidget = lazy(() => import("./SlateWidget"));
@@ -39,16 +60,17 @@ const SlateWidget = lazy(() => import("./SlateWidget"));
  */
 export class SlateShapeUtil extends BaseBoxShapeUtil<SlateShape> {
   static override type = SLATE_TYPE;
+  static override migrations = slateMigrations;
   static override props: RecordProps<SlateShape> = {
     date: T.string,
     w: T.number,
     h: T.number,
     scale: T.number,
-    cols: T.number,
+    hideNotes: T.boolean,
   };
 
   override getDefaultProps(): SlateShape["props"] {
-    return { date: "", w: 480, h: 140, scale: 0, cols: 0 };
+    return { date: "", w: 480, h: 140, scale: 0, hideNotes: false };
   }
   override canEdit() {
     return false;

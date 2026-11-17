@@ -160,7 +160,7 @@ test("map widget: whiteboard → /linkkit with both open; and with only one open
 test("Slate widget: a note typed in /calendar with the whiteboard closed shows in the widget when it opens", async ({ page, context, request }) => {
   await openWhiteboard(page);
   await page.getByTestId("tools.slate").click();
-  await expect.poll(() => page.evaluate(() => ((window as any).editor.getCurrentPageShapes() as any[]).some((s) => s.type === "calendarkit-slate" && s.props.cols > 0))).toBe(true);
+  await expect.poll(() => page.evaluate(() => ((window as any).editor.getCurrentPageShapes() as any[]).some((s) => s.type === "calendarkit-slate" && s.props.scale > 0))).toBe(true);
   const date = await page.evaluate(() => ((window as any).editor.getCurrentPageShapes() as any[]).find((s) => s.type === "calendarkit-slate").props.date as string);
   const first = await page.locator('[data-testid="slate-widget"] .ck-slate-card').first().getAttribute("data-game-id");
   await page.waitForTimeout(800);

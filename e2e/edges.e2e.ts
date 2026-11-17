@@ -34,7 +34,7 @@ async function open(page: Page) {
     item touches the page's edge. */
 async function packedPage(page: Page, W: number, H: number): Promise<Item[]> {
   await page.getByTestId("tools.slate").click();
-  await expect.poll(() => ed(page, (e) => e.getCurrentPageShapes().filter((s: any) => s.type === "calendarkit-slate" && s.props.scale > 0 && s.props.cols > 0).length)).toBe(1);
+  await expect.poll(() => ed(page, (e) => e.getCurrentPageShapes().filter((s: any) => s.type === "calendarkit-slate" && s.props.scale > 0).length)).toBe(1);
   return ed(page, (e, { W, H, PNG }) => {
     const c = W / 4;
     const textH = 44;

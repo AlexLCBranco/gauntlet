@@ -36,24 +36,6 @@ like "4/11". Fixed text, editable like any text, never changes by itself. If a b
 tray exists, propose it in the report, but build the stamp. Tests: right date (mock the clock, including just after
 midnight), text is editable and saved.
 
-### GT-7 — Slate looks like the calendarkit copy: 2 columns, notes shown or hidden
-(owner, 2026-11-16, chat)
-The owner copy-pastes Slates from calendarkit instead of using the toolbar's Slate, because the widget comes out as
-one narrow column (columns chosen once at insert, PROJECT.md DECISIONS 2026-10-31). The Slate widget must look like
-that copy-paste, with the plus of being live (hover, links, ‹ › as today).
-- Always 2 columns. The "columns chosen at insert" rule and its `cols` choice go away (no reflow when a note grows
-  stays true: the column count is fixed at 2).
-- Notes shown: 2 columns in whatever layout calendarkit's own copy uses with notes on (no third layout invented).
-  Notes hidden: 2 columns of the wide cards, exactly like the copy-paste with notes hidden. Use calendarkit's
-  existing hideNotes (src/components/SlateView.tsx) and its copy component, not a whiteboard copy.
-- A new Slate starts with notes SHOWN.
-- A show/hide notes button in the Slate's "‹ date ›" bar (only while one Slate is selected). Saved per widget
-  (a shape prop; still never games), one undo step, survives reload and backups.
-- Existing Slates switch to the new layout (owner: he wasn't using them).
-- Speed: perf.e2e.ts must pass without raising any limit (hover with 3 Slates is already 24-26 ms vs 25).
-Tests: insert → 2 columns, notes shown; toggle hides/shows, one undo, reload keeps it; layout matches calendarkit's
-copy in both states (as the step-2 visual check); old Slate shapes load in the new layout.
-
 ### GT-8 — Slate tight grid (calendarkit CK-7 on the whiteboard)
 (owner, 2026-11-16, chat)
 Blocked: until calendarkit's CK-7 (divider lines instead of gaps) ships.

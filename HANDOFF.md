@@ -4,12 +4,11 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-11-14)
+## Current state (2026-11-16)
 
-- PHASE 3 DONE; phase 4 NOT started (owner: don't start it). Earlier
-  rounds done: docs/HISTORY.md and DECISIONS.
-- SLATE WIDGET (owner, 2026-10-31; steps 1-5, DECISIONS): steps 1-3
-  DONE (src/slate/, e2e/slate + slatehover.e2e.ts); 4-5 not started.
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-7 DONE (2 columns, notes
+  toggle; DECISIONS 2026-11-16). NEXT: GT-8, GT-9 (calendarkit v1.74.0
+  has CK-7 + CK-6: pin it), then GT-4. Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.65.1 (`0a6cb17`); all three on their main (2026-11-14).
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
@@ -26,7 +25,7 @@ Finished work goes to docs/HISTORY.md.
   DONE (export styles, src/whiteboard/exportStyles.tsx, e2e/export.e2e.ts).
   PART 5 DONE (hover; what's left, with sizes, in DECISIONS 2026-11-14).
   PART 6 DONE (copies independent, src/widgets/copies.ts). STOPPED for
-  the owner's report. NEXT: Part 7. Parts 7, 8, 10, 11 not started.
+  the owner's report. Parts 7, 10, 11 = GT-1..3 (backlog).
 - Real-disk save measurement, by hand only (a visible Edge for ~1 min):
   `node scripts/local-e2e.mjs gauntlet "-c playwright.disk.config.ts"`.
 - Pitfall: `git stash pop` here rewrites files with CRLF (autocrlf true);

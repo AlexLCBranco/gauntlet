@@ -16,7 +16,7 @@ import { box } from "./helpers";
 const TZ = "America/Sao_Paulo";
 test.use({ timezoneId: TZ, viewport: { width: 1920, height: 1080 } });
 
-type Slate = { id: string; x: number; y: number; date: string; w: number; h: number; scale: number; cols: number };
+type Slate = { id: string; x: number; y: number; date: string; w: number; h: number; scale: number; hideNotes: boolean };
 type Night = { date: string; ids: string[] };
 
 const slates = (page: Page) =>
@@ -71,7 +71,7 @@ async function insertSlate(page: Page): Promise<Slate> {
   await expect
     .poll(async () => {
       made = (await slates(page)).find((s) => !before.includes(s.id));
-      return made ? made.scale > 0 && made.cols > 0 : false;
+      return made ? made.scale > 0 : false;
     })
     .toBe(true);
   await expect(widgetOf(page, made!.id)).toHaveAttribute("data-state", "ready");

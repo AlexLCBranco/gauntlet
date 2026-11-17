@@ -30,5 +30,5 @@ export {
   type SlateNotes,
   type TeamLinks,
 } from "calendarkit/src/slate";
-export { SLATE_GRID_GAP } from "calendarkit/src/slate/layout";
+export { SLATE_GRID_GAP, slateCardWidth } from "calendarkit/src/slate/layout";
 export { slateCopyCup } from "calendarkit/src/slate/SlateCard";

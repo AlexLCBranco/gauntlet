@@ -19,7 +19,7 @@ test.use({ timezoneId: TZ });
 // running clock): moving it back on an open whiteboard stalls tldraw (its
 // ticks wait for the time to catch up), so only short moves forward later.
 
-type Slate = { id: string; x: number; y: number; date: string; w: number; h: number; scale: number; cols: number };
+type Slate = { id: string; x: number; y: number; date: string; w: number; h: number; scale: number; hideNotes: boolean };
 type Night = { date: string; ids: string[]; keys: string[] };
 
 const slates = (page: Page) =>
@@ -72,7 +72,7 @@ async function insertSlate(page: Page): Promise<Slate> {
   await expect
     .poll(async () => {
       made = (await slates(page)).find((s) => !before.includes(s.id));
-      return made ? made.scale > 0 && made.cols > 0 : false;
+      return made ? made.scale > 0 : false;
     })
     .toBe(true);
   await expect(widgetOf(page, made!.id)).toBeVisible();
@@ -81,23 +81,13 @@ async function insertSlate(page: Page): Promise<Slate> {
 
 const cardIds = (page: Page, id: string) => widgetOf(page, id).locator(".ck-slate-card").evaluateAll((cs) => cs.map((c) => c.getAttribute("data-game-id")!));
 
-/** calendarkit's copies' column rule (its layout.ts slateCopyColumns),
-    written out here: the count whose image, fitted to the page, shows the
-    cards largest; ties, fewer. Card 914 px wide, 24 px between. */
-function copyColumns(n: number, cardH: number, page: { w: number; h: number }) {
-  let best = 1;
-  let bestScale = 0;
-  for (let c = 1; c <= n; c++) {
-    const s = Math.min(page.w / (c * 938), page.h / (Math.ceil(n / c) * (cardH + 24)));
-    if (s > bestScale + 1e-9) [best, bestScale] = [c, s];
-  }
-  return best;
-}
+/** The widget's columns of cards (its grid's). */
+const gridCols = (page: Page, id: string) => widgetOf(page, id).locator(".ck-slate-copy").evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(" ").length);
 
 /** Where the page's 100% view starts and how big it is (page units). */
 const view = (page: Page) => page.evaluate(() => { const b = (window as any).editor.getViewportPageBounds(); return { x: b.x, y: b.y, w: b.w, h: b.h }; });
 
-test("Slate: one click puts tonight's games on the page, in tip-off order, in the copies' columns, a third of the window wide (speed session Part 3); one undo removes it", async ({ page, request }) => {
+test("Slate: one click puts tonight's games on the page, in tip-off order, in 2 columns with the notes shown (GT-7), a third of the window wide (speed session Part 3); one undo removes it", async ({ page, request }) => {
   const night = nightWith(await nights(request), 15);
   await openWhiteboard(page, noonOn(night.date));
   const v = await view(page);
@@ -107,10 +97,11 @@ test("Slate: one click puts tonight's games on the page, in tip-off order, in th
 
   // The room: a third of the window's width, 90% of its height (at 100%).
   const room = { w: v.w / 3, h: v.h * 0.9 };
-  const cardH = await widgetOf(page, s.id).locator(".ck-slate-card").evaluateAll((cs) => Math.max(...cs.map((c) => (c as HTMLElement).offsetHeight)));
-  expect(s.cols).toBe(copyColumns(night.ids.length, cardH, room));
-  const grid = await widgetOf(page, s.id).locator(".ck-slate-copy").evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(" ").length);
-  expect(grid).toBe(s.cols);
+  // Always 2 columns (GT-7), notes shown: a note box on every card.
+  expect(await gridCols(page, s.id)).toBe(2);
+  expect(s.hideNotes).toBe(false);
+  await expect(widgetOf(page, s.id)).toHaveAttribute("data-notes", "shown");
+  await expect(widgetOf(page, s.id).locator(".ck-gnote")).toHaveCount(night.ids.length);
   // The whole night inside the window, filling the room one way.
   expect(s.x).toBeGreaterThanOrEqual(v.x - 0.5);
   expect(s.y).toBeGreaterThanOrEqual(v.y - 0.5);
@@ -175,8 +166,8 @@ const COPY_RATIO = 4;
     screenshot of the copy's own layout (its capture stage, brought on
     screen) at that ratio. The clipboard write is held (never finishes), so
     the stage stays while it is shot. */
-async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, notes: object) {
-  const ctx = await browser.newContext({ baseURL, viewport: { width: 1920, height: 1080 }, deviceScaleFactor: COPY_RATIO, timezoneId: TZ });
+async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, notes: object, { hide = false, height = 1080, dpr = COPY_RATIO } = {}) {
+  const ctx = await browser.newContext({ baseURL, viewport: { width: 1920, height }, deviceScaleFactor: dpr, timezoneId: TZ });
   const page = await ctx.newPage();
   await page.addInitScript(
     ({ date, notes }) => {
@@ -198,6 +189,12 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
   await page.clock.setFixedTime(noonOn(night.date));
   await page.goto("/calendar/?view=league&layout=slate");
   await showCalendarNotes(page);
+  // Notes hidden: calendarkit's own "Hide all notes" (its hideNotes).
+  if (hide) {
+    await page.getByTestId("notes-hide").click();
+    await expect(page.getByTestId("notes-hide")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-testid="slate"] .ck-gnote')).toHaveCount(0);
+  }
   await expect(page.locator('[data-testid="slate"] .ck-slate-card')).toHaveCount(night.ids.length);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
@@ -221,8 +218,8 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
   const ratio = Number((await button.getAttribute("data-captured"))!.split("@")[1]);
   const stage = (await page.evaluate(() => (window as any).__stage)) as { x: number; y: number; w: number; h: number; text: string }[];
   await page.addStyleTag({ content: ".ck-capture-stage { left: 0 !important; top: 0 !important; z-index: 2147483647; }" });
-  await page.mouse.move(1919, 1079);
-  const stageShot = (await page.locator(".ck-capture .ck-slate-copy").screenshot({ animations: "disabled", caret: "hide" })).toString("base64");
+  await page.mouse.move(1919, height - 1);
+  const stageShot =(await page.locator(".ck-capture .ck-slate-copy").screenshot({ animations: "disabled", caret: "hide" })).toString("base64");
   // The copy's columns (its own rule, from its card size: since calendarkit
   // v1.64 its cards are narrower than on screen, so often more columns).
   const cols = await page.locator(".ck-capture .ck-slate-copy").evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(" ").length);
@@ -236,24 +233,38 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
   return { png, ratio, stage, stageShot, cols };
 }
 
-test("Slate: at 100% the widget is calendarkit's copy of that night: same cards and note boxes at the same places and sizes, same text, near-identical pixels; nothing between them; no ⇄ (the ↗ of step 3 aside)", async ({ browser, baseURL, request }) => {
+/** A window height in which calendarkit's copy of 5 games comes out in 2
+    columns, as the owner's copy-pastes (its column rule follows the
+    window's shape; a taller window, fewer columns). Hidden notes: its
+    info-only cards (calendarkit's slateCardWidth). */
+const TWO_COLS_HEIGHT = { shown: 1400, hidden: 900 };
+
+for (const hide of [false, true])
+test(`Slate: at 100% the widget is calendarkit's copy of that night, notes ${hide ? "hidden" : "shown"} (GT-7: 2 columns): same cards${hide ? "" : " and note boxes"} at the same places and sizes, same text, near-identical pixels; nothing between them; no ⇄ (the ↗ of step 3 aside)`, async ({ browser, baseURL, request }) => {
   test.setTimeout(240_000);
   const night = nightWith(await nights(request), 5);
   const notes = notesFor(night.ids);
-  const copy = await calendarkitCopy(browser, baseURL!, night, notes);
-  expect(copy.ratio).toBe(COPY_RATIO);
+  const height = TWO_COLS_HEIGHT[hide ? "hidden" : "shown"];
+  let copy = await calendarkitCopy(browser, baseURL!, night, notes, { hide, height });
+  // The copy's pixel ratio is calendarkit's (slatePixelRatio: 4, more when
+  // the image is small); its stage is shot again at that ratio.
+  if (copy.ratio !== COPY_RATIO) copy = await calendarkitCopy(browser, baseURL!, night, notes, { hide, height, dpr: copy.ratio });
+  expect(copy.ratio).toBeGreaterThanOrEqual(COPY_RATIO);
+  expect(copy.cols).toBe(2);
 
   // The widget, at the copy's pixel ratio, scale 1, at the page's corner (set up).
-  const ctx = await browser.newContext({ baseURL, viewport: { width: 1920, height: 1080 }, deviceScaleFactor: copy.ratio, timezoneId: TZ });
+  const ctx = await browser.newContext({ baseURL, viewport: { width: 1920, height }, deviceScaleFactor: copy.ratio, timezoneId: TZ });
   const page = await ctx.newPage();
   await page.addInitScript((n) => localStorage.setItem("ck:notes:v1", n), JSON.stringify(notes));
   await page.clock.install({ time: noonOn(night.date) });
   await openWhiteboard(page);
   const s = await insertSlate(page);
-  // In the copy's columns (the widget picks its own when placed, for a
-  // third of the window), then at scale 1.
-  await page.evaluate(({ id, cols }) => (window as any).editor.updateShape({ id, type: "calendarkit-slate", props: { cols } }), { id: s.id, cols: copy.cols });
-  await expect.poll(() => widgetOf(page, s.id).locator(".ck-slate-copy").evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(" ").length)).toBe(copy.cols);
+  expect(await gridCols(page, s.id)).toBe(2);
+  // Notes hidden with the date bar's button (GT-7), then at scale 1.
+  if (hide) {
+    await page.getByTestId("slate-notes").click();
+    await expect(widgetOf(page, s.id)).toHaveAttribute("data-notes", "hidden");
+  }
   await page.evaluate((id) => {
     const editor = (window as any).editor;
     editor.selectNone();
@@ -261,7 +272,7 @@ test("Slate: at 100% the widget is calendarkit's copy of that night: same cards 
     editor.updateShape({ id, type: "calendarkit-slate", x: 0, y: 0, props: { scale: 1, w: p.w / p.scale, h: p.h / p.scale } });
     editor.setCamera({ x: 0, y: 0, z: 1 });
   }, s.id);
-  await page.mouse.move(1919, 1079);
+  await page.mouse.move(1919, height - 1);
   const w = widgetOf(page, s.id);
   await expect.poll(async () => (await box(w)).width).toBeCloseTo(copy.png ? (await sizeOf(page, copy.png)).w / copy.ratio : 0, 0);
   await page.evaluate(() => document.fonts.ready);
@@ -270,9 +281,10 @@ test("Slate: at 100% the widget is calendarkit's copy of that night: same cards 
   // card (speed session Part 4); hidden for the comparison (copies have none).
   await expect(w.locator('[data-testid="note-switch"], textarea, button')).toHaveCount(0);
   await expect(w.getByTestId("game-link")).toHaveCount(night.ids.length);
-  // Slot labels as saved.
+  // Slot labels as saved; none with the notes hidden.
   const slots = await w.locator('[data-testid="note-slot"]').allTextContents();
-  expect(slots.slice(0, 3)).toEqual(["PRE", "LIVE", "POST"]);
+  if (hide) expect(slots).toEqual([]);
+  else expect(slots.slice(0, 3)).toEqual(["PRE", "LIVE", "POST"]);
   // Nothing drawn behind the cards: no background on the widget or its grid.
   for (const sel of [".gs-slate", ".ck-slate-copy"])
     expect(await page.locator(`[id="${s.id}"] ${sel}`).evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
@@ -502,7 +514,7 @@ test("Slate: box select, lasso, duplicate (same night), delete, undo and redo; a
   await expect.poll(async () => (await slates(page)).length).toBe(2);
   const copy = (await slates(page)).find((t) => t.id !== s.id)!;
   expect(copy.date).toBe(s.date);
-  expect(copy.cols).toBe(s.cols);
+  expect(copy.hideNotes).toBe(s.hideNotes);
   await expect(widgetOf(page, copy.id).locator(".ck-slate-card")).toHaveCount(night.ids.length);
 
   // Delete it; undo brings it back; redo deletes it again.
@@ -575,6 +587,139 @@ test("Slate: the widget and its night survive a reload and a backup restored int
   expect((await slates(fresh))[0]).toMatchObject({ date: night.date, scale: 0.5, x: 120, y: 80 });
   expect(await cardIds(fresh, s.id)).toEqual(night.ids);
   await ctx.close();
+});
+
+/** calendarkit's notes as stored (localStorage `ck:notes:v1`). */
+const storedNotes = (page: Page) => page.evaluate(() => localStorage.getItem("ck:notes:v1"));
+
+test("Slate: the date bar's button hides and shows the notes (GT-7): 2 columns of info-only cards, one undo step, saved on the widget through a reload and a backup; the notes themselves never change", async ({ page, browser, baseURL, request }) => {
+  const night = nightWith(await nights(request), 5);
+  const notes = JSON.stringify(notesFor(night.ids));
+  await page.addInitScript((n) => localStorage.getItem("ck:notes:v1") ?? localStorage.setItem("ck:notes:v1", n), notes);
+  await openWhiteboard(page, noonOn(night.date));
+  const s = await insertSlate(page);
+  const w = widgetOf(page, s.id);
+  const button = page.getByTestId("slate-notes");
+  const hidden = async () => (await slates(page)).find((t) => t.id === s.id)!.hideNotes;
+  const cardW = () => w.locator(".ck-slate-card").first().evaluate((c) => (c as HTMLElement).offsetWidth);
+
+  // A new Slate: notes shown.
+  await expect(button).toHaveText("Hide notes");
+  await expect(button).toHaveAttribute("aria-pressed", "false");
+  await expect(w.locator(".ck-gnote")).toHaveCount(night.ids.length);
+  const withNotes = await cardW();
+
+  // Hide: no note boxes, calendarkit's info-only cards, still 2 columns, same scale.
+  await button.click();
+  await expect.poll(hidden).toBe(true);
+  await expect(w).toHaveAttribute("data-notes", "hidden");
+  await expect(w.locator(".ck-gnote")).toHaveCount(0);
+  await expect(button).toHaveText("Show notes");
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  expect(await cardW()).toBeLessThan(withNotes);
+  expect(await gridCols(page, s.id)).toBe(2);
+  expect((await slates(page))[0]!.scale).toBe(s.scale);
+  // The box follows the cards.
+  await expect.poll(async () => {
+    const t = (await slates(page))[0]!;
+    const b = await box(w);
+    return Math.abs(b.width - t.w) < 1 && Math.abs(b.height - t.h) < 1;
+  }).toBe(true);
+  expect(await storedNotes(page)).toBe(notes);
+  // Still selected, keys still on the whiteboard (→ steps the night).
+  expect(await page.evaluate(() => (window as any).editor.getSelectedShapeIds())).toEqual([s.id]);
+
+  // One undo step each way; the widget stays.
+  await page.keyboard.press("Control+z");
+  await expect.poll(hidden).toBe(false);
+  await expect(w.locator(".ck-gnote")).toHaveCount(night.ids.length);
+  expect(await slates(page)).toHaveLength(1);
+  await page.keyboard.press("Control+y");
+  await expect.poll(hidden).toBe(true);
+  await expect(w.locator(".ck-gnote")).toHaveCount(0);
+
+  // A reload keeps it.
+  await whiteboardSaved(page);
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  await expect(w.locator(".ck-slate-card")).toHaveCount(night.ids.length);
+  expect(await hidden()).toBe(true);
+  await expect(w.locator(".ck-gnote")).toHaveCount(0);
+  expect(await storedNotes(page)).toBe(notes);
+
+  // A backup restored into a fresh browser keeps it.
+  await page.goto("/backup/");
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save a backup" }).click()]);
+  const file = await readFile((await download.path())!, "utf-8");
+  const ctx = await browser.newContext({ baseURL, timezoneId: TZ });
+  try {
+    const fresh = await ctx.newPage();
+    await fresh.clock.install({ time: noonOn(night.date) });
+    await restore(fresh, file);
+    await openWhiteboard(fresh);
+    await expect(widgetOf(fresh, s.id).locator(".ck-slate-card")).toHaveCount(night.ids.length);
+    expect((await slates(fresh))[0]!.hideNotes).toBe(true);
+    await expect(widgetOf(fresh, s.id).locator(".ck-gnote")).toHaveCount(0);
+    expect(await storedNotes(fresh)).toBe(notes);
+
+    // Shown again: the same notes, untouched.
+    await fresh.evaluate((id) => void (window as any).editor.select(id), s.id);
+    await fresh.getByTestId("slate-notes").click();
+    await expect(widgetOf(fresh, s.id).locator(".ck-gnote")).toHaveCount(night.ids.length);
+    await expect(widgetOf(fresh, s.id).locator('[data-testid="note-slot"]').first()).toHaveText("PRE");
+    expect(await storedNotes(fresh)).toBe(notes);
+  } finally {
+    await ctx.close();
+  }
+});
+
+/** Restores `file` (a backup's JSON) on /backup/. */
+async function restore(page: Page, file: string) {
+  await page.goto("/backup/");
+  await page.getByLabel("Backup file").setInputFiles({ name: "backup.json", mimeType: "application/json", buffer: Buffer.from(file) });
+  const dialog = page.getByRole("dialog", { name: "Replace what's here with this backup?" });
+  await Promise.all([page.waitForEvent("download"), dialog.getByRole("button", { name: "Replace with this backup" }).click()]);
+  await expect(page.getByRole("status")).toContainText("Restored");
+}
+
+test("Slate: a Slate saved before GT-7 (columns chosen at insert, no notes switch) loads in the new layout: 2 columns, notes shown, same place, night and scale", async ({ page, browser, baseURL, request }) => {
+  const night = nightWith(await nights(request), 5);
+  await openWhiteboard(page, noonOn(night.date));
+  const s = await placed(page, night, 0.5, 120, 80);
+  await whiteboardSaved(page);
+  await page.goto("/backup/");
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save a backup" }).click()]);
+  // Made old: the Slate as saved before GT-7 (3 columns) and a schema
+  // without the Slate's migration.
+  let olds = 0;
+  const make = (o: any): void => {
+    if (!o || typeof o !== "object") return;
+    if (o.type === "calendarkit-slate" && o.props) {
+      delete o.props.hideNotes;
+      o.props.cols = 3;
+      olds++;
+    }
+    if (o.sequences && typeof o.sequences === "object") delete o.sequences["com.tldraw.shape.calendarkit-slate"];
+    Object.values(o).forEach(make);
+  };
+  const json = JSON.parse(await readFile((await download.path())!, "utf-8"));
+  make(json);
+  expect(olds).toBeGreaterThan(0);
+  const ctx = await browser.newContext({ baseURL, timezoneId: TZ });
+  try {
+    const fresh = await ctx.newPage();
+    await fresh.clock.install({ time: noonOn(night.date) });
+    await restore(fresh, JSON.stringify(json));
+    await openWhiteboard(fresh);
+    await expect(widgetOf(fresh, s.id).locator(".ck-slate-card")).toHaveCount(night.ids.length);
+    const t = (await slates(fresh))[0]! as Slate & { cols?: number };
+    expect(t).toMatchObject({ date: night.date, scale: 0.5, x: 120, y: 80, hideNotes: false });
+    expect(t.cols).toBeUndefined();
+    expect(await gridCols(fresh, s.id)).toBe(2);
+    await expect(widgetOf(fresh, s.id).locator(".ck-gnote")).toHaveCount(night.ids.length);
+  } finally {
+    await ctx.close();
+  }
 });
 
 test("Slate: when the schedule can't load the widget keeps its place and size, says so, and Try again works; a night with no games says so", async ({ page, browser, baseURL, request }) => {

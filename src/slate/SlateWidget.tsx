@@ -13,11 +13,10 @@ import {
   liveOddsStore,
   loadCalendarData,
   localNotesStore,
+  slateCardWidth,
   slateCopyCardWidth,
-  slateCopyColumns,
   slateCopyCup,
   slateGames,
-  slateImageSize,
   SlateCopy,
   SLATE_GRID_GAP,
   TeamLinkContext,
@@ -39,7 +38,18 @@ import { SLATE_TIME_ZONE, slateDateLabel, stepSlateDate } from "./today";
     narrower from it (slateCopyCardWidth, calendarkit v1.64+): the widget's
     cards are that copy width, so they wrap their text as in the copies. */
 export const SLATE_CARD_WIDTH = (1840 - SLATE_GRID_GAP) / 2;
-const copyCardWidth = (data: CalendarData, games: Parameters<typeof slateCopyCup>[1]) => slateCopyCardWidth(SLATE_CARD_WIDTH, slateCopyCup(data, games));
+/** The card width of calendarkit's copy (its ScheduleDestination's
+    copySlate takes the on-screen card's): with notes, the on-screen card
+    narrowed by slateCopyCardWidth; notes hidden, calendarkit's info-only
+    card (slateCardWidth, as its Slate shows with notes hidden). */
+const copyCardWidth = (data: CalendarData, games: Parameters<typeof slateCopyCup>[1], hideNotes: boolean) => {
+  const cup = slateCopyCup(data, games);
+  return hideNotes ? slateCardWidth(cup) : slateCopyCardWidth(SLATE_CARD_WIDTH, cup);
+};
+/** GT-7 (owner, 2026-11-16): always 2 columns, as the owner's copy-pastes
+    (a one-game night: its one card). */
+export const SLATE_COLS = 2;
+const colsFor = (n: number) => Math.max(1, Math.min(SLATE_COLS, n));
 
 // The schedule: fetched and parsed once per page (loadCalendarData keeps
 // the one promise), shared by every Slate widget on every page. The font
@@ -117,7 +127,7 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   const version = useSyncExternalStore(subscribeNotes, () => notesVersion);
   const store = useMemo(readOnly, [version]);
   const content = useRef<HTMLDivElement>(null);
-  const { date, w, h, scale, cols } = shape.props;
+  const { date, w, h, scale, hideNotes } = shape.props;
   // Drawn for an export: the shape is left as it is (exportStyles.tsx).
   const inExport = useInExport();
   const games = d.status === "ready" ? slateGames(d.data, date) : null;
@@ -129,18 +139,19 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   const lone = useValue("slate alone selected", () => editor.getOnlySelectedShapeId() === shape.id && editor.isIn("select.idle") && !editor.getEditingShapeId(), [editor, shape.id]);
 
   // Keep the box the size of the cards (boards/fit.ts). The first time
-  // (cols 0), calendarkit's copies' rule picks the columns and the whole
-  // night is fitted to the page. Not an undo step. Until the schedule is
-  // here (or when it can't load) the box keeps its place and size.
+  // (scale 0) the whole night is fitted to a third of the window. Not an
+  // undo step (showing or hiding the notes is one; the box follows it).
+  // Until the schedule is here (or when it can't load) the box keeps its
+  // place and size.
   useLayoutEffect(() => {
     const el = content.current;
     if (!games || !el || inExport) return;
-    const measure = () => fit(editor, shape.id, el, games.length);
+    const measure = () => fit(editor, shape.id, el);
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [editor, shape.id, games, cols, inExport]);
+  }, [editor, shape.id, games, hideNotes, inExport]);
 
   // The cards, made again only when what they show changes: a popup
   // opening or closing (hover state, kept in this component) never redraws
@@ -150,10 +161,19 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
     () =>
       ready && games ? (
         <TeamLinkContext.Provider value={hover.teamLinks}>
-          <SlateCopy data={ready} games={games} cols={cols || 1} cardWidth={copyCardWidth(ready, games)} timeZone={SLATE_TIME_ZONE} notes={store} odds={dayOdds} gameLink={hoopsjunkieLink} />
+          <SlateCopy
+            data={ready}
+            games={games}
+            cols={colsFor(games.length)}
+            cardWidth={copyCardWidth(ready, games, hideNotes)}
+            timeZone={SLATE_TIME_ZONE}
+            notes={hideNotes ? undefined : store}
+            odds={dayOdds}
+            gameLink={hoopsjunkieLink}
+          />
         </TeamLinkContext.Provider>
       ) : null,
-    [ready, games, cols, store, dayOdds, hover.teamLinks],
+    [ready, games, hideNotes, store, dayOdds, hover.teamLinks],
   );
   const z = scale || 1;
   const keep = { width: w / z, height: h / z };
@@ -165,7 +185,8 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
       data-testid="slate-widget"
       data-date={date}
       data-state={state}
-      style={{ transform: `scale(${z})`, visibility: scale && cols ? "visible" : "hidden" }}
+      data-notes={hideNotes ? "hidden" : "shown"}
+      style={{ transform: `scale(${z})`, visibility: scale ? "visible" : "hidden" }}
       {...hover.handlers}
     >
       {state === "ready" ? (
@@ -195,6 +216,15 @@ export function stepSlate(editor: Editor, id: SlateShape["id"], dir: -1 | 1) {
   editor.updateShape<SlateShape>({ id, type: SLATE_TYPE, props: { date: next } });
 }
 
+/** Show or hide the widget's notes (GT-7): one undo step, saved on the
+    widget; the notes themselves (calendarkit's) are never touched. */
+export function toggleSlateNotes(editor: Editor, id: SlateShape["id"]) {
+  const cur = editor.getShape<SlateShape>(id);
+  if (!cur) return;
+  editor.markHistoryStoppingPoint("slate notes");
+  editor.updateShape<SlateShape>({ id, type: SLATE_TYPE, props: { hideNotes: !cur.props.hideNotes } });
+}
+
 const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
 const inMenu = (t: EventTarget | null) => t instanceof Element && !!t.closest('.tlui-popover__content, [role="menu"], [role="dialog"], [role="listbox"]');
 
@@ -218,6 +248,7 @@ function controlRects() {
  */
 function DateBar({ editor, id }: { editor: Editor; id: SlateShape["id"] }) {
   const date = useValue("slate date", () => editor.getShape<SlateShape>(id)?.props.date ?? "", [editor, id]);
+  const hidden = useValue("slate notes hidden", () => !!editor.getShape<SlateShape>(id)?.props.hideNotes, [editor, id]);
   const at = useValue(
     "slate bar place",
     () => {
@@ -254,10 +285,13 @@ function DateBar({ editor, id }: { editor: Editor; id: SlateShape["id"] }) {
   // tldraw's box: a click there would leave the whiteboard unfocused, and
   // tldraw then stops nudging with the arrows).
   const keepFocus = (e: { preventDefault(): void }) => e.preventDefault();
-  const step = (dir: -1 | 1) => {
-    stepSlate(editor, id, dir);
+  const back = () => {
     editor.getContainer().focus({ preventScroll: true });
     editor.focus();
+  };
+  const step = (dir: -1 | 1) => {
+    stepSlate(editor, id, dir);
+    back();
   };
   return (
     <InLayer>
@@ -268,6 +302,19 @@ function DateBar({ editor, id }: { editor: Editor; id: SlateShape["id"] }) {
         <span data-testid="slate-date">{slateDateLabel(date)}</span>
         <button type="button" aria-label="Next night" title="Next night (→)" data-testid="slate-next" onClick={() => step(1)}>
           ›
+        </button>
+        <button
+          type="button"
+          className="gs-slate-notes"
+          aria-pressed={hidden}
+          title={hidden ? "Show the notes" : "Hide the notes (they are kept)"}
+          data-testid="slate-notes"
+          onClick={() => {
+            toggleSlateNotes(editor, id);
+            back();
+          }}
+        >
+          {hidden ? "Show notes" : "Hide notes"}
         </button>
       </div>
     </InLayer>
@@ -297,29 +344,19 @@ export function slateRoom(win: { w: number; h: number }) {
   return { w: win.w * SLATE_WIDTH_SHARE, h: roomForWindow(win).h };
 }
 
-function fit(editor: Editor, id: SlateShape["id"], el: HTMLElement, n: number) {
+function fit(editor: Editor, id: SlateShape["id"], el: HTMLElement) {
   const cur = editor.getShape<SlateShape>(id);
   if (!cur || el.offsetWidth === 0) return;
   const p = cur.props;
   const page = pageBox.get() ?? SHEET;
   const natural = { w: el.offsetWidth, h: el.offsetHeight };
-  if (p.cols === 0) {
-    // First sizing (speed session Part 3): the night fitted to a third of
-    // the window's width (and its height), in the columns whose cards come
-    // out largest there (calendarkit's rule); placed new, it grows from
-    // where it was put, inside the window.
+  if (!(p.scale > 0)) {
+    // First sizing (speed session Part 3): the night (2 columns, GT-7)
+    // fitted to a third of the window's width (and its height); placed
+    // new, it grows from where it was put, inside the window.
     const room = slateRoom(windowSize(editor));
-    let next: { cols: number; scale: number; w: number; h: number };
-    if (n > 0) {
-      const cards = [...el.querySelectorAll<HTMLElement>(".ck-slate-card")];
-      const card = { width: cards[0]!.offsetWidth, height: Math.max(...cards.map((c) => c.offsetHeight)) };
-      const c = slateCopyColumns(n, card, { width: room.w, height: room.h });
-      const size = slateImageSize(n, c, card);
-      const s = Math.min(room.w / size.width, room.h / size.height);
-      next = { cols: c, scale: s, w: size.width * s, h: size.height * s };
-    } else {
-      next = { cols: 1, ...fitBoard(natural, 0, page, room) };
-    }
+    const s = Math.min(room.w / natural.w, room.h / natural.h);
+    const next = el.querySelector(".ck-slate-card") ? { scale: s, w: natural.w * s, h: natural.h * s } : fitBoard(natural, 0, page, room);
     const at = cur.meta?.corner ? { x: cur.x, y: cur.y } : { x: cur.x + (p.w - next.w) / 2, y: cur.y + (p.h - next.h) / 2 };
     const d = arriveDeltaNow(editor, { ...at, w: next.w, h: next.h });
     editor.run(() => editor.updateShape<SlateShape>({ id, type: SLATE_TYPE, x: at.x + d.x, y: at.y + d.y, props: next }), { history: "ignore" });

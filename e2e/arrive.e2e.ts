@@ -153,7 +153,7 @@ test("a small picture keeps its own size", async ({ page }) => {
 test("a new Slate starts at about a third of the window's width, every corner in the window", async ({ page }) => {
   await openBigPage(page);
   await page.getByTestId("tools.slate").click();
-  const id = await arrived(page, "calendarkit-slate", [], "s.props.scale > 0 && s.props.cols > 0");
+  const id = await arrived(page, "calendarkit-slate", [], "s.props.scale > 0");
   const c = await corners(page, id);
   insideWindow(c, "Slate");
   const w = c.right - c.left;

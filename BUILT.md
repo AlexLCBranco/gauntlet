@@ -6,6 +6,10 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
+## 2026-11-16
+- GT-7 — Slate looks like the calendarkit copy: 2 columns, notes shown or hidden
+  A Slate is always 2 columns like the copy-paste, starts with notes shown, and a "Hide notes" button in its date bar switches to calendarkit's info-only cards (saved per Slate, one undo; notes are never changed).
+
 ## 2026-11-14
 - Serve footykit at /football (rewrites to footykit.vercel.app, like /calendar); the local dev proxy and its tests know it
 - A board or map widget copied on the whiteboard shows its own new board or map (speed session Part 6)
