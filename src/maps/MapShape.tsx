@@ -21,6 +21,7 @@ import { useEditedMap } from "./mapEditing";
 import { MapView, type MapShift } from "./MapView";
 import "./maps.css";
 import { ExportStyles, useInExport } from "../whiteboard/exportStyles";
+import { WidgetBoundary } from "../widgets/WidgetBoundary";
 
 export const MAP_TYPE = "linkkit-map";
 
@@ -82,7 +83,11 @@ export class MapShapeUtil extends BaseBoxShapeUtil<MapShape> {
     return { ...next, props: { ...next.props, scale: (from.scale || 1) * (next.props.w / from.w) } };
   }
   override component(shape: MapShape) {
-    return <MapShapeComponent shape={shape} />;
+    return (
+      <WidgetBoundary kind="map">
+        <MapShapeComponent shape={shape} />
+      </WidgetBoundary>
+    );
   }
   override getIndicatorPath(shape: MapShape) {
     const path = new Path2D();

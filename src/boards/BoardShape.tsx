@@ -28,6 +28,7 @@ import { fitBoard } from "./fit";
 import { editingHalf, viewOf } from "./views";
 import { ViewSwitch } from "./ViewSwitch";
 import "./boards.css";
+import { WidgetBoundary } from "../widgets/WidgetBoundary";
 
 export const BOARD_TYPE = "boardkit-board";
 
@@ -78,7 +79,11 @@ export class BoardShapeUtil extends BaseBoxShapeUtil<BoardShape> {
     return { ...next, props: { ...next.props, scale: (from.scale || 1) * (next.props.w / from.w) } };
   }
   override component(shape: BoardShape) {
-    return <BoardShapeComponent shape={shape} />;
+    return (
+      <WidgetBoundary kind="board">
+        <BoardShapeComponent shape={shape} />
+      </WidgetBoundary>
+    );
   }
   override getIndicatorPath(shape: BoardShape) {
     const path = new Path2D();

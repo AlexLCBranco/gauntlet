@@ -66,6 +66,7 @@ import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
 import { undoSkipsSelection } from "./undoSkipsSelection";
 import { unsavedJournal } from "./unsavedJournal";
 import { ZoomUndo } from "./ZoomUndo";
+import { ShapeFailed } from "../widgets/WidgetBoundary";
 import "./whiteboard.css";
 
 /** tldraw keeps the whiteboard here (IndexedDB, per origin), and syncs it
@@ -220,6 +221,9 @@ const components: TLComponents = {
   HelpMenu: null,
   Background: SheetBackground,
   InFrontOfTheCanvas: InFront,
+  // A shape that fails outside a widget's own boundary (GT-1): a box that
+  // says so, not tldraw's bare "Error".
+  ShapeErrorFallback: ShapeFailed,
 };
 
 function setUp(editor: Editor) {

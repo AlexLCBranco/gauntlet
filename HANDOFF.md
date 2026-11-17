@@ -4,11 +4,12 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-11-16)
+## Current state (2026-11-17)
 
-- PLAN = FEATURE_BACKLOG.md on origin/main. GT-7, GT-8, GT-9, GT-4 DONE (2 columns, notes
-  toggle, tight grid; DECISIONS 2026-11-16). The owner's GT-7/8/9/4 batch
-  is done; next in Ready order: GT-1. Phase 3 done; phase 4 = GT-6, held.
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1 DONE (2026-11-17:
+  src/widgets/WidgetBoundary.tsx, e2e/widgetfail.e2e.ts; test hook
+  `window.__gkFailWidgets`). Owner said "build the backlog": next in Ready
+  order GT-2, GT-3, GT-5, GT-10, GT-11, one at a time, report after each. Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.75.0 (`448cd3c`); all three on their main (2026-11-14).
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):

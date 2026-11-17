@@ -21,6 +21,7 @@ import { pageBox } from "../pages/keepFilled";
 import { insideDelta, SHEET } from "../pages/sheet";
 import "./embed.css";
 import { ExportStyles } from "../whiteboard/exportStyles";
+import { WidgetBoundary } from "../widgets/WidgetBoundary";
 
 export const WEB_EMBED_TYPE = "web-embed";
 
@@ -145,7 +146,11 @@ export class WebEmbedShapeUtil extends BaseBoxShapeUtil<WebEmbedShape> {
     return true;
   }
   override component(shape: WebEmbedShape) {
-    return <WebEmbed shape={shape} />;
+    return (
+      <WidgetBoundary kind="embed">
+        <WebEmbed shape={shape} />
+      </WidgetBoundary>
+    );
   }
   override getIndicatorPath(shape: WebEmbedShape) {
     const path = new Path2D();

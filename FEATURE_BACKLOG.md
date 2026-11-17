@@ -13,12 +13,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-1 — One broken widget never breaks the page
-(was speed session Part 7)
-Check whether each widget (board, map, Slate, web embed) is wrapped so an error inside it shows a small
-"this widget failed" box and the rest of the whiteboard keeps working. Add it where missing, with a test per widget
-type that forces an error and checks the rest of the page still works (select, drag, type, change page).
-
 ### GT-2 — Resizing a text box scales its font
 (was speed session Part 10)
 Today changing a text box's size does not change the font size. Dragging a text box's corner makes the text bigger

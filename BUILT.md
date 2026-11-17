@@ -7,6 +7,8 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-17
+- GT-1 — One broken widget never breaks the page
+  A board, map, Slate or web embed that fails shows a small "This … widget failed" box with Try again, and can still be selected, moved and deleted; the rest of the whiteboard keeps working.
 - GT-4 — Slate step 4: notes on the whiteboard
   Click a note on a Slate to type in it (Enter adds a line, ⇄ switches PRE/LIVE/POST); clicking away saves it; it is the game's note, the same in /calendar and in backups.
 - GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
