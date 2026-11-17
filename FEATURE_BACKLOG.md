@@ -13,12 +13,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-5 — Slate step 5: live scores and changes reach the widget
-(Slate track, PROJECT.md DECISIONS 2026-10-31, step 5)
-Final scores show on a Slate once games end; changes to a game card in calendarkit reach the widget on the
-whiteboard without a reload. The widget stays pinned to its date and still stores only date and size, never games.
-Tests across both repos (gauntlet and calendarkit).
-
 ### GT-10 — Save a board as a frozen archive file, load it back and edit
 (owner, 2026-11-16, chat)
 The owner makes a board every day and wants to keep past days. A PNG is useless: widgets must stay hoverable.

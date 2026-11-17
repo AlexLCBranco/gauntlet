@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { ExportStyles } from "../whiteboard/exportStyles";
+import { kitReady } from "./kit";
 import { BaseBoxShapeUtil, HTMLContainer, T, createShapePropsMigrationIds, createShapePropsMigrationSequence, resizeBox, type RecordProps, type TLResizeInfo, type TLShape } from "tldraw";
 import { WidgetBoundary } from "../widgets/WidgetBoundary";
 
@@ -48,7 +49,11 @@ export const slateMigrations = createShapePropsMigrationSequence({
 });
 
 /** calendarkit's code, loaded with the first Slate widget a page shows. */
-const SlateWidget = lazy(() => import("./SlateWidget"));
+// GT-5: the widget waits for the kit (calendarkit's current Slate, else the pinned copy: kit.ts).
+const SlateWidget = lazy(async () => {
+  await kitReady();
+  return import("./SlateWidget");
+});
 
 /**
  * One night of NBA games as calendarkit's Slate cards (game info + note

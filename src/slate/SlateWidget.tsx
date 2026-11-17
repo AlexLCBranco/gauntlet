@@ -8,43 +8,31 @@ import { pageBox } from "../pages/keepFilled";
 import { arriveDeltaNow, roomForWindow, windowSize } from "../pages/arrive";
 import { SHEET } from "../pages/sheet";
 import { CONTROLS } from "../pages/edges";
-import {
-  hoopsjunkieLink,
-  liveOddsStore,
-  loadCalendarData,
-  localNotesStore,
-  slateCardWidth,
-  slateCopyCardWidth,
-  slateCopyCup,
-  slateGames,
-  SlateCopy,
-  SLATE_GRID_GAP,
-  TeamLinkContext,
-  type CalendarData,
-  type DayOdds,
-  type SlateOdds,
-  type SlateNotes,
-} from "./calendarkit";
+import type { CalendarData, DayOdds, SlateNotes, SlateOdds } from "./calendarkit";
+import { checkKit, getKit, KIT_CHECK_MS, subscribeKit, type Kit } from "./kit";
 import { SLATE_TYPE, type SlateShape } from "./SlateShape";
 import { barPlace } from "./barPlace";
 import { InLayer, useSlateHover } from "./hover";
 import { SLATE_TIME_ZONE, slateDateLabel, stepSlateDate } from "./today";
 
 // The Slate widget's content, calendarkit's code: loaded (lazily, by
-// SlateShape.tsx) with the first Slate widget a page shows.
+// SlateShape.tsx) with the first Slate widget a page shows. Every part of
+// calendarkit comes from the kit (kit.ts, GT-5): calendarkit's current one,
+// loaded from its site, or the pinned copy; when a newer kit arrives the
+// widgets draw again with it (SlateWidget, `key`).
 
 /** calendarkit's on-screen Slate card in the owner's 1920 px window (a
     1840 px grid in two columns: 914 px). Its copies (with notes) are made
     narrower from it (slateCopyCardWidth, calendarkit v1.64+): the widget's
     cards are that copy width, so they wrap their text as in the copies. */
-export const SLATE_CARD_WIDTH = (1840 - SLATE_GRID_GAP) / 2;
+const slateCardBase = (kit: Kit) => (1840 - kit.SLATE_GRID_GAP) / 2;
 /** The card width of calendarkit's copy (its ScheduleDestination's
     copySlate takes the on-screen card's): with notes, the on-screen card
     narrowed by slateCopyCardWidth; notes hidden, calendarkit's info-only
     card (slateCardWidth, as its Slate shows with notes hidden). */
-const copyCardWidth = (data: CalendarData, games: Parameters<typeof slateCopyCup>[1], hideNotes: boolean) => {
-  const cup = slateCopyCup(data, games);
-  return hideNotes ? slateCardWidth(cup) : slateCopyCardWidth(SLATE_CARD_WIDTH, cup);
+const copyCardWidth = (kit: Kit, data: CalendarData, games: ReturnType<Kit["slateGames"]>, hideNotes: boolean) => {
+  const cup = kit.slateCopyCup(data, games);
+  return hideNotes ? kit.slateCardWidth(cup) : kit.slateCopyCardWidth(slateCardBase(kit), cup);
 };
 /** GT-7 (owner, 2026-11-16): always 2 columns, as the owner's copy-pastes
     (a one-game night: its one card). */
@@ -54,6 +42,9 @@ const colsFor = (n: number) => Math.max(1, Math.min(SLATE_COLS, n));
 // The schedule: fetched and parsed once per page (loadCalendarData keeps
 // the one promise), shared by every Slate widget on every page. The font
 // is waited for too, so the first sizing measures the cards' real text.
+// GT-5: a whiteboard left open asks again every few minutes and when its tab
+// comes back (refreshCalendarData): a newer snapshot (the morning's final
+// scores, a moved game) shows without a reload. A new kit starts afresh.
 type Data = { status: "idle" | "loading" | "failed" } | { status: "ready"; data: CalendarData };
 let data: Data = { status: "idle" };
 const dataSubs = new Set<() => void>();
@@ -61,20 +52,51 @@ const setData = (d: Data) => {
   data = d;
   dataSubs.forEach((f) => f());
 };
+subscribeKit(() => setData({ status: "idle" }));
 const FONT = '400 14px "Inter ck"';
-function load() {
+function load(kit: Kit) {
   if (data.status === "loading" || data.status === "ready") return;
   setData({ status: "loading" });
   const font = document.fonts?.load(FONT).catch(() => []);
-  Promise.all([loadCalendarData(), font]).then(
-    ([d]) => setData({ status: "ready", data: d }),
-    () => setData({ status: "failed" }),
+  Promise.all([kit.loadCalendarData(), font]).then(
+    ([d]) => getKit() === kit && setData({ status: "ready", data: d }),
+    () => getKit() === kit && setData({ status: "failed" }),
   );
+}
+async function refreshData(kit: Kit) {
+  if (data.status !== "ready") return;
+  const next = await kit.refreshCalendarData(data.data.updatedAt);
+  if (next && getKit() === kit) setData({ status: "ready", data: next });
 }
 const subscribeData = (fn: () => void) => {
   dataSubs.add(fn);
   return () => void dataSubs.delete(fn);
 };
+
+// While any Slate widget is on screen: every KIT_CHECK_MS, and when the tab
+// comes back, look for a newer kit, then a newer schedule.
+let watching = 0;
+let stopWatch = () => {};
+function check() {
+  void checkKit().then(() => {
+    const kit = getKit();
+    if (kit) return refreshData(kit);
+  });
+}
+function watch() {
+  if (watching++ === 0) {
+    const t = setInterval(() => document.visibilityState === "visible" && check(), KIT_CHECK_MS);
+    const vis = () => document.visibilityState === "visible" && check();
+    document.addEventListener("visibilitychange", vis);
+    stopWatch = () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", vis);
+    };
+  }
+  return () => {
+    if (--watching === 0) stopWatch();
+  };
+}
 
 // The notes: calendarkit's own store (one per page, localStorage
 // `ck:notes:v1`, one `storage` listener for the page however many widgets).
@@ -82,53 +104,79 @@ const subscribeData = (fn: () => void) => {
 // SlateCopy editNotes); each note follows its own game, so a note saved
 // anywhere (another tab: /calendar) shows at once. Notes belong to the game:
 // the shape stores none.
-const notes: SlateNotes = localNotesStore();
-
+//
 // The odds: calendarkit's own store (/calendar/api/odds, ESPN moneyline),
 // one per page: one request per date shown however many widgets show it,
-// refreshed every 10 min while a widget shows a night not yet over. No
-// answer (a failure, or calendarkit's `vite preview`) = no odds, the
-// cards keep their empty odds column.
-const odds: SlateOdds = liveOddsStore();
+// refreshed every 10 min while a widget shows a night not yet over (every 2
+// while a game is on: the same answer brings the night's final scores,
+// GT-5). No answer (a failure, or calendarkit's `vite preview`) = no odds
+// and no early finals, the cards keep their empty odds column.
+//
+// Both are the kit's: one of each per kit.
+interface Stores {
+  notes: SlateNotes;
+  odds: SlateOdds;
+  // calendarkit's store loads a night again each time a Slate starts showing
+  // it while it isn't over (its own page shows one Slate): here every widget
+  // showing a night shares one `show`, so one request per night, not per
+  // widget; the last widget to stop showing it stops the refresh.
+  showing: Map<string, { n: number; stop: () => void }>;
+}
+const stores = new WeakMap<Kit, Stores>();
+function storesOf(kit: Kit): Stores {
+  let s = stores.get(kit);
+  if (!s) stores.set(kit, (s = { notes: kit.localNotesStore(), odds: kit.liveOddsStore(), showing: new Map() }));
+  return s;
+}
 const NO_ODDS = () => undefined;
-// calendarkit's store loads a night again each time a Slate starts showing
-// it while it isn't over (its own page shows one Slate): here every widget
-// showing a night shares one `show`, so one request per night, not per
-// widget; the last widget to stop showing it stops the refresh.
-const showing = new Map<string, { n: number; stop: () => void }>();
-function showOdds(date: string, allOver: boolean): () => void {
+function showOdds(s: Stores, date: string, allOver: boolean): () => void {
   const key = `${date} ${allOver}`;
-  let s = showing.get(key);
-  if (!s) showing.set(key, (s = { n: 0, stop: odds.show(date, allOver) }));
-  s.n++;
+  let one = s.showing.get(key);
+  if (!one) s.showing.set(key, (one = { n: 0, stop: s.odds.show(date, allOver) }));
+  one.n++;
   return () => {
-    if (--s.n > 0) return;
-    s.stop();
-    showing.delete(key);
+    if (--one.n > 0) return;
+    one.stop();
+    s.showing.delete(key);
   };
 }
-function useDayOdds(date: string, allOver: boolean | null): DayOdds | undefined {
+function useDayOdds(s: Stores, date: string, allOver: boolean | null): DayOdds | undefined {
   const day = useSyncExternalStore(
-    useMemo(() => (fn: () => void) => odds.subscribe(date, fn), [date]),
-    allOver === null ? NO_ODDS : () => odds.get(date),
+    useMemo(() => (fn: () => void) => s.odds.subscribe(date, fn), [s, date]),
+    allOver === null ? NO_ODDS : () => s.odds.get(date),
   );
-  useEffect(() => (allOver === null ? undefined : showOdds(date, allOver)), [date, allOver]);
+  useEffect(() => (allOver === null ? undefined : showOdds(s, date, allOver)), [s, date, allOver]);
   return day;
 }
 
+/** The widget, drawn with the kit loaded now; a newer kit draws it again from scratch. */
 export default function SlateWidget({ shape }: { shape: SlateShape }) {
+  const kit = useSyncExternalStore(subscribeKit, getKit);
+  useEffect(() => watch(), []);
+  if (!kit) return null;
+  return <SlateWithKit key={kit.kitKey} kit={kit} shape={shape} />;
+}
+
+function SlateWithKit({ kit, shape }: { kit: Kit; shape: SlateShape }) {
   const editor = useEditor();
   const d = useSyncExternalStore(subscribeData, () => data);
-  useEffect(() => load(), []);
+  useEffect(() => load(kit), [kit]);
+  const s = storesOf(kit);
   const content = useRef<HTMLDivElement>(null);
   const { date, w, h, scale, hideNotes } = shape.props;
   // Drawn for an export: the shape is left as it is (exportStyles.tsx).
   const inExport = useInExport();
-  const games = d.status === "ready" ? slateGames(d.data, date) : null;
-  // null until the schedule is here, or on a night without games: nothing asked
-  const allOver = games?.length ? games.every((g) => g.status === "final") : null;
-  const dayOdds = useDayOdds(date, allOver);
-  const hover = useSlateHover(editor, d.status === "ready" ? d.data : undefined, date);
+  const games = useMemo(() => (d.status === "ready" ? kit.slateGames(d.data, date) : null), [kit, d, date]);
+  // null until the schedule is here, or on a night without games: nothing
+  // asked. Over: every game final, in the snapshot or by ESPN's finals
+  // (GT-5, the odds answer); the odds stop refreshing then.
+  const night = useSyncExternalStore(
+    useMemo(() => (fn: () => void) => s.odds.subscribe(date, fn), [s, date]),
+    () => s.odds.get(date),
+  );
+  const allOver = games?.length ? kit.withFinals(games, night).every((g) => g.status === "final") : null;
+  const dayOdds = useDayOdds(s, date, allOver);
+  const hover = useSlateHover(kit, editor, d.status === "ready" ? d.data : undefined, date);
   // The date bar (‹ date ›) and ← / →: while this widget alone is selected.
   const lone = useValue("slate alone selected", () => editor.getOnlySelectedShapeId() === shape.id && editor.isIn("select.idle") && !editor.getEditingShapeId(), [editor, shape.id]);
 
@@ -149,8 +197,10 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
 
   // The cards, made again only when what they show changes: a popup
   // opening or closing (hover state, kept in this component) never redraws
-  // them (perf.e2e.ts: hovering a page of Slates).
+  // them (perf.e2e.ts: hovering a page of Slates). The kit's SlateCopy puts
+  // in ESPN's final scores (dayOdds.finals) itself.
   const ready = d.status === "ready" ? d.data : undefined;
+  const { SlateCopy, TeamLinkContext } = kit;
   const cards = useMemo(
     () =>
       ready && games ? (
@@ -159,16 +209,16 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
             data={ready}
             games={games}
             cols={colsFor(games.length)}
-            cardWidth={copyCardWidth(ready, games, hideNotes)}
+            cardWidth={copyCardWidth(kit, ready, games, hideNotes)}
             timeZone={SLATE_TIME_ZONE}
-            notes={hideNotes ? undefined : notes}
+            notes={hideNotes ? undefined : s.notes}
             editNotes
             odds={dayOdds}
-            gameLink={hoopsjunkieLink}
+            gameLink={kit.hoopsjunkieLink}
           />
         </TeamLinkContext.Provider>
       ) : null,
-    [ready, games, hideNotes, dayOdds, hover.teamLinks],
+    [kit, s, SlateCopy, TeamLinkContext, ready, games, hideNotes, dayOdds, hover.teamLinks],
   );
   const z = scale || 1;
   const keep = { width: w / z, height: h / z };
@@ -181,6 +231,8 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
       data-date={date}
       data-state={state}
       data-notes={hideNotes ? "hidden" : "shown"}
+      data-kit={kit.kitSource}
+      data-kit-version={kit.kitVersion}
       style={{ transform: `scale(${z})`, visibility: scale ? "visible" : "hidden" }}
       {...hover.handlers}
     >
@@ -189,7 +241,7 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
       ) : state === "empty" ? (
         <Message date={date} text="No games" />
       ) : state === "failed" ? (
-        <Message date={date} text="Schedule unavailable" size={keep} retry={editor} />
+        <Message date={date} text="Schedule unavailable" size={keep} retry={editor} kit={kit} />
       ) : (
         <div style={keep} />
       )}
@@ -317,13 +369,13 @@ function DateBar({ editor, id }: { editor: Editor; id: SlateShape["id"] }) {
 }
 
 /** The date and why there are no cards; with `retry`, a "Try again". */
-function Message({ date, text, size, retry }: { date: string; text: string; size?: { width: number; height: number }; retry?: Editor }) {
+function Message({ date, text, size, retry, kit }: { date: string; text: string; size?: { width: number; height: number }; retry?: Editor; kit?: Kit }) {
   return (
     <div className="gs-slate-msg" data-testid="slate-message" style={size}>
       <b>{slateDateLabel(date)}</b>
       <span>{text}</span>
       {retry && (
-        <button type="button" className="gs-slate-retry" data-testid="slate-retry" onPointerDown={(e) => retry.markEventAsHandled(e)} onClick={load}>
+        <button type="button" className="gs-slate-retry" data-testid="slate-retry" onPointerDown={(e) => retry.markEventAsHandled(e)} onClick={() => kit && load(kit)}>
           Try again
         </button>
       )}

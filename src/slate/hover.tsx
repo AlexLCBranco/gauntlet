@@ -2,18 +2,8 @@ import { useEffect, useMemo, useRef, type MouseEvent as ReactMouseEvent, type Po
 import { createPortal } from "react-dom";
 import { react, type Editor } from "tldraw";
 
-import {
-  claimPopup,
-  hoopsjunkieLink,
-  releasePopup,
-  teamCalendarUrl,
-  teamLinkTarget,
-  useSeriesPopup,
-  useStreakPopup,
-  useTooltip,
-  type CalendarData,
-  type TeamLinks,
-} from "./calendarkit";
+import type { CalendarData, TeamLinks } from "./calendarkit";
+import type { Kit } from "./kit";
 
 // Slate step 3 (speed session Part 4): hovering a Slate widget feels like
 // hovering calendarkit's Slate in /calendar, without selecting the widget
@@ -56,9 +46,9 @@ export function InLayer({ children }: { children: ReactNode }) {
     popup): after a pan or zoom the browser hovers what is under the still
     pointer again, which cancelled that grace and kept the popup (GT-9). */
 const noPopup = () => {};
-function closePopupsNow() {
-  claimPopup(noPopup);
-  releasePopup(noPopup);
+function closePopupsNow(kit: Kit) {
+  kit.claimPopup(noPopup);
+  kit.releasePopup(noPopup);
 }
 
 /** What of an open note takes presses itself (GT-4): its field and ⇄. */
@@ -72,10 +62,12 @@ const CLICK_SLOP = 4;
  * cards `teamLinks` (TeamLinkContext), render `node`. `date` is the night shown: a team link
  * opens that team's Calendar there.
  */
-export function useSlateHover(editor: Editor, data: CalendarData | undefined, date: string) {
-  const tooltip = useTooltip();
-  const streak = useStreakPopup(data, { gameLink: hoopsjunkieLink });
-  const series = useSeriesPopup(data, { gameLink: hoopsjunkieLink });
+export function useSlateHover(kit: Kit, editor: Editor, data: CalendarData | undefined, date: string) {
+  // calendarkit's hooks, from the kit shown (a newer kit draws the widget
+  // again from scratch: SlateWidget's key)
+  const tooltip = kit.useTooltip();
+  const streak = kit.useStreakPopup(data, { gameLink: kit.hoopsjunkieLink });
+  const series = kit.useSeriesPopup(data, { gameLink: kit.hoopsjunkieLink });
   const all = [tooltip, streak, series];
   const hideRef = useRef(() => {});
   hideRef.current = () => {
@@ -91,11 +83,11 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
     let first = true;
     const stop = react("slate popups follow the camera", () => {
       editor.getCamera();
-      if (!first) closePopupsNow();
+      if (!first) closePopupsNow(kit);
       first = false;
     });
     const down = (e: PointerEvent) => {
-      if (!(e.target instanceof Node && layer?.contains(e.target))) closePopupsNow();
+      if (!(e.target instanceof Node && layer?.contains(e.target))) closePopupsNow(kit);
       // GT-4: a press anywhere but in the open note saves it and closes it
       // (owner's click-away rule; tldraw may keep the focus where it was)
       const open = document.activeElement;
@@ -107,7 +99,7 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
       stop();
       window.removeEventListener("pointerdown", down, true);
     };
-  }, [editor]);
+  }, [kit, editor]);
 
   // A link (↗, a final score, a team; on a card or in a popup) opens in a
   // new tab when clicked; a note (GT-4) opens for typing. The whiteboard
@@ -128,7 +120,7 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
     window.addEventListener("pointerup", up, true);
     return () => window.removeEventListener("pointerup", up, true);
   }, []);
-  const teamLinks = useMemo<TeamLinks>(() => ({ href: (teamId) => teamCalendarUrl(teamId, date) }), [date]);
+  const teamLinks = useMemo<TeamLinks>(() => ({ href: (teamId) => kit.teamCalendarUrl(teamId, date) }), [kit, date]);
 
   const handlers = {
     onMouseOver: (e: SyntheticEvent) => all.forEach((h) => h.handlers.onMouseOver(e)),
@@ -146,7 +138,7 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
       if (note) press.current = { x: e.clientX, y: e.clientY, note };
       const a = e.button === 0 ? (e.target as Element).closest?.<HTMLAnchorElement>("a[href]") : null;
       if (!a) return;
-      const team = teamLinkTarget(a);
+      const team = kit.teamLinkTarget(a);
       if (team) a.href = teamLinks.href(team.teamId);
       press.current = { x: e.clientX, y: e.clientY, href: a.href };
     },

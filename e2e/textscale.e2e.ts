@@ -21,6 +21,23 @@ async function open(page: Page) {
   await page.evaluate(() => void (window as any).editor.setCamera({ x: 0, y: 0, z: 1 }));
 }
 
+/** The text's size once its font has loaded: until then it is measured in a
+    narrower fallback font, and grows when the font arrives (a drag from the
+    old edge then started inside the text). */
+async function settled(page: Page, id: string) {
+  await page.evaluate(() => document.fonts.ready);
+  let last = -1;
+  await expect
+    .poll(async () => {
+      const w = (await text(page, id)).bw;
+      const same = w === last;
+      last = w;
+      return same;
+    })
+    .toBe(true);
+  return text(page, id);
+}
+
 type T = { fontPx: number | null; scale: number; w: number; autoSize: boolean; bw: number; bh: number; x: number; y: number };
 const text = (page: Page, id: string) =>
   page.evaluate((id) => {
@@ -56,7 +73,7 @@ test("a corner drag scales a text's font; the panel shows the real size; one und
     e.createShapes([{ id: "shape:ts", type: "text", x: 400, y: 300, props: { richText, size: "m" } }]);
     e.select("shape:ts");
   }, rt("Lakers ml"));
-  const before = await text(page, "shape:ts");
+  const before = await settled(page, "shape:ts");
   expect(await drawnPx(page, "shape:ts")).toBe(24);
   await expect(page.getByText("Font size · 24 px")).toBeVisible();
   await expect(page.getByTestId("font-m")).toHaveAttribute("aria-pressed", "true");
@@ -114,7 +131,7 @@ test("a side handle changes only the width: the text re-wraps, its font stays", 
     e.createShapes([{ id: "shape:tw", type: "text", x: 400, y: 300, props: { richText, size: "m" } }]);
     e.select("shape:tw");
   }, rt("Lakers moneyline tonight at home"));
-  const before = await text(page, "shape:tw");
+  const before = await settled(page, "shape:tw");
 
   // Right side in to about half: two or more lines, same font size.
   await dragFrom(page, "shape:tw", 1, 0.5, -before.bw / 2, 0);

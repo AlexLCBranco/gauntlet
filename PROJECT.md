@@ -1270,6 +1270,27 @@ Changes to the plan, newest last. Each says what and why.
     real store (localNotesStore); notes are in `ck:notes:v1`, so backups
     (localStorage) carry them. Hidden notes (GT-7) have no box to type in.
   * Tests: e2e/slate.e2e.ts "GT-4" (3); calendarkit tests/notelive.test.tsx.
+- 2026-11-17 — GT-5: Slate step 5, live scores and changes (owner).
+  * Owner's choices (asked 2026-11-17): same-night final scores from ESPN,
+    like the odds; "changes" = new schedule data, scores and odds updating,
+    AND calendarkit code updates reaching the whiteboard without a new pin.
+  * calendarkit v1.76.0 (made for this): /calendar/api/odds also sends the
+    night's `finals` (ESPN scoreboard: scores, periods → "Final/OT") and
+    `live`; its store asks every 2 min while a game is on (CDN 2 min too),
+    10 min otherwise; SlateCopy/SlateDay show the finals (`withFinals`).
+    `refreshCalendarData` re-reads the snapshot (no-cache) when asked. Its
+    build also makes the Slate kit: /calendar/slatekit/ (one ES module,
+    stylesheet, manifest {api, version, js, css}, no-cache); React comes
+    from the page (`globalThis.__calendarkitHost`).
+  * Ours (src/slate/kit.ts, manifest.ts): the widget loads the kit named by
+    the manifest (API 1, calendarkit's own /calendar/ files only), its
+    stylesheet first in <head> so calendarkit.css still overrides it; no
+    usable kit → the pinned copy (its stylesheet inline, same place). While
+    a Slate is on screen: every 5 min and when the tab comes back, a newer
+    kit is loaded (widgets redraw: `key`), then a newer snapshot. The shape
+    still stores only date and size.
+  * Tests: e2e/slatelive.e2e.ts (4); unit manifest.test.ts; calendarkit
+    tests/odds, refresh, slatekit; e2e slate.spec "ESPN".
 
 IDEAS
 

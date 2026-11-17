@@ -7,6 +7,8 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-17
+- GT-5 — Slate step 5: live scores and changes reach the widget
+  A Slate shows a game's final score within minutes of the end; a newer schedule, and any new calendarkit Slate design, reach an open whiteboard without a reload (checked every 5 minutes and when you come back to the tab).
 - GT-3 — Today's date in one click
   The stamps tray (Y) starts with a "Today" item showing the date (e.g. 5/11, São Paulo time); a click drops it where the pointer was, a drag drops it where you let go, as normal text you can edit, that never changes by itself.
 - GT-2 — Resizing a text box scales its font
@@ -18,6 +20,8 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 - GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
   On the whiteboard a Slate popup closes within 100 ms of leaving, only one is ever open across Slates, and a pan, zoom or press elsewhere closes it at once.
 ### Internal
+- test: text-scaling e2e measures the text after its font has loaded (it was measured in the narrower fallback font, then dragged from a stale edge)
+- Pin calendarkit v1.76.0 (d8e9c79): the Slate kit and same-night finals; the pinned copy is now the fallback
 - ALL_BUILT.md, its script and daily workflow moved to backlogkit (BL-2 there), which now also writes ALL_BACKLOG.md
 - Pin calendarkit v1.75.0 (448cd3c): notes open for typing in its copy layout (SlateCopy editNotes)
 - test: copies and paste-at-cursor e2e wait for Ctrl+C / Ctrl+X to land in the clipboard before pasting (a quick paste took an earlier test's clipboard)
