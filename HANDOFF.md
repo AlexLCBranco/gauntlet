@@ -6,9 +6,9 @@ Finished work goes to docs/HISTORY.md.
 
 ## Current state (2026-11-16)
 
-- PLAN = FEATURE_BACKLOG.md on origin/main. GT-7, GT-8 DONE (2 columns, notes
-  toggle, tight grid; DECISIONS 2026-11-16). NEXT: GT-9 (CK-6 is in the
-  pinned v1.74.0), then GT-4. Phase 3 done; phase 4 = GT-6, held.
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-7, GT-8, GT-9 DONE (2 columns, notes
+  toggle, tight grid; DECISIONS 2026-11-16). NEXT: GT-4 (owner asked for
+  GT-7/8/9/4 on 2026-11-16). Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.74.0 (`e525f54`); all three on their main (2026-11-14).
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):

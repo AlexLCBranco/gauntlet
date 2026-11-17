@@ -36,14 +36,6 @@ like "4/11". Fixed text, editable like any text, never changes by itself. If a b
 tray exists, propose it in the report, but build the stamp. Tests: right date (mock the clock, including just after
 midnight), text is editable and saved.
 
-### GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
-(owner, 2026-11-16, chat)
-Blocked: until calendarkit's CK-6 (hover popups close on leave) ships.
-Then: pin that calendarkit version. On the whiteboard: leaving an element closes its popup within 100 ms; element →
-element swaps cleanly; element → popup → click its link works; a fast sweep leaves none open; pan/zoom or a press
-elsewhere still closes them; with several Slates on a page, never two popups open. Tests in e2e/slatehover.e2e.ts;
-perf.e2e.ts passes without raising any limit. Only the feel is left to the owner.
-
 ### GT-4 — Slate step 4: notes on the whiteboard
 (Slate track, PROJECT.md DECISIONS 2026-10-31, step 4)
 Today a Slate's game notes are read-only on the whiteboard. Step 4 as planned: typing notes in the Slate on the

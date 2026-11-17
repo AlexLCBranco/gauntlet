@@ -1248,6 +1248,14 @@ Changes to the plan, newest last. Each says what and why.
   * Tests: the GT-7 visual checks against calendarkit v1.74.0's copy (a
     600 px tall window for the notes-hidden one, where its copy is 2
     columns). The odds-request check now picks a night not over.
+- 2026-11-17 — GT-9: Slate popups close on leave (CK-6) on the whiteboard.
+  * CK-6 is calendarkit's (pinned v1.74.0): 80 ms grace after leaving, one
+    popup at a time across every widget (its popupGate).
+  * Ours: a pan, zoom or press elsewhere closes the open popup at once
+    (claimPopup with a no-op, hover.tsx), not through the hooks' grace:
+    the browser re-hovers under a still pointer after a camera change and
+    that cancelled the grace (the flaky slatehover zoom check).
+  * Tests: e2e/slatehover.e2e.ts "GT-9" (5), times measured in the page.
 
 IDEAS
 

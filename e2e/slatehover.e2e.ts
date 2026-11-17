@@ -351,3 +351,232 @@ test("Slate ← / →: the selected widget steps its night (keys and ‹ ›, on
   await page.waitForFunction(() => "editor" in window);
   await expect(widgetOf(page, s.id)).toHaveAttribute("data-date", next.date);
 });
+
+/*
+ * GT-9 (owner, 2026-11-16): calendarkit's CK-6 on the whiteboard. Hover
+ * popups close as soon as the pointer leaves; one popup at a time across
+ * every Slate on the page; a pan, a zoom or a press elsewhere closes them at
+ * once. Times are measured in the page (the pointer's mouseleave, or the
+ * camera change, to the popup's removal, by a MutationObserver), as
+ * calendarkit's e2e/hover-close.spec.ts does.
+ */
+const POPUPS = '[data-testid="tooltip"], [data-testid="streak-popup"], [data-testid="series-popup"]';
+type Watch = { max: number; gone: number; left: number };
+
+/** Counts the popups open after every DOM change: the most at once since
+    the last reset, and when the last one went. */
+const watchPopups = (page: Page) =>
+  page.evaluate((sel) => {
+    const w = window as unknown as { __pop: Watch };
+    w.__pop = { max: 0, gone: 0, left: 0 };
+    const p = window as unknown as { __ptr: { x: number; y: number } };
+    p.__ptr = { x: -1, y: -1 };
+    window.addEventListener("pointermove", (e) => (p.__ptr = { x: e.clientX, y: e.clientY }), true);
+    new MutationObserver(() => {
+      const n = document.querySelectorAll(sel).length;
+      w.__pop.max = Math.max(w.__pop.max, n);
+      if (!n && !w.__pop.gone) w.__pop.gone = performance.now();
+    }).observe(document.body, { childList: true, subtree: true });
+  }, POPUPS);
+const popState = (page: Page) => page.evaluate(() => (window as unknown as { __pop: Watch }).__pop);
+const resetPop = (page: Page) => page.evaluate((sel) => Object.assign((window as unknown as { __pop: Watch }).__pop, { max: document.querySelectorAll(sel).length, gone: 0, left: 0 }), POPUPS);
+const centerOf = async (l: Locator) => {
+  const b = await box(l);
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+};
+/** An empty spot of the page, away from every widget and control. */
+const EMPTY = { x: 1500, y: 700 };
+
+/** Two Slates of `night` side by side, each 600 px wide (set up),
+    nothing selected, the popups watched. */
+async function twoSlates(page: Page, night: Night) {
+  await openWhiteboard(page, night.date);
+  const a = await insertSlate(page);
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  const b = await insertSlate(page);
+  await page.evaluate(({ ids }) => {
+    const editor = (window as any).editor;
+    const v = editor.getViewportPageBounds();
+    ids.forEach((id: string, i: number) => {
+      const p = editor.getShape(id).props;
+      const scale = 600 / (p.w / p.scale);
+      editor.updateShape({ id, type: "calendarkit-slate", x: v.x + 60 + i * 640, y: v.y + 80, props: { scale, w: (p.w / p.scale) * scale, h: (p.h / p.scale) * scale } });
+    });
+    editor.selectNone();
+  }, { ids: [a.id, b.id] });
+  await expect.poll(async () => (await box(widgetOf(page, a.id))).width).toBeLessThan(601);
+  await page.evaluate(() => document.fonts.ready);
+  await page.mouse.move(EMPTY.x, EMPTY.y);
+  await watchPopups(page);
+  return { a: widgetOf(page, a.id), b: widgetOf(page, b.id) };
+}
+
+/** A card of `w` with a record tooltip, a streak and a series chip. */
+const fullCard = (w: Locator) => w.locator(`.ck-slate-card:has(${TARGETS[0].sel}):has(${TARGETS[1].sel}):has(${TARGETS[2].sel})`).first();
+
+test("GT-9: leaving a Slate's record, streak or series chip closes its popup within 100 ms (measured in the page)", async ({ page, request }) => {
+  const { night } = await midSeasonNight(request);
+  const { a } = await twoSlates(page, night);
+  const card = fullCard(a);
+  for (const t of TARGETS) {
+    const el = card.locator(t.sel).first();
+    await hover(page, el);
+    await expect(page.getByTestId(t.popup), t.name).toBeVisible();
+    await resetPop(page);
+    await el.evaluate((e) => e.addEventListener("mouseleave", () => ((window as unknown as { __pop: Watch }).__pop.left = performance.now()), { once: true }));
+    await page.mouse.move(EMPTY.x, EMPTY.y);
+    await expect.poll(async () => (await popState(page)).gone, { timeout: 2000 }).toBeGreaterThan(0);
+    const s = await popState(page);
+    expect(s.left, `${t.name}: left seen`).toBeGreaterThan(0);
+    expect(s.gone - s.left, `${t.name}: ms from leaving to gone`).toBeLessThanOrEqual(100);
+  }
+  expect(await selected(page)).toEqual([]);
+});
+
+test("GT-9: element → element swaps the popup, never two open, across two Slates on the page", async ({ page, request }) => {
+  const { night } = await midSeasonNight(request);
+  const { a, b } = await twoSlates(page, night);
+  const ca = fullCard(a);
+  const cb = fullCard(b);
+  const path = [
+    [ca.locator(TARGETS[1].sel).first(), "streak-popup"],
+    [ca.locator(TARGETS[2].sel).first(), "series-popup"],
+    [ca.locator(TARGETS[0].sel).first(), "tooltip"],
+    [cb.locator(TARGETS[1].sel).first(), "streak-popup"],
+    [cb.locator(TARGETS[2].sel).first(), "series-popup"],
+    [ca.locator(TARGETS[2].sel).first(), "series-popup"],
+    [cb.locator(TARGETS[0].sel).first(), "tooltip"],
+  ] as const;
+  let at = EMPTY;
+  for (const [el, id] of path) {
+    await resetPop(page);
+    const to = await centerOf(el);
+    // through whatever lies between (cards, the page), a step every few px
+    await page.mouse.move(to.x, to.y, { steps: Math.max(4, Math.round(Math.hypot(to.x - at.x, to.y - at.y) / 6)) });
+    at = to;
+    await expect(page.getByTestId(id)).toBeVisible();
+    await expect(page.locator(POPUPS)).toHaveCount(1);
+    expect((await popState(page)).max, `moving to ${id}`).toBeLessThanOrEqual(1);
+  }
+});
+
+test("GT-9: element → its popup → click its link: the link opens (the grace for the trip), streak and series popups", async ({ page, context, request }) => {
+  const { night } = await midSeasonNight(request);
+  await context.route("https://hoopsjunkie.io/**", (r) => r.fulfill({ contentType: "text/html", body: "<title>hj</title>" }));
+  const { a } = await twoSlates(page, night);
+  const card = fullCard(a);
+  for (const [el, id, link] of [
+    [card.locator(TARGETS[1].sel).first(), "streak-popup", "a.ck-streak-game"],
+    [card.locator(TARGETS[2].sel).first(), "series-popup", 'a[data-testid="series-link"]'],
+  ] as const) {
+    await hover(page, el);
+    const pop = page.getByTestId(id);
+    const l = pop.locator(link).first();
+    await expect(l).toBeVisible();
+    const to = await centerOf(l);
+    await page.mouse.move(to.x, to.y, { steps: 6 });
+    await page.waitForTimeout(300);
+    await expect(pop).toBeVisible();
+    const [tab] = await Promise.all([context.waitForEvent("page"), page.mouse.click(to.x, to.y)]);
+    await tab.waitForLoadState();
+    expect(tab.url()).toMatch(/^https:\/\/hoopsjunkie\.io\/games\//);
+    await tab.close();
+    await page.mouse.move(EMPTY.x, EMPTY.y, { steps: 2 });
+    await expect(page.locator(POPUPS)).toHaveCount(0);
+  }
+  expect(await selected(page)).toEqual([]);
+});
+
+test("GT-9: a fast sweep across every card of two Slates leaves no popup open, never two at once", async ({ page, request }) => {
+  const { night } = await midSeasonNight(request);
+  const { a, b } = await twoSlates(page, night);
+  const points = async (w: Locator) =>
+    w.locator("[data-streak], [data-testid='series-chip'], [data-tip]").evaluateAll((els) =>
+      els
+        .map((e) => e.getBoundingClientRect())
+        .filter((r) => r.width && r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth)
+        .map((r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 })),
+    );
+  const all = [...(await points(a)), ...(await points(b))];
+  expect(all.length).toBeGreaterThan(20);
+  await resetPop(page);
+  for (let round = 0; round < 3; round++) for (const p of round % 2 ? [...all].reverse() : all) await page.mouse.move(p.x, p.y, { steps: 2 });
+  await page.mouse.move(EMPTY.x, EMPTY.y, { steps: 2 });
+  await page.waitForTimeout(150);
+  await expect(page.locator(POPUPS)).toHaveCount(0);
+  expect((await popState(page)).max).toBeLessThanOrEqual(1);
+});
+
+/** ms from `act` (code run in the page) until no popup is left behind:
+    none open, or the one open sits against the element now under the
+    pointer (the browser hovers what is under a still pointer again and may
+    open it there, as /calendar does after a scroll); Infinity if a popup
+    still points at an old place after 1 s. -1: no popup open before. */
+const closeMs = (page: Page, act: string) =>
+  page.evaluate(
+    ({ act, sel }) =>
+      new Promise<number>((done) => {
+        const w = window as unknown as { __ptr: { x: number; y: number } };
+        const before = document.querySelector(sel);
+        if (!before) return done(-1);
+        const pos = (el: Element) => el.getBoundingClientRect();
+        const settled = () => {
+          const pop = document.querySelector(sel);
+          if (!pop) return true;
+          const p = pos(pop);
+          const el = document.elementFromPoint(w.__ptr.x, w.__ptr.y)?.closest("[data-streak], [data-series-game], [data-tip]");
+          if (!el) return false;
+          const r = pos(el);
+          return Math.abs(p.top - (r.bottom + 6)) < 2 || Math.abs(p.bottom - (r.top - 6)) < 2;
+        };
+        const t0 = performance.now();
+        let finished = false;
+        const finish = (ms: number) => {
+          if (finished) return;
+          finished = true;
+          o.disconnect();
+          cancelAnimationFrame(raf);
+          done(ms);
+        };
+        const o = new MutationObserver(() => settled() && finish(performance.now() - t0));
+        o.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
+        // a popup that moved without a DOM change is seen on the next frames
+        let raf = 0;
+        const tick = () => (settled() ? finish(performance.now() - t0) : (raf = requestAnimationFrame(tick)));
+        new Function(act)();
+        raf = requestAnimationFrame(tick);
+        setTimeout(() => finish(Infinity), 1000);
+      }),
+    { act, sel: POPUPS },
+  );
+
+test("GT-9: a pan, a zoom or a press elsewhere closes an open popup at once (no grace a re-hover could cancel), with two Slates on the page", async ({ page, request }) => {
+  const { night } = await midSeasonNight(request);
+  const { a } = await twoSlates(page, night);
+  const streak = fullCard(a).locator(TARGETS[1].sel).first();
+  const fast = (ms: number, what: string) => expect(ms >= 0 && ms < 50, `${what}: ${ms} ms`).toBe(true);
+  // At 120%, so the view can pan (at 100% the page fills the window).
+  await page.evaluate(() => void (window as any).editor.setCamera({ x: 0, y: 0, z: 1.2 }));
+  /** A camera step in the page, which must really move the view. */
+  // An empty spot right of both Slates at 120%.
+  const spot = { x: 1880, y: 600 };
+  const cam = (to: string) => `const e = window.editor; const c = e.getCamera(); const was = JSON.stringify(c); e.setCamera(${to}); if (JSON.stringify(e.getCamera()) === was) throw new Error("the camera did not move");`;
+  const open = async () => {
+    await page.mouse.move(spot.x, spot.y, { steps: 2 });
+    await expect(page.locator(POPUPS)).toHaveCount(0);
+    await hover(page, streak);
+    await expect(page.getByTestId("streak-popup")).toBeVisible();
+  };
+  // A zoom and a pan, the pointer kept still on the streak.
+  await open();
+  fast(await closeMs(page, cam("{ x: c.x, y: c.y, z: c.z * 1.05 }")), "zoom");
+  await open();
+  fast(await closeMs(page, cam("{ x: c.x - 3, y: c.y - 3, z: c.z }")), "pan, the streak still under the pointer");
+  await open();
+  fast(await closeMs(page, cam("{ x: c.x - 150, y: c.y - 150, z: c.z }")), "pan, the streak away from the pointer");
+  await page.evaluate(() => void (window as any).editor.setCamera({ x: 0, y: 0, z: 1.2 }));
+  // A press elsewhere: the empty page.
+  await open();
+  fast(await closeMs(page, `const t = document.querySelector(".tl-canvas"); for (const type of ["pointerdown", "pointerup"]) t.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: ${spot.x}, clientY: ${spot.y}, pointerId: 1, isPrimary: true, button: 0, buttons: type === "pointerdown" ? 1 : 0 }));`), "press elsewhere");
+  expect(await selected(page)).toEqual([]);
+});

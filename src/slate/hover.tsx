@@ -3,7 +3,9 @@ import { createPortal } from "react-dom";
 import { react, type Editor } from "tldraw";
 
 import {
+  claimPopup,
   hoopsjunkieLink,
+  releasePopup,
   teamCalendarUrl,
   teamLinkTarget,
   useSeriesPopup,
@@ -48,6 +50,17 @@ export function InLayer({ children }: { children: ReactNode }) {
   );
 }
 
+/** Closes the open popup now, whichever Slate widget's it is: calendarkit's
+    one-popup gate (CK-6) closes its holder at once when another claims it.
+    Not the hooks' "pointer left" (an 80 ms grace for the trip into a
+    popup): after a pan or zoom the browser hovers what is under the still
+    pointer again, which cancelled that grace and kept the popup (GT-9). */
+const noPopup = () => {};
+function closePopupsNow() {
+  claimPopup(noPopup);
+  releasePopup(noPopup);
+}
+
 /** How far a press may move and still be a click on a link. */
 const CLICK_SLOP = 4;
 
@@ -69,16 +82,17 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
   };
 
   // The popups stay with what they point at: a pan or zoom, or a press
-  // anywhere but on a popup (moving or scaling the widget), closes them.
+  // anywhere but on a popup (moving or scaling the widget), closes them at
+  // once (GT-9).
   useEffect(() => {
     let first = true;
     const stop = react("slate popups follow the camera", () => {
       editor.getCamera();
-      if (!first) hideRef.current();
+      if (!first) closePopupsNow();
       first = false;
     });
     const down = (e: PointerEvent) => {
-      if (!(e.target instanceof Node && layer?.contains(e.target))) hideRef.current();
+      if (!(e.target instanceof Node && layer?.contains(e.target))) closePopupsNow();
     };
     window.addEventListener("pointerdown", down, true);
     return () => {

@@ -6,6 +6,10 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
+## 2026-11-17
+- GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
+  On the whiteboard a Slate popup closes within 100 ms of leaving, only one is ever open across Slates, and a pan, zoom or press elsewhere closes it at once.
+
 ## 2026-11-16
 - GT-8 — Slate tight grid (calendarkit CK-7 on the whiteboard)
   The Slate widget's cards touch, split by one 1 px line with square corners, with notes shown or hidden (calendarkit v1.74.0).
