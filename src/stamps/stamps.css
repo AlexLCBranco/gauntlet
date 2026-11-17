@@ -60,3 +60,8 @@
 }
 .gs-stamp:hover .gs-stamp-del { display: block; }
 .gs-stamp-ghost { position: fixed; z-index: 600; width: 48px; height: 48px; object-fit: contain; pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; }
+/* GT-3: the Today item, always first; it shows the date it drops. */
+.gs-stamp-today { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: #232a3a; }
+.gs-today-label { font-size: 10px; color: #8a8a96; text-transform: uppercase; letter-spacing: 0.04em; }
+.gs-today-date { font-size: 14px; font-weight: 600; color: #e3e3e8; }
+.gs-today-ghost { display: grid; place-items: center; width: auto; height: auto; padding: 4px 8px; border-radius: 6px; background: #232a3a; color: #e3e3e8; font-weight: 600; }

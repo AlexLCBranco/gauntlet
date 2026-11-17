@@ -7,6 +7,8 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-17
+- GT-3 — Today's date in one click
+  The stamps tray (Y) starts with a "Today" item showing the date (e.g. 5/11, São Paulo time); a click drops it where the pointer was, a drag drops it where you let go, as normal text you can edit, that never changes by itself.
 - GT-2 — Resizing a text box scales its font
   Dragging a text box's corner makes the text bigger or smaller with the box (the style panel shows the new size, e.g. "Font size · 36.5 px"); a side handle still changes only the width and re-wraps; one undo puts the old size back.
 - GT-1 — One broken widget never breaks the page

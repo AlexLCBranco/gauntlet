@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 
 import { expect, test, type Page } from "./test";
 
+import { whiteboardSaved } from "./helpers";
+
 /**
  * The stamps tray v0 (owner, Edges round item 6; src/stamps/). Fresh
  * profile, 1600 × 1000.
@@ -235,4 +237,86 @@ test("no slowdown with 50 stickers: opening the tray and zooming the page with i
   test.info().annotations.push({ type: "stamps", description: JSON.stringify({ empty, many }) });
   expect(many.openMs).toBeLessThan(Math.max(300, empty.openMs * 3));
   expect(many.p95).toBeLessThan(Math.max(34, empty.p95 * 1.5));
+});
+
+/** The text shapes on the page: their text and middle. */
+const texts = (page: Page) =>
+  page.evaluate(() => {
+    const e = (window as any).editor;
+    return (e.getCurrentPageShapes() as any[])
+      .filter((s) => s.type === "text")
+      .map((s) => {
+        const b = e.getShapePageBounds(s.id);
+        return { id: s.id as string, text: s.props.richText.content[0].content[0].text as string, x: b.midX as number, y: b.midY as number, selected: e.getSelectedShapeIds().includes(s.id) as boolean };
+      });
+  });
+
+test("GT-3: Today drops today's date (São Paulo, d/m) as normal text by click or drag; it is editable, saved, one undo, and never changes by itself", async ({ page }) => {
+  // 00:05 on 5 Nov in São Paulo (03:05 UTC): just after midnight there.
+  await page.clock.setFixedTime(new Date("2026-11-05T03:05:00Z"));
+  await open(page);
+  await openTray(page);
+  const today = tray(page).getByTestId("stamp-today");
+  await expect(today).toContainText("5/11");
+  // Shown with an empty tray too, before any sticker.
+  await expect(stickers(page)).toHaveCount(0);
+
+  // Click: at the point the pointer was last on the page, selected.
+  await page.mouse.move(600, 500);
+  await today.click();
+  await expect.poll(async () => (await texts(page)).length).toBe(1);
+  const [one] = await texts(page);
+  expect(one).toMatchObject({ text: "5/11", selected: true });
+  const at = await page.evaluate(() => (window as any).editor.screenToPage({ x: 600, y: 500 }));
+  expect(Math.abs(one!.x - at.x)).toBeLessThan(3);
+  expect(Math.abs(one!.y - at.y)).toBeLessThan(3);
+
+  // One undo takes it off; redo puts it back.
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await texts(page)).length).toBe(0);
+  await page.keyboard.press("Control+Shift+z");
+  await expect.poll(async () => (await texts(page)).length).toBe(1);
+
+  // Drag: where it is let go.
+  const t = (await today.boundingBox())!;
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(800, 600, { steps: 8 });
+  await page.mouse.move(900, 650, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(async () => (await texts(page)).length).toBe(2);
+  const dropped = (await texts(page)).find((x) => x.id !== one!.id)!;
+  const drop = await page.evaluate(() => (window as any).editor.screenToPage({ x: 900, y: 650 }));
+  expect(dropped.text).toBe("5/11");
+  expect(Math.abs(dropped.x - drop.x)).toBeLessThan(3);
+  expect(Math.abs(dropped.y - drop.y)).toBeLessThan(3);
+
+  // Editable like any text.
+  // Enter right after the drop types in it (the keys reach the page, not the toolbar's Stamps button).
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => (window as any).editor.getEditingShapeId())).toBe(dropped.id);
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("5/11 Lakers");
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => (await texts(page)).find((x) => x.id === dropped.id)?.text).toBe("5/11 Lakers");
+
+  // A day later: the tray shows the new date once reopened; the texts on the page stay as they were, also after a reload.
+  await page.clock.setFixedTime(new Date("2026-11-06T15:00:00Z"));
+  await page.getByTestId("tools.stamps").click();
+  await expect(tray(page)).toHaveCount(0);
+  await openTray(page);
+  await expect(today).toContainText("6/11");
+  await whiteboardSaved(page);
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  await expect.poll(async () => (await texts(page)).map((x) => x.text).sort()).toEqual(["5/11", "5/11 Lakers"]);
+});
+
+test("GT-3: just before midnight in São Paulo it is still that day there (already the next day in UTC)", async ({ page }) => {
+  // 23:55 on 4 Nov in São Paulo = 02:55 UTC on the 5th.
+  await page.clock.setFixedTime(new Date("2026-11-05T02:55:00Z"));
+  await open(page);
+  await openTray(page);
+  await tray(page).getByTestId("stamp-today").click();
+  await expect.poll(async () => (await texts(page)).map((x) => x.text)).toEqual(["4/11"]);
 });

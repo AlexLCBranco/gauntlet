@@ -6,10 +6,10 @@ Finished work goes to docs/HISTORY.md.
 
 ## Current state (2026-11-17)
 
-- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, GT-2 DONE (2026-11-17:
-  WidgetBoundary + e2e/widgetfail; text corner scaling = meta fontPx,
-  TextUtil.onResize, e2e/textscale). "Build the backlog": next GT-3, GT-5,
-  GT-10, GT-11, one at a time, report after each. Phase 3 done; phase 4 = GT-6, held.
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, GT-2, GT-3 DONE
+  (2026-11-17: WidgetBoundary + e2e/widgetfail; text corner scaling =
+  meta fontPx, e2e/textscale; Today stamp = src/stamps/today.ts). Next in
+  Ready: GT-5, GT-10, GT-11, one at a time, report after each. Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.75.0 (`448cd3c`); all three on their main (2026-11-14).
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
@@ -52,7 +52,7 @@ Finished work goes to docs/HISTORY.md.
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom a wheel tick off).
 - Toolbar buttons keep the keyboard focus after a click (tldraw then
   ignores keys: no nudge/Delete until the page is clicked). Fixed for the
-  Slate only (DECISIONS Part 4); Board, Map and the rest still have it.
+  Slate (DECISIONS Part 4) and stamps-tray placing (GT-3); Board, Map still have it.
 - perf.e2e.ts:259 hover p95 with 3 Slates: 24-26 ms since Part 4 (limit 25).
 - Zoom of a big map is near its limit: 150 boxes, zoom p95 67-117 ms per
   run (limit 108; the board's is ~50); the test now judges the median of

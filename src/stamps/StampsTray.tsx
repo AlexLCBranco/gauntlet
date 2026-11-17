@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { atom, useEditor, useValue, type Editor, type TLUiToolItem } from "tldraw";
+import { atom, createShapeId, toRichText, useEditor, useValue, type Editor, type TLUiToolItem } from "tldraw";
 
 import { lastPointOnPage } from "../widgets/WidgetPicker";
 import { addImageFile, addSelection, deleteStamp, loadStamps, moveStamp, placeStamp, stamps, type Stamp } from "./store";
+import { todayLabel } from "./today";
 import "./stamps.css";
 
 // The stamps tray's panel (owner, Edges round item 6; store.ts): opened and
@@ -32,6 +33,28 @@ export function stampsToolItem(): TLUiToolItem {
   };
 }
 
+/** GT-3: today's date (day/month, São Paulo) as a normal text, its middle
+    at `point`, selected: fixed text, edited like any other. One undo step. */
+export function placeToday(editor: Editor, point: { x: number; y: number }, now: number = Date.now()) {
+  const id = createShapeId();
+  editor.markHistoryStoppingPoint("place today's date");
+  editor.run(() => {
+    editor.createShape({ id, type: "text", x: point.x, y: point.y, props: { richText: toRichText(todayLabel(now)) } });
+    const b = editor.getShapePageBounds(id);
+    if (b) editor.updateShape({ id, type: "text", x: point.x - b.w / 2, y: point.y - b.h / 2 });
+    editor.select(id);
+  });
+  editor.setCurrentTool("select");
+}
+
+/** After a placing: keys go to the whiteboard (Enter types in what was
+    placed, Delete deletes it), not to the toolbar's Stamps button, which
+    keeps the keyboard focus after it is clicked (HANDOFF, "Broken"). */
+function focusPage(editor: Editor) {
+  editor.focus();
+  editor.getContainer().focus({ preventScroll: true });
+}
+
 /** Where a drag from the tray would drop: a page point, or null when the
     pointer is not over the page (on the tray, a toolbar, outside). */
 function dropPoint(editor: Editor, x: number, y: number): { x: number; y: number } | null {
@@ -45,10 +68,15 @@ export function StampsTray() {
   const open = useValue(trayOpen);
   const list = useValue(stamps);
   const box = useRef<HTMLDivElement>(null);
-  const [drag, setDrag] = useState<{ stamp: Stamp; x: number; y: number; moved: boolean } | null>(null);
+  const [drag, setDrag] = useState<{ stamp: Stamp | null; x: number; y: number; moved: boolean } | null>(null);
+  // The date the Today item shows (and drops), checked again each time the tray opens.
+  const [today, setToday] = useState(() => todayLabel());
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (open) void loadStamps();
+    if (open) {
+      void loadStamps();
+      setToday(todayLabel());
+    }
   }, [open]);
 
   // Paste a picture into the tray: while the pointer is over it.
@@ -96,7 +124,7 @@ export function StampsTray() {
 
   if (!open) return null;
 
-  const begin = (e: React.PointerEvent, stamp: Stamp) => {
+  const begin = (e: React.PointerEvent, stamp: Stamp | null) => {
     if (e.button !== 0 || (e.target as Element).closest(".gs-stamp-del")) return;
     e.preventDefault();
     e.stopPropagation();
@@ -112,13 +140,15 @@ export function StampsTray() {
       window.removeEventListener("pointerup", up, true);
       setDrag(null);
       if (!moved) {
-        void placeStamp(editor, stamp, lastPointOnPage(editor));
-        editor.focus();
+        if (stamp) void placeStamp(editor, stamp, lastPointOnPage(editor));
+        else placeToday(editor, lastPointOnPage(editor));
+        focusPage(editor);
         return;
       }
       // Let go over the tray: reorder, before the sticker under the pointer.
       const over = document.elementFromPoint(u.clientX, u.clientY)?.closest<HTMLElement>("[data-stamp]");
       if (over && box.current?.contains(over)) {
+        if (!stamp) return;
         const ids = stamps.get().map((s) => s.id);
         const to = ids.indexOf(over.dataset.stamp!);
         const from = ids.indexOf(stamp.id);
@@ -127,8 +157,9 @@ export function StampsTray() {
       }
       const at = dropPoint(editor, u.clientX, u.clientY);
       if (at) {
-        void placeStamp(editor, stamp, at);
-        editor.focus();
+        if (stamp) void placeStamp(editor, stamp, at);
+        else placeToday(editor, at);
+        focusPage(editor);
       }
     };
     window.addEventListener("pointermove", move, true);
@@ -161,10 +192,11 @@ export function StampsTray() {
           + Add selection
         </button>
       </div>
-      {list.length === 0 ? (
-        <div className="gs-tray-empty">Select something and press “+ Add selection”, or paste or drop a picture here.</div>
-      ) : (
-        <div className="gs-tray-grid">
+      <div className="gs-tray-grid">
+        <div className="gs-stamp gs-stamp-today" data-testid="stamp-today" onPointerDown={(e) => begin(e, null)} title={`Today's date (${today}): click to put it on the page, or drag it there`}>
+          <span className="gs-today-label">Today</span>
+          <span className="gs-today-date">{today}</span>
+        </div>
           {list.map((s) => (
             <div key={s.id} className="gs-stamp" data-stamp={s.id} data-testid="stamp" onPointerDown={(e) => begin(e, s)} title="Click: put one on the page · drag: put it there, or to another place in the tray">
               {s.thumbUrl ? <img src={s.thumbUrl} alt="" draggable={false} /> : <span>?</span>}
@@ -182,9 +214,10 @@ export function StampsTray() {
               </button>
             </div>
           ))}
-        </div>
-      )}
-      {drag?.moved && drag.stamp.thumbUrl && <img className="gs-stamp-ghost" src={drag.stamp.thumbUrl} alt="" style={{ left: drag.x, top: drag.y }} />}
+      </div>
+      {list.length === 0 && <div className="gs-tray-empty">Select something and press “+ Add selection”, or paste or drop a picture here.</div>}
+      {drag?.moved && !drag.stamp && <span className="gs-stamp-ghost gs-today-ghost" style={{ left: drag.x, top: drag.y }}>{today}</span>}
+      {drag?.moved && drag.stamp?.thumbUrl && <img className="gs-stamp-ghost" src={drag.stamp.thumbUrl} alt="" style={{ left: drag.x, top: drag.y }} />}
     </div>
   );
 }

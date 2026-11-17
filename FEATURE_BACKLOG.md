@@ -13,14 +13,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-3 — Today's date in one click
-(was speed session Part 11)
-The owner makes a board every day and types the date by hand (e.g. "4/11", day/month). Add a "today's date" item to
-the stamps tray (src/stamps/): one click (or drag) drops today's date as normal text in America/Sao_Paulo, format d/m
-like "4/11". Fixed text, editable like any text, never changes by itself. If a better one-click place than the stamps
-tray exists, propose it in the report, but build the stamp. Tests: right date (mock the clock, including just after
-midnight), text is editable and saved.
-
 ### GT-5 — Slate step 5: live scores and changes reach the widget
 (Slate track, PROJECT.md DECISIONS 2026-10-31, step 5)
 Final scores show on a Slate once games end; changes to a game card in calendarkit reach the widget on the
