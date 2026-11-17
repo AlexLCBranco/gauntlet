@@ -7,8 +7,13 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-16
+- GT-8 — Slate tight grid (calendarkit CK-7 on the whiteboard)
+  The Slate widget's cards touch, split by one 1 px line with square corners, with notes shown or hidden (calendarkit v1.74.0).
 - GT-7 — Slate looks like the calendarkit copy: 2 columns, notes shown or hidden
   A Slate is always 2 columns like the copy-paste, starts with notes shown, and a "Hide notes" button in its date bar switches to calendarkit's info-only cards (saved per Slate, one undo; notes are never changed).
+### Internal
+- test: the Slate odds-request check picks a night not over (an over night's odds are asked once; the data now has finals)
+- test: edges e2e places its Slate at a whole height (the text under it sat on tldraw's 16 px side-handle limit at 50%, by float rounding)
 
 ## 2026-11-14
 - Serve footykit at /football (rewrites to footykit.vercel.app, like /calendar); the local dev proxy and its tests know it

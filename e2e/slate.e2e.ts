@@ -20,7 +20,7 @@ test.use({ timezoneId: TZ });
 // ticks wait for the time to catch up), so only short moves forward later.
 
 type Slate = { id: string; x: number; y: number; date: string; w: number; h: number; scale: number; hideNotes: boolean };
-type Night = { date: string; ids: string[]; keys: string[] };
+type Night = { date: string; ids: string[]; keys: string[]; /** every game final in the data */ over: boolean };
 
 const slates = (page: Page) =>
   page.evaluate(() =>
@@ -34,17 +34,17 @@ const slates = (page: Page) =>
     game's id in tip-off order, as the feed has them. */
 async function nights(request: APIRequestContext): Promise<Night[]> {
   const raw = (await (await request.get("/calendar/data/schedule.json")).json()) as {
-    leagueSchedule: { gameDates: { games: { gameId: string; gameDateEst: string; gameDateTimeUTC: string; awayTeam: { teamTricode: string }; homeTeam: { teamTricode: string } }[] }[] };
+    leagueSchedule: { gameDates: { games: { gameId: string; gameStatus: number; gameDateEst: string; gameDateTimeUTC: string; awayTeam: { teamTricode: string }; homeTeam: { teamTricode: string } }[] }[] };
   };
-  const by: Record<string, { gameId: string; t: string; key: string }[]> = {};
+  const by: Record<string, { gameId: string; t: string; key: string; final: boolean }[]> = {};
   for (const d of raw.leagueSchedule.gameDates)
     for (const g of d.games)
-      if (/^00[2456]/.test(g.gameId)) (by[g.gameDateEst.slice(0, 10)] ??= []).push({ gameId: g.gameId, t: g.gameDateTimeUTC, key: `${g.awayTeam.teamTricode}@${g.homeTeam.teamTricode}` });
+      if (/^00[2456]/.test(g.gameId)) (by[g.gameDateEst.slice(0, 10)] ??= []).push({ gameId: g.gameId, t: g.gameDateTimeUTC, key: `${g.awayTeam.teamTricode}@${g.homeTeam.teamTricode}`, final: g.gameStatus === 3 });
   return Object.keys(by)
     .sort()
     .map((date) => {
       const gs = by[date]!.sort((a, b) => a.t.localeCompare(b.t));
-      return { date, ids: gs.map((g) => g.gameId), keys: gs.map((g) => g.key) };
+      return { date, ids: gs.map((g) => g.gameId), keys: gs.map((g) => g.key), over: gs.every((g) => g.final) };
     });
 }
 
@@ -237,7 +237,7 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
     columns, as the owner's copy-pastes (its column rule follows the
     window's shape; a taller window, fewer columns). Hidden notes: its
     info-only cards (calendarkit's slateCardWidth). */
-const TWO_COLS_HEIGHT = { shown: 1400, hidden: 900 };
+const TWO_COLS_HEIGHT = { shown: 1400, hidden: 600 };
 
 for (const hide of [false, true])
 test(`Slate: at 100% the widget is calendarkit's copy of that night, notes ${hide ? "hidden" : "shown"} (GT-7: 2 columns): same cards${hide ? "" : " and note boxes"} at the same places and sizes, same text, near-identical pixels; nothing between them; no ⇄ (the ↗ of step 3 aside)`, async ({ browser, baseURL, request }) => {
@@ -789,7 +789,9 @@ test("Slate: one schedule request for every widget on every page; no timers or r
       };
     }
   });
-  const night = nightWith(await nights(request), 5);
+  // A night not over: calendarkit asks for its odds again each time a
+  // page starts showing it (an over night's odds are kept).
+  const night = nightWith((await nights(request)).filter((n) => !n.over), 5);
   await openWhiteboard(page, noonOn(night.date));
   await page.waitForTimeout(1000);
   const slateCode = () => asked.filter((p) => /SlateWidget|\/src\/slate\/(SlateWidget|calendarkit)|\/node_modules\/calendarkit\//.test(p));

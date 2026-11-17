@@ -1240,6 +1240,14 @@ Changes to the plan, newest last. Each says what and why.
     over a control rather than the Slate's own edge (barPlace.ts).
   * Tests: e2e/slate.e2e.ts (visual check per state, toggle, migration),
     barPlace.test.ts.
+- 2026-11-16 — GT-8: calendarkit pin v1.65.1 -> v1.74.0 (`e525f54`; owner).
+  * CK-7's tight grid on the whiteboard: cards touch, one 1 px shared
+    border, square corners, 12 px transparent margin round the night. No
+    widget code changed: SLATE_CARD_WIDTH follows SLATE_GRID_GAP (now -1).
+  * Also brings CK-6 (popups close on leave; GT-9 tests it here).
+  * Tests: the GT-7 visual checks against calendarkit v1.74.0's copy (a
+    600 px tall window for the notes-hidden one, where its copy is 2
+    columns). The odds-request check now picks a night not over.
 
 IDEAS
 

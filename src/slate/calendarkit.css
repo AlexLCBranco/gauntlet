@@ -47,7 +47,8 @@
 /* Slate step 3 (speed session Part 4): the cards take the pointer, for
    calendarkit's hover (tooltips, streak and season-series popups) and its
    links; a press still reaches the whiteboard (select, move, draw). The
-   gaps between cards stay the page's. */
+   margin round the cards stays the page's (no gaps between them since
+   calendarkit's tight grid, CK-7). */
 .gs-slate .ck-slate-card {
   pointer-events: auto;
 }

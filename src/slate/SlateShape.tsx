@@ -54,7 +54,8 @@ const SlateWidget = lazy(() => import("./SlateWidget"));
  * box), a widget on the whiteboard (owner, 2026-10-31, "Slate widget"
  * steps 1-5; this is step 2: static). It sits on the page as a board does:
  * select, move, drag a corner to scale it, cards and all; the cards are
- * real text, drawn on nothing (the gaps are the page's, for drawing). The
+ * real text, drawn on nothing (a tight grid since calendarkit v1.74, CK-7:
+ * cards share a 1 px divider; the margin round them is the page's). The
  * shape stores its date and size, never the games: those come from the
  * live schedule (SlateWidget.tsx).
  */

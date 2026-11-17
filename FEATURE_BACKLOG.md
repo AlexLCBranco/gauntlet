@@ -36,13 +36,6 @@ like "4/11". Fixed text, editable like any text, never changes by itself. If a b
 tray exists, propose it in the report, but build the stamp. Tests: right date (mock the clock, including just after
 midnight), text is editable and saved.
 
-### GT-8 — Slate tight grid (calendarkit CK-7 on the whiteboard)
-(owner, 2026-11-16, chat)
-Blocked: until calendarkit's CK-7 (divider lines instead of gaps) ships.
-Then: pin that calendarkit version; the widget shows the tight grid (1 px dividers, square corners, every card's info
-still there) in both notes states of GT-7. Tests: the GT-7 visual checks against calendarkit's copy updated to the
-new layout; perf.e2e.ts passes without raising any limit.
-
 ### GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
 (owner, 2026-11-16, chat)
 Blocked: until calendarkit's CK-6 (hover popups close on leave) ships.

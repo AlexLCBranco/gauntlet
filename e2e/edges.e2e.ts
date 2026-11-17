@@ -41,7 +41,11 @@ async function packedPage(page: Page, W: number, H: number): Promise<Item[]> {
     const slate = e.getCurrentPageShapes().find((s: any) => s.type === "calendarkit-slate");
     const z = slate.props.scale;
     const natural = { w: slate.props.w / z, h: slate.props.h / z };
-    const s = Math.min(c / natural.w, (H - textH) / natural.h);
+    // A whole number of page units tall: the text under it then sits on a
+    // whole y and is exactly its 32 units tall. At 50% that is tldraw's
+    // limit for side handles (hidden under 16 screen px); a fractional y
+    // can make its height 31.999999999999986 and drop them.
+    const s = Math.floor(Math.min(c / natural.w, (H - textH) / natural.h) * natural.h) / natural.h;
     e.updateShape({ id: slate.id, type: slate.type, x: 0, y: 0, props: { scale: s, w: natural.w * s, h: natural.h * s } });
     const slateH = natural.h * s;
     e.createAssets([{ id: "asset:edgepic", type: "image", typeName: "asset", props: { name: "p.png", src: PNG, w: 100, h: 100, mimeType: "image/png", isAnimated: false }, meta: {} }]);
