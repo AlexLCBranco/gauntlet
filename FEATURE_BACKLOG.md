@@ -85,29 +85,6 @@ Final scores show on a Slate once games end; changes to a game card in calendark
 whiteboard without a reload. The widget stays pinned to its date and still stores only date and size, never games.
 Tests across both repos (gauntlet and calendarkit).
 
-### GT-10 — Backlogs page: every repo's planned and built items in one place
-The owner wants one small website where he can quickly review all his repos' feature backlogs: what is planned and
-what is built, side by side, without opening GitHub. Build it as a page at gauntlet-home.vercel.app/backlogs, served
-by this repo's own Vercel deployment (not a rewrite to another app).
-- Data: read live from GitHub on each visit, server side, through a function in api/ (like api/unfurl.js), so the
-  page is never stale and no daily job is needed. Use a token from a Vercel env var (name it in the report) so
-  private repos (rotationkit, and any others) work; never send the token to the browser. Cache the response for a
-  short time (about a minute) so reloads are fast. Find repos automatically: every repo of AlexLCBranco that has a
-  FEATURE_BACKLOG.md or a BUILT.md, so a new repo shows up without code changes.
-- Layout: a list of repos on the left (name, number of planned items, date of the latest built item), click one to
-  see it; plus an "All repos" view. For a repo: Planned on the left, Built on the right, never mixed. Planned keeps
-  the backlog's own sections (Ready, Held, ...) and shows each item as its ID and title, click to expand its full
-  text. Built shows newest day first, the same items as BUILT.md ("### Internal" left out, as scripts/all-built.mjs
-  does: reuse its parsing, don't write a second one). A search box filters items across all repos by text or ID.
-- A repo that cannot be read (no access, error) is listed with the reason instead of silently missing.
-- Desktop only. Same look as the rest of gauntlet-home.
-- Add a link to it from wherever gauntlet-home lists its apps, if such a place exists (say where in the report).
-- Owner step the report must spell out: how to create the token (fine-grained, read-only Contents on all repos) and
-  where to set it in Vercel. Until it is set, the page shows the public repos and lists the private ones as unread.
-Tests (automated, mocked GitHub): parsing of a backlog with sections and multi-line items, built days newest first
-with Internal skipped, an unreadable repo shown with its reason, search, token never present in the page or its
-responses.
-
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-6 — Phase 4: things connect (cards go anywhere)
