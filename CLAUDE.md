@@ -60,7 +60,7 @@ When an item ships: in the same commit/PR as the code, cut it from `FEATURE_BACK
 never reused. Work shipped without a backlog item (a direct request, a fix) gets the same line without the ID:
 `- title`. Housekeeping the owner can't see (handoff notes, pins, test-only or CI fixes, docs) goes under a
 `### Internal` subheading at the bottom of that day, not in the main list. The same format is used in every one of
-the owner's repos, so `gauntlet` can merge them into one `ALL_BUILT.md`.
+the owner's repos, so backlogkit can merge them into one `ALL_BUILT.md`.
 Follow this file's other rules (branches, tests, version bump) as usual.
 
 When the owner mentions something that isn't to be built now (an aside, "later", "someday", "maybe"), add it at the
@@ -75,5 +75,5 @@ hand (only what couldn't be automated). A pasted prompt overrides this section.
 Guard: `scripts/check-lists.mjs` runs with the checks (before `npm test`) and fails if an ID is both planned and built, an
 ID repeats, or package.json's version has no `BUILT.md` entry. Fix the lists, never the check.
 
-`ALL_BUILT.md` merges every repo's `BUILT.md` (repo list in `scripts/all-built.mjs`): the `all-built` workflow
-rebuilds it daily and on demand. Never edit it by hand; a new repo is added to `REPOS` there.
+`ALL_BUILT.md` (every repo's built list) and `ALL_BACKLOG.md` (every repo's planned items) live in backlogkit
+(https://github.com/AlexLCBranco/backlogkit), built daily by its `all-built` workflow from every repo on GitHub.
