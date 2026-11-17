@@ -61,6 +61,9 @@ function closePopupsNow() {
   releasePopup(noPopup);
 }
 
+/** What of an open note takes presses itself (GT-4): its field and ⇄. */
+const OWN_NOTE = 'textarea, [data-testid="note-switch"]';
+
 /** How far a press may move and still be a click on a link. */
 const CLICK_SLOP = 4;
 
@@ -93,6 +96,11 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
     });
     const down = (e: PointerEvent) => {
       if (!(e.target instanceof Node && layer?.contains(e.target))) closePopupsNow();
+      // GT-4: a press anywhere but in the open note saves it and closes it
+      // (owner's click-away rule; tldraw may keep the focus where it was)
+      const open = document.activeElement;
+      if (open instanceof HTMLTextAreaElement && open.closest(".gs-slate") && !(e.target instanceof Element && (open.contains(e.target) || open.closest(".ck-slate-card")?.contains(e.target.closest(OWN_NOTE)))))
+        open.blur();
     };
     window.addEventListener("pointerdown", down, true);
     return () => {
@@ -102,14 +110,20 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
   }, [editor]);
 
   // A link (↗, a final score, a team; on a card or in a popup) opens in a
-  // new tab when clicked; the whiteboard keeps the press, so a drag that
+  // new tab when clicked; a note (GT-4) opens for typing. The whiteboard
+  // keeps the press (its click never reaches the card), so a drag that
   // starts on one still moves the widget.
-  const press = useRef<{ x: number; y: number; href: string }>(undefined);
+  const press = useRef<{ x: number; y: number; href?: string; note?: HTMLElement }>(undefined);
   useEffect(() => {
     const up = (e: PointerEvent) => {
       const p = press.current;
       press.current = undefined;
-      if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) <= CLICK_SLOP) window.open(p.href, "_blank", "noopener");
+      if (!p || Math.hypot(e.clientX - p.x, e.clientY - p.y) > CLICK_SLOP) return;
+      if (p.href) window.open(p.href, "_blank", "noopener");
+      // after the whiteboard's own handling of the release (it takes the
+      // focus back to its canvas), so the note keeps it
+      const note = p.note;
+      if (note) setTimeout(() => note.isConnected && note.click());
     };
     window.addEventListener("pointerup", up, true);
     return () => window.removeEventListener("pointerup", up, true);
@@ -121,7 +135,15 @@ export function useSlateHover(editor: Editor, data: CalendarData | undefined, da
     onFocus: (e: SyntheticEvent) => all.forEach((h) => h.handlers.onFocus(e)),
     onMouseLeave: () => hideRef.current(),
     onBlur: tooltip.handlers.onBlur,
+    // GT-4: presses in an open note (its field, its ⇄) are the note's
+    // (caret, selecting text, switching), never the whiteboard's (no
+    // select, no move of the widget)
+    onPointerDown: (e: ReactPointerEvent) => {
+      if ((e.target as Element).closest?.(OWN_NOTE)) e.stopPropagation();
+    },
     onPointerDownCapture: (e: ReactPointerEvent) => {
+      const note = e.button === 0 ? (e.target as Element).closest?.<HTMLElement>('[data-testid="note"][data-editable]') : null;
+      if (note) press.current = { x: e.clientX, y: e.clientY, note };
       const a = e.button === 0 ? (e.target as Element).closest?.<HTMLAnchorElement>("a[href]") : null;
       if (!a) return;
       const team = teamLinkTarget(a);

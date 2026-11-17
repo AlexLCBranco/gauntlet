@@ -77,16 +77,12 @@ const subscribeData = (fn: () => void) => {
 };
 
 // The notes: calendarkit's own store (one per page, localStorage
-// `ck:notes:v1`, one `storage` listener for the page however many widgets),
-// read only. A change anywhere (another tab: calendarkit) bumps the
-// version; the widgets then draw their cards again.
-const notes = localNotesStore();
-let notesVersion = 0;
-notes.subscribe("*", () => notesVersion++);
-const subscribeNotes = (fn: () => void) => notes.subscribe("*", fn);
-/** What the cards read the notes through: `get` only, nothing is ever
-    written (typing in the widget is step 4). */
-const readOnly = (): SlateNotes => ({ get: (id) => notes.get(id), set() {}, flush() {}, subscribe: () => () => {} });
+// `ck:notes:v1`, one `storage` listener for the page however many widgets).
+// GT-4: typed in the widget (a click on a note opens calendarkit's field,
+// SlateCopy editNotes); each note follows its own game, so a note saved
+// anywhere (another tab: /calendar) shows at once. Notes belong to the game:
+// the shape stores none.
+const notes: SlateNotes = localNotesStore();
 
 // The odds: calendarkit's own store (/calendar/api/odds, ESPN moneyline),
 // one per page: one request per date shown however many widgets show it,
@@ -124,8 +120,6 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   const editor = useEditor();
   const d = useSyncExternalStore(subscribeData, () => data);
   useEffect(() => load(), []);
-  const version = useSyncExternalStore(subscribeNotes, () => notesVersion);
-  const store = useMemo(readOnly, [version]);
   const content = useRef<HTMLDivElement>(null);
   const { date, w, h, scale, hideNotes } = shape.props;
   // Drawn for an export: the shape is left as it is (exportStyles.tsx).
@@ -167,13 +161,14 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
             cols={colsFor(games.length)}
             cardWidth={copyCardWidth(ready, games, hideNotes)}
             timeZone={SLATE_TIME_ZONE}
-            notes={hideNotes ? undefined : store}
+            notes={hideNotes ? undefined : notes}
+            editNotes
             odds={dayOdds}
             gameLink={hoopsjunkieLink}
           />
         </TeamLinkContext.Provider>
       ) : null,
-    [ready, games, hideNotes, store, dayOdds, hover.teamLinks],
+    [ready, games, hideNotes, dayOdds, hover.teamLinks],
   );
   const z = scale || 1;
   const keep = { width: w / z, height: h / z };

@@ -1256,6 +1256,20 @@ Changes to the plan, newest last. Each says what and why.
     the browser re-hovers under a still pointer after a camera change and
     that cancelled the grace (the flaky slatehover zoom check).
   * Tests: e2e/slatehover.e2e.ts "GT-9" (5), times measured in the page.
+- 2026-11-17 — GT-4: notes typed on the whiteboard (owner).
+  * Owner's choices (asked 2026-11-17): click to edit (a note looks like
+    the copy until clicked); Enter adds a line, as in /calendar.
+  * calendarkit v1.75.0 (`448cd3c`, made for this): SlateCopy `editNotes`,
+    NoteLive: the copy's note until clicked, then calendarkit's field with
+    ⇄ in the same box, uncapped; saved as typed (its 400 ms) and at once on
+    leaving (click away, Escape, Tab). Each note follows its own game.
+  * Ours (hover.tsx): tldraw takes a press on a card, so a note opens on a
+    release within 4 px (like the links); a drag still moves the widget.
+    Presses in the open field and on ⇄ stay out of tldraw; a press
+    anywhere else blurs the field (saves). The widget passes calendarkit's
+    real store (localNotesStore); notes are in `ck:notes:v1`, so backups
+    (localStorage) carry them. Hidden notes (GT-7) have no box to type in.
+  * Tests: e2e/slate.e2e.ts "GT-4" (3); calendarkit tests/notelive.test.tsx.
 
 IDEAS
 

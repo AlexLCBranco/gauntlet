@@ -36,16 +36,6 @@ like "4/11". Fixed text, editable like any text, never changes by itself. If a b
 tray exists, propose it in the report, but build the stamp. Tests: right date (mock the clock, including just after
 midnight), text is editable and saved.
 
-### GT-4 — Slate step 4: notes on the whiteboard
-(Slate track, PROJECT.md DECISIONS 2026-10-31, step 4)
-Today a Slate's game notes are read-only on the whiteboard. Step 4 as planned: typing notes in the Slate on the
-whiteboard, ⇄, notes in the backups. Owner's rules still apply: notes belong to the GAME (calendarkit's localStorage
-`ck:notes:v1`, shared, same site), so a note typed on the whiteboard shows in /calendar and the other way round.
-Clicking outside the note box saves, like Enter (owner's rule for every widget). Use calendarkit's own component, not
-a whiteboard copy. With GT-7's toggle: notes are typed only while shown; hiding them never deletes
-or changes a note. Tests: type on the whiteboard → seen in /calendar and after reload; typed in /calendar → seen on
-the whiteboard; notes restored from a backup.
-
 ### GT-5 — Slate step 5: live scores and changes reach the widget
 (Slate track, PROJECT.md DECISIONS 2026-10-31, step 5)
 Final scores show on a Slate once games end; changes to a game card in calendarkit reach the widget on the

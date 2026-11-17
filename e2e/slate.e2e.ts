@@ -400,48 +400,151 @@ const comparePng = (page: Page, mask: string, ref: string, shot: string, rects: 
     { mask, ref, shot, rects, ratio },
   );
 
-test("Slate: notes are read only: one typed in calendarkit (same browser) shows in the widget at once, with its slot; the widget never writes them", async ({ page, context, request }) => {
-  await page.addInitScript(() => {
-    const w = window as unknown as { __noteWrites: string[] };
-    w.__noteWrites = [];
-    for (const m of ["setItem", "removeItem"] as const) {
-      const own = Storage.prototype[m];
-      Storage.prototype[m] = function (this: Storage, key: string, ...rest: string[]) {
-        if (key === "ck:notes:v1") w.__noteWrites.push(m);
-        return (own as (...a: string[]) => void).call(this, key, ...rest);
-      };
-    }
-  });
+/** The note of game `gameId` in widget `id`: its box, its text, its label. */
+const noteOf = (page: Page, id: string, gameId: string) => {
+  const card = widgetOf(page, id).locator(`[data-game-id="${gameId}"]`);
+  return { card, box: card.getByTestId("note"), text: card.getByTestId("note-text"), slot: card.getByTestId("note-slot"), field: card.locator("textarea") };
+};
+const notesMap = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem("ck:notes:v1") ?? "{}"));
+
+test("Slate notes (GT-4): a click on a note opens calendarkit's field; typed (Enter adds a line, tldraw's keys stay out), saved as the game's note; a click on the page saves and closes; seen in /calendar and after a reload", async ({ page, context, request }) => {
   const night = nightWith(await nights(request), 5);
   await openWhiteboard(page, noonOn(night.date));
   const s = await insertSlate(page);
-  const firstNote = widgetOf(page, s.id).locator(`[data-game-id="${night.ids[0]}"] [data-testid="note"]`);
-  // The slot label is the card's, in its top-right corner (calendarkit v1.64+).
-  const firstSlot = widgetOf(page, s.id).locator(`[data-game-id="${night.ids[0]}"] [data-testid="note-slot"]`);
-  await expect(firstSlot).toHaveText("PRE");
-  await expect(firstNote.getByTestId("note-text")).toHaveText("");
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  const n = noteOf(page, s.id, night.ids[0]!);
+  await expect(n.slot).toHaveText("PRE");
+  await expect(n.field).toHaveCount(0);
+  const at = (await slates(page))[0]!;
+
+  // A click on the note: calendarkit's field, focused, with its ⇄.
+  await n.box.click();
+  await expect(n.field).toBeFocused();
+  await expect(n.card.getByTestId("note-switch")).toBeVisible();
+  // Typed: letters that are tldraw's tool keys, Backspace and Delete, Enter
+  // for a new line; none reach the whiteboard.
+  await page.keyboard.type("Rotate the bigs");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.type("s");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("dvx er");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("Delete");
+  await expect(n.field).toHaveValue("Rotate the bigs\ndvx e");
+  expect(await page.evaluate(() => (window as any).editor.getCurrentToolId())).toBe("select");
+  expect(await slates(page)).toHaveLength(1);
+  expect((await slates(page))[0]).toMatchObject({ x: at.x, y: at.y, date: night.date });
+  // ⇄ while typing: the LIVE space, the field still open.
+  await n.card.getByTestId("note-switch").click();
+  await expect(n.slot).toHaveText("LIVE");
+  await expect(n.field).toBeFocused();
+  await page.keyboard.type("Zone in the 4th");
+  // A click on the empty page: saved at once, the copy's look again.
+  await page.mouse.click(1500, 900);
+  await expect(n.field).toHaveCount(0);
+  await expect(n.text).toHaveText("Zone in the 4th");
+  expect((await notesMap(page))[night.ids[0]!]).toEqual({ pre: "Rotate the bigs\ndvx e", live: "Zone in the 4th", post: "", shown: "live" });
+  // The widget never moved; the click on the page selected nothing.
+  expect((await slates(page))[0]).toMatchObject({ x: at.x, y: at.y });
+
+  // /calendar shows it (the same game's note).
+  const ck = await context.newPage();
+  await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), night.date);
+  await ck.goto("/calendar/?view=league&layout=slate");
+  await showCalendarNotes(ck);
+  const inCk = ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[0]}"]`);
+  await expect(inCk.getByTestId("note-slot")).toHaveText("LIVE");
+  await expect(inCk.getByTestId("note-text")).toHaveValue("Zone in the 4th");
+  await ck.close();
+
+  // A reload keeps it.
+  await page.reload();
+  await page.waitForFunction(() => "editor" in window);
+  await expect(n.text).toHaveText("Zone in the 4th");
+  await expect(n.slot).toHaveText("LIVE");
+});
+
+test("Slate notes (GT-4): typed in /calendar shows in the widget at once; a drag that starts on a note moves the widget and opens nothing; hidden notes can't be typed and hiding changes none", async ({ page, context, request }) => {
+  const night = nightWith(await nights(request), 5);
+  await openWhiteboard(page, noonOn(night.date));
+  const s = await insertSlate(page);
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  const n = noteOf(page, s.id, night.ids[1]!);
 
   const ck = await context.newPage();
   await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), night.date);
-    await ck.goto("/calendar/?view=league&layout=slate");
+  await ck.goto("/calendar/?view=league&layout=slate");
   await showCalendarNotes(ck);
-  const box1 = ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[0]}"]`);
-  await box1.getByTestId("note-text").fill("Typed in calendarkit");
-  await box1.getByTestId("note-text").blur();
-  await expect(firstNote.getByTestId("note-text")).toHaveText("Typed in calendarkit");
-  await box1.getByTestId("note-switch").click();
-  await box1.getByTestId("note-text").fill("Live one");
-  await box1.getByTestId("note-text").blur();
-  await expect(firstSlot).toHaveText("LIVE");
-  await expect(firstNote.getByTestId("note-text")).toHaveText("Live one");
+  const inCk = ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[1]}"]`);
+  await inCk.getByTestId("note-text").fill("Typed in calendarkit");
+  await inCk.getByTestId("note-text").blur();
+  await expect(n.text).toHaveText("Typed in calendarkit");
   await ck.close();
 
-  // Nothing to type in, and nothing written from the whiteboard.
-  await expect(widgetOf(page, s.id).locator("textarea, button")).toHaveCount(0);
-  await page.reload();
-  await page.waitForFunction(() => "editor" in window);
-  await expect(firstNote.getByTestId("note-text")).toHaveText("Live one");
-  expect(await page.evaluate(() => (window as any).__noteWrites)).toEqual([]);
+  // A drag from the note moves the widget (a hand moving it by its cards).
+  await page.bringToFront();
+  const before = (await slates(page))[0]!;
+  const b = await box(n.box);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2 + 60, b.y + b.height / 2 + 40, { steps: 8 });
+  await page.mouse.up();
+  const zoom = await page.evaluate(() => (window as any).editor.getZoomLevel() as number);
+  const after = (await slates(page))[0]!;
+  expect(after.x - before.x).toBeCloseTo(60 / zoom, 0);
+  expect(after.y - before.y).toBeCloseTo(40 / zoom, 0);
+  await expect(n.field).toHaveCount(0);
+
+  // Open, typing, then Hide notes: saved as typed, nothing to type while hidden.
+  await n.box.click();
+  await expect(n.field).toBeFocused();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" and more");
+  await page.evaluate((id) => void (window as any).editor.select(id), s.id);
+  await page.getByTestId("slate-notes").click();
+  await expect(widgetOf(page, s.id).locator('[data-testid="note"], textarea')).toHaveCount(0);
+  await expect.poll(async () => (await notesMap(page))[night.ids[1]!]?.pre).toBe("Typed in calendarkit and more");
+  const kept = JSON.stringify(await notesMap(page));
+  await page.getByTestId("slate-notes").click();
+  await expect(n.text).toHaveText("Typed in calendarkit and more");
+  expect(JSON.stringify(await notesMap(page))).toBe(kept);
+});
+
+test("Slate notes (GT-4): notes typed on the whiteboard are in the backup and come back restored into a fresh browser, in the widget and in /calendar", async ({ page, browser, baseURL, request }) => {
+  const night = nightWith(await nights(request), 5);
+  await openWhiteboard(page, noonOn(night.date));
+  const s = await insertSlate(page);
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  const n = noteOf(page, s.id, night.ids[2]!);
+  await n.box.click();
+  await page.keyboard.type("Backed up note");
+  await page.mouse.click(1500, 900);
+  await expect(n.text).toHaveText("Backed up note");
+  await whiteboardSaved(page);
+  await page.goto("/backup/");
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save a backup" }).click()]);
+  const file = await readFile((await download.path())!, "utf-8");
+  expect(file).toContain("Backed up note");
+
+  const ctx = await browser.newContext({ baseURL, timezoneId: TZ });
+  try {
+    const fresh = await ctx.newPage();
+    await fresh.clock.install({ time: noonOn(night.date) });
+    await fresh.goto("/backup/");
+    await fresh.getByLabel("Backup file").setInputFiles({ name: "backup.json", mimeType: "application/json", buffer: Buffer.from(file) });
+    const dialog = fresh.getByRole("dialog", { name: "Replace what's here with this backup?" });
+    await Promise.all([fresh.waitForEvent("download"), dialog.getByRole("button", { name: "Replace with this backup" }).click()]);
+    await expect(fresh.getByRole("status")).toContainText("Restored");
+    await openWhiteboard(fresh);
+    await expect(noteOf(fresh, s.id, night.ids[2]!).text).toHaveText("Backed up note");
+    const ck = await ctx.newPage();
+    await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), night.date);
+    await ck.goto("/calendar/?view=league&layout=slate");
+    await showCalendarNotes(ck);
+    await expect(ck.locator(`[data-testid="slate"] [data-game-id="${night.ids[2]}"]`).getByTestId("note-text")).toHaveValue("Backed up note");
+  } finally {
+    await ctx.close();
+  }
 });
 
 /** A widget of `night` at `scale`, its top-left at (`x`, `y`) on the page

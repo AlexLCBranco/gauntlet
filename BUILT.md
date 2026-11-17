@@ -7,9 +7,12 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-17
+- GT-4 — Slate step 4: notes on the whiteboard
+  Click a note on a Slate to type in it (Enter adds a line, ⇄ switches PRE/LIVE/POST); clicking away saves it; it is the game's note, the same in /calendar and in backups.
 - GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
   On the whiteboard a Slate popup closes within 100 ms of leaving, only one is ever open across Slates, and a pan, zoom or press elsewhere closes it at once.
 ### Internal
+- Pin calendarkit v1.75.0 (448cd3c): notes open for typing in its copy layout (SlateCopy editNotes)
 - test: copies and paste-at-cursor e2e wait for Ctrl+C / Ctrl+X to land in the clipboard before pasting (a quick paste took an earlier test's clipboard)
 
 ## 2026-11-16

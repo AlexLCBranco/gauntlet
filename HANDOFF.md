@@ -6,11 +6,11 @@ Finished work goes to docs/HISTORY.md.
 
 ## Current state (2026-11-16)
 
-- PLAN = FEATURE_BACKLOG.md on origin/main. GT-7, GT-8, GT-9 DONE (2 columns, notes
-  toggle, tight grid; DECISIONS 2026-11-16). NEXT: GT-4 (owner asked for
-  GT-7/8/9/4 on 2026-11-16). Phase 3 done; phase 4 = GT-6, held.
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-7, GT-8, GT-9, GT-4 DONE (2 columns, notes
+  toggle, tight grid; DECISIONS 2026-11-16). The owner's GT-7/8/9/4 batch
+  is done; next in Ready order: GT-1. Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
-  calendarkit v1.74.0 (`e525f54`); all three on their main (2026-11-14).
+  calendarkit v1.75.0 (`448cd3c`); all three on their main (2026-11-14).
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
   list paste). Item 6's mod+c "clash" is a dev-only Boardkit check that
