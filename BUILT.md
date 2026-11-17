@@ -12,6 +12,7 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 - GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
   On the whiteboard a Slate popup closes within 100 ms of leaving, only one is ever open across Slates, and a pan, zoom or press elsewhere closes it at once.
 ### Internal
+- ALL_BUILT.md, its script and daily workflow moved to backlogkit (BL-2 there), which now also writes ALL_BACKLOG.md
 - Pin calendarkit v1.75.0 (448cd3c): notes open for typing in its copy layout (SlateCopy editNotes)
 - test: copies and paste-at-cursor e2e wait for Ctrl+C / Ctrl+X to land in the clipboard before pasting (a quick paste took an earlier test's clipboard)
 
