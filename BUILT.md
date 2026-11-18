@@ -22,6 +22,7 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 - GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
   On the whiteboard a Slate popup closes within 100 ms of leaving, only one is ever open across Slates, and a pan, zoom or press elsewhere closes it at once.
 ### Internal
+- REPORTS.md: the end-of-batch reports (new rule, CLAUDE.md), starting with GT-1, 2, 3, 5, 10
 - test: the archive Slate test and the odds-request count no longer assume a night the snapshot lists as upcoming has no ESPN finals (on the live site it may)
 - test: the archive hover check points at the record where it is now (a just-drawn widget may still be settling its size)
 - Pin calendarkit v1.77.0 (abedce8): calendarDataFromRaw for archived Slates
