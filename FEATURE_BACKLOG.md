@@ -22,6 +22,22 @@ calendarkit's own component (SlateCopy editNotes, `ck:notes:v1`), so change it t
 clicking away to save and hover popups still work. Tests in both repos: a short note and a long note give the same
 card height; a long note scrolls inside the box and is saved in full.
 
+### GT-12 — Hide the style menu while editing a widget under it
+**What:** the side menu with Opacity / Layers / Actions (image `docs/backlog-img/GT-12-menu.png`) hides while a widget in that area is being edited, and comes back when editing ends.
+**Tests:** e2e: start editing a widget placed under the menu → menu hidden; stop → back.
+
+### GT-13 — Slate popup on the whiteboard same as calendarkit's
+**What:** the team popup on the whiteboard's Slate (image `docs/backlog-img/GT-13-whiteboard-popup.png`) lacks what calendarkit's has (image `docs/backlog-img/GT-13-calendarkit-popup.png`): opponent logo and "vs NYK" / "@ DET" in each day square, the "last played" line and "Record going in". Find why (pinned calendarkit version, or the Slate copy path builds its own popup) and make the whiteboard show exactly calendarkit's.
+**Tests:** e2e: same popup text on the whiteboard and on /calendar for the same team and night.
+
+### GT-14 — Football Slate and combined Slate widgets
+**What:** next to the NBA Slate widget, a Football Slate widget (footykit's Slate) and a Combined Slate: one Slate with both sports' games sorted by start time, a small sport mark on each card. Each can be placed on its own (NBA only, Football only, Combined). Needs footykit FK-35 first (same card shape); until then this item is `Blocked:` on it. Header: "SLATE · 18-11 · NBA + Football". Live scores and updates as GT-5.
+**Tests:** e2e: each of the three widget kinds renders; combined is in time order with both sports.
+
+### GT-15 — Browser tab title follows the page
+**What:** the tab title says where you are ("Gauntlet · <page name>"), like calendarkit and footykit already do. Owner's rule for all apps.
+**Tests:** e2e: switching page changes the title.
+
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-6 — Phase 4: things connect (cards go anywhere)
