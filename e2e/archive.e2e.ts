@@ -142,6 +142,9 @@ test("save → open: the page comes back as a new page with every widget, each d
 });
 
 test("a frozen Slate shows the games as saved after the live schedule changes; a live Slate shows the change", async ({ page, context }) => {
+  // No odds answer at all, saved or live: only the snapshot brings scores here (on the live site ESPN may already
+  // have the finals of a night the snapshot still lists as upcoming, and the file rightly keeps them).
+  await page.route("**/calendar/api/odds**", (r) => r.fulfill({ status: 404, body: "" }));
   const day = await dayBoard(page, context);
   const file = await saveToFile(page);
   // the next morning: the first game of that night was played

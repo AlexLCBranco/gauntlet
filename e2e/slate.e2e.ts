@@ -900,8 +900,11 @@ test("Slate: one schedule request for every widget on every page; no timers or r
     }
   });
   // A night not over: calendarkit asks for its odds again each time a
-  // page starts showing it (an over night's odds are kept).
-  const night = nightWith((await nights(request)).filter((n) => !n.over), 5);
+  // page starts showing it (an over night's odds are kept). Two days ahead
+  // at least: a night the snapshot still lists may already be over by
+  // ESPN's finals (GT-5), and then it is asked for once.
+  const soon = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+  const night = nightWith((await nights(request)).filter((n) => !n.over && n.date >= soon), 5);
   await openWhiteboard(page, noonOn(night.date));
   await page.waitForTimeout(1000);
   const slateCode = () => asked.filter((p) => /SlateWidget|\/src\/slate\/(SlateWidget|calendarkit)|\/node_modules\/calendarkit\//.test(p));
