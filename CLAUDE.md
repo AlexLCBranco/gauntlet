@@ -70,7 +70,7 @@ in the backlog yourself.
 If an item is unclear or blocked, don't guess: leave it in `FEATURE_BACKLOG.md` with a `Blocked:` note saying what's
 missing, and continue with the next one. Don't add, rewrite or reorder backlog items yourself; only remove shipped
 ones and add `Blocked:` notes. End with a short report: built / blocked / ideas added / what the owner must test by
-hand (only what couldn't be automated). A pasted prompt overrides this section.
+hand (only what couldn't be automated). Also save that report at the top of `REPORTS.md` (newest first: date, item IDs, the report text) in the same commit, so the owner's Claude chat can read it without a paste. A pasted prompt overrides this section.
 
 Guard: `scripts/check-lists.mjs` runs with the checks (before `npm test`) and fails if an ID is both planned and built, an
 ID repeats, or package.json's version has no `BUILT.md` entry. Fix the lists, never the check.
