@@ -68,6 +68,7 @@ import { undoSkipsSelection } from "./undoSkipsSelection";
 import { unsavedJournal } from "./unsavedJournal";
 import { ZoomUndo } from "./ZoomUndo";
 import { ShapeFailed } from "../widgets/WidgetBoundary";
+import { hideStylePanelForEditing } from "../style/hideForEditing";
 import "./whiteboard.css";
 
 /** tldraw keeps the whiteboard here (IndexedDB, per origin), and syncs it
@@ -284,6 +285,8 @@ function setUp(editor: Editor) {
   const stopHealth = useSaveHealth.subscribe((h) => setAppSaveFailing(h.failing.length > 0));
   const stopBoxKey = trackBoxKey();
   const stopYield = controlsYield(editor);
+  // The style panel hides while a widget under it is edited (GT-12).
+  const stopHideForEditing = hideStylePanelForEditing(editor);
   // Lines and arrows drawn nearly level or upright come out straight.
   const stopStraight = straightLines(editor);
   // Pasting a web address makes a web embed (src/embed/).
@@ -329,6 +332,7 @@ function setUp(editor: Editor) {
     stopHealth();
     stopBoxKey();
     stopYield();
+    stopHideForEditing();
     stopStraight();
     stopEmbeds();
     stopLinks();

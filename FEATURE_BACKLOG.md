@@ -13,10 +13,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-12 — Hide the style menu while editing a widget under it
-**What:** the side menu with Opacity / Layers / Actions (image `docs/backlog-img/GT-12-menu.png`) hides while a widget in that area is being edited, and comes back when editing ends.
-**Tests:** e2e: start editing a widget placed under the menu → menu hidden; stop → back.
-
 ### GT-13 — Slate popup on the whiteboard same as calendarkit's
 **What:** the team popup on the whiteboard's Slate (image `docs/backlog-img/GT-13-whiteboard-popup.png`) lacks what calendarkit's has (image `docs/backlog-img/GT-13-calendarkit-popup.png`): opponent logo and "vs NYK" / "@ DET" in each day square, the "last played" line and "Record going in". Find why (pinned calendarkit version, or the Slate copy path builds its own popup) and make the whiteboard show exactly calendarkit's.
 **Tests:** e2e: same popup text on the whiteboard and on /calendar for the same team and night.

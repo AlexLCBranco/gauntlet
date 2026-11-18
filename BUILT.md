@@ -7,6 +7,8 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-18
+- GT-12 — Hide the style menu while editing a widget under it
+  The style panel (Opacity / Layers / Actions) hides while a board, map, web embed or Slate note under it is being edited, and comes back when the editing ends.
 - GT-11 — Slate notes box: fixed 3 lines, scroll inside
   Every note box on a Slate, on the whiteboard and in /calendar, is 3 lines tall, empty or not, so all cards are the same height; a longer note scrolls inside its box (the wheel scrolls an open note, not the whiteboard); copied pictures still show each note whole.
 ### Internal

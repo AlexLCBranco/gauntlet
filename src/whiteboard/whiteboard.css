@@ -26,3 +26,5 @@ body { background: #101011; overflow: hidden; }
 [data-yield] { opacity: 0.15 !important; pointer-events: none !important; }
 [data-yield] * { pointer-events: none !important; }
 [data-yield-wrap] { pointer-events: none !important; }
+/* GT-12: the style panel hides while a widget under it is edited (src/style/hideForEditing.ts) */
+.gk-style-panel[data-hidden-for-editing] { visibility: hidden; pointer-events: none; }

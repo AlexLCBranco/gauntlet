@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "./test";
 
+import { seedBoard } from "./helpers";
+
 /**
  * The style panel: collapse and left/right (owner, Edges round item 5;
  * src/style/panelPlace.ts). Fresh profile, 1600 × 1000.
@@ -102,4 +104,113 @@ test("on either side, the panel covers neither the toolbar, the page arrows and 
   const pages = (await rect(page, ".gauntlet-pages"))!;
   const wm = await rect(page, ".tl-watermark_SEE-LICENSE");
   if (wm) expect(overlap(pages, wm)).toBe(false);
+});
+
+// GT-12: the style panel hides while a widget under it is edited, and comes back when the editing ends.
+test.describe("GT-12: the style panel gives way to an edited widget under it", () => {
+  const panel = (page: Page) => page.getByTestId("style-panel");
+  const editingId = (page: Page) => page.evaluate(() => (window as any).editor.getEditingShapeId() as string | null);
+  /** The widget's box on screen. */
+  const onScreen = (page: Page, id: string) =>
+    page.evaluate((id) => {
+      const e = (window as any).editor;
+      const b = e.getShapePageBounds(id);
+      const a = e.pageToScreen({ x: b.minX, y: b.minY });
+      const c = e.pageToScreen({ x: b.maxX, y: b.maxY });
+      return { x: a.x, y: a.y, r: c.x, b: c.y };
+    }, id);
+
+  async function boardAt(page: Page, boardId: string, x: number) {
+    await page.evaluate(
+      ({ boardId, x }) => {
+        const e = (window as any).editor;
+        e.setCamera({ x: 0, y: 0, z: 1 });
+        e.createShapes([{ id: "shape:gb", type: "boardkit-board", x, y: 120, props: { boardId } }]);
+        e.select("shape:gb");
+      },
+      { boardId, x },
+    );
+    await expect(page.locator('[id="shape:gb"] [data-boardkit-board]')).toBeVisible();
+    // its lists (the seeded board may open on its linked map)
+    const list = page.locator('[id="shape:gb"] [data-testid="view-switch"] [data-view="list"]');
+    if (await list.count()) {
+      await list.click();
+      await expect(list).toHaveAttribute("aria-pressed", "true");
+      await page.evaluate(() => void (window as any).editor.select("shape:gb"));
+    }
+    await expect(panel(page)).toBeVisible();
+  }
+  /** A double-click on the board's own empty area, at its right end: editing it. */
+  async function editBoard(page: Page) {
+    const b = await onScreen(page, "shape:gb");
+    // inside its visible part, clear of the edge handles (it may run past the window)
+    await page.mouse.dblclick(Math.min(b.r, page.viewportSize()!.width) - 60, b.b - 30);
+    await expect.poll(() => editingId(page)).toBe("shape:gb");
+  }
+
+  test("a board under the panel, opened for editing: the panel hides; left: it is back. A board away from it: the panel stays", async ({ page, context }) => {
+    const boardId = await seedBoard(context);
+    await open(page);
+    await boardAt(page, boardId, 60);
+    const p = (await panel(page).boundingBox())!;
+    const b = await onScreen(page, "shape:gb");
+    expect(b.x < p.x + p.width && b.r > p.x && b.y < p.y + p.height && b.b > p.y, "the board lies under the panel").toBe(true);
+    await editBoard(page);
+    await expect(panel(page)).toHaveAttribute("data-hidden-for-editing", "");
+    await expect(panel(page)).toBeHidden();
+    // editing ends: the panel is back (the board still selected)
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await expect.poll(() => editingId(page)).toBeNull();
+    await page.evaluate(() => void (window as any).editor.select("shape:gb"));
+    await expect(panel(page)).toBeVisible();
+    await expect(panel(page)).not.toHaveAttribute("data-hidden-for-editing", "");
+
+    // the same board far from the panel: editing it leaves the panel as it is
+    await page.evaluate(() => {
+      const e = (window as any).editor;
+      e.updateShape({ id: "shape:gb", type: "boardkit-board", x: 900 });
+      e.select("shape:gb");
+    });
+    await editBoard(page);
+    await expect(panel(page)).toBeVisible();
+    await expect(panel(page)).not.toHaveAttribute("data-hidden-for-editing", "");
+  });
+
+  test("typing in a Slate note under the panel hides it; leaving the note brings it back", async ({ page }) => {
+    // a night with games, from the schedule served
+    const raw = (await (await page.request.get("/calendar/data/schedule.json")).json()) as { leagueSchedule: { gameDates: { games: { gameId: string; gameDateEst: string }[] }[] } };
+    const date = raw.leagueSchedule.gameDates.flatMap((d) => d.games).find((g) => /^002/.test(g.gameId))!.gameDateEst.slice(0, 10);
+    await open(page);
+    await page.evaluate((date) => {
+      const e = (window as any).editor;
+      e.setCamera({ x: 0, y: 0, z: 1 });
+      e.createShapes([{ id: "shape:gs", type: "calendarkit-slate", x: 60, y: 140, props: { date } }]);
+    }, date);
+    const w = page.locator('[id="shape:gs"] [data-testid="slate-widget"]');
+    await expect(w).toHaveAttribute("data-state", "ready", { timeout: 20_000 });
+    await page.evaluate(() => void (window as any).editor.select("shape:gs"));
+    await expect(panel(page)).toBeVisible();
+    // a note right of the panel, under the panel's band (the widget overlaps the panel)
+    const p = (await panel(page).boundingBox())!;
+    const notes = w.getByTestId("note");
+    const n = await notes.count();
+    let target = notes.first();
+    for (let i = 0; i < n; i++) {
+      const r = (await notes.nth(i).boundingBox())!;
+      if (r.x > p.x + p.width + 4) {
+        target = notes.nth(i);
+        break;
+      }
+    }
+    await target.click();
+    await expect(w.locator("textarea")).toBeFocused();
+    await expect(panel(page)).toHaveAttribute("data-hidden-for-editing", "");
+    await page.keyboard.press("Escape");
+    await expect(w.locator("textarea")).toHaveCount(0);
+    // the Slate selected again: the panel is there
+    await page.evaluate(() => void (window as any).editor.select("shape:gs"));
+    await expect(panel(page)).toBeVisible();
+    await expect(panel(page)).not.toHaveAttribute("data-hidden-for-editing", "");
+  });
 });

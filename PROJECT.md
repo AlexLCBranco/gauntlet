@@ -1327,6 +1327,13 @@ Changes to the plan, newest last. Each says what and why.
   * Tests: e2e/slate.e2e.ts "GT-11"; the copy pixel check lays the copy out
     with 3-line boxes (TWO_COLS_HEIGHT shown 1100); calendarkit
     e2e/notes-cap.spec.ts.
+- 2026-11-18 — GT-12: the style panel hides for an edited widget under it.
+  * src/style/hideForEditing.ts: while a board, map or web embed is in
+    tldraw's edit mode, or a Slate note's field has the focus, and that
+    widget's box on screen overlaps .gk-style-panel, the panel gets
+    data-hidden-for-editing (visibility hidden, pointer through); its state
+    is kept. Nothing edited: no work on camera steps (perf).
+  * Tests: e2e/stylepanel.e2e.ts "GT-12" (2).
 
 IDEAS
 

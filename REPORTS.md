@@ -3,6 +3,19 @@
 The report at the end of each batch of backlog work, newest first (CLAUDE.md, "Feature backlog, built list and
 ideas"), so the owner's Claude chat can read it without a paste.
 
+## 2026-11-18 — GT-12
+
+**Built** (live; local and live suites pass): GT-12 — Hide the style menu while editing a widget under it. The style
+panel (Opacity / Layers / Actions) hides while a board, map, web embed or a Slate note under it is being edited, and
+comes back when the editing ends. A widget elsewhere on the page doesn't hide it.
+
+**Agent's reading of the spec:** "being edited" = a widget opened with a double-click (board, map, web embed) or a
+Slate note being typed in; "in that area" = the widget's box on screen overlaps the panel.
+
+**Blocked:** none. **Ideas added:** none.
+
+**To test by hand** (feel only): whether the panel vanishing and coming back feels right while you work.
+
 ## 2026-11-18 — GT-11
 
 **Built** (live; local and live suites pass): GT-11 — Slate notes box: fixed 3 lines, scroll inside. Every note box,
