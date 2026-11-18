@@ -13,26 +13,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-10 — Save a board as a frozen archive file, load it back and edit
-(owner, 2026-11-16, chat)
-The owner makes a board every day and wants to keep past days. A PNG is useless: widgets must stay hoverable.
-- **Save board → file**: one action saves the current board (all pages, or the current one — propose which in the
-  report) to a file on disk (reuse the backup-folder mechanism if it fits). The file holds the full whiteboard plus a
-  **frozen copy of every widget's data at save time** (Slate's games for its date, Boardkit lists/cards, Linkkit maps,
-  web embeds as their link). The file must be self-sufficient: opening it later never pulls today's data.
-- **Load file → gauntlet**: opens as a normal, fully editable board (move, draw, type, add widgets). Frozen widgets
-  keep working (hover popups, clicks, List | Map | Both) using the frozen data, and show a small "frozen" badge.
-- **Edits stay in the file (owner chose A)**: editing a frozen widget (e.g. adding a card to an old list) changes only
-  that board's frozen copy; live Boardkit boards, Linkkit maps and calendarkit data are never touched.
-- **"Go live" per widget**: a button on a frozen widget reconnects it to the live data (replacing the frozen copy,
-  undoable in one step). Never automatic.
-- Not a change to GT-5: live Slates on normal boards still store only date and size; freezing happens only in the
-  saved file.
-Tests: save → load round-trip keeps every widget and its data; a frozen Slate shows the saved games after the live
-schedule is mocked to change; editing a frozen list leaves the live Boardkit board unchanged; "Go live" switches to
-live data and undo restores the frozen copy; badge shows on frozen widgets only; perf.e2e.ts passes without raising
-any limit.
-
 ### GT-11 — Slate notes box: fixed 3 lines, scroll inside
 (owner, 2026-11-17, chat)
 Today a game's notes box grows with its text, so cards in a Slate end up different heights. Make every notes box

@@ -7,6 +7,8 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-17
+- GT-10 — Save a board as a frozen archive file, load it back and edit
+  Main menu → "Save board to file" keeps the current page with its widgets' data as they are; "Open board file…" adds it as a new page whose boards, maps and Slates show that saved data (badge "Frozen d/m"), are edited there only, and "Go live" shows today's data again (Ctrl+Z undoes it).
 - GT-5 — Slate step 5: live scores and changes reach the widget
   A Slate shows a game's final score within minutes of the end; a newer schedule, and any new calendarkit Slate design, reach an open whiteboard without a reload (checked every 5 minutes and when you come back to the tab).
 - GT-3 — Today's date in one click
@@ -20,6 +22,8 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 - GT-9 — Slate hover popups close as soon as the cursor leaves (calendarkit CK-6 on the whiteboard)
   On the whiteboard a Slate popup closes within 100 ms of leaving, only one is ever open across Slates, and a pan, zoom or press elsewhere closes it at once.
 ### Internal
+- test: the archive hover check points at the record where it is now (a just-drawn widget may still be settling its size)
+- Pin calendarkit v1.77.0 (abedce8): calendarDataFromRaw for archived Slates
 - test: text-scaling e2e measures the text after its font has loaded (it was measured in the narrower fallback font, then dragged from a stale edge)
 - Pin calendarkit v1.76.0 (d8e9c79): the Slate kit and same-night finals; the pinned copy is now the fallback
 - ALL_BUILT.md, its script and daily workflow moved to backlogkit (BL-2 there), which now also writes ALL_BACKLOG.md

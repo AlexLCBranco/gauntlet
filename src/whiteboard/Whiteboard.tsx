@@ -14,6 +14,7 @@ import { BoardShapeUtil } from "../boards/BoardShape";
 import { WebEmbedDialog } from "../embed/WebEmbedDialog";
 import { WebEmbedShapeUtil, webEmbeds } from "../embed/WebEmbedShape";
 import { ImportNotice } from "../import/excalidraw/ImportNotice";
+import { BoardFileNotice } from "../archive/BoardFileNotice";
 import { ourExcalidrawImport } from "../import/excalidraw/importExcalidraw";
 import { picturesArriveInside } from "../pages/arrive";
 import { takeBackEmptyNewBoards } from "../boards/emptyNewBoards";
@@ -195,6 +196,7 @@ function InFront() {
       <WidgetPicker />
       <StampsTray />
       <ImportNotice />
+      <BoardFileNotice />
       <MapEditingBar />
       {/* Each linked item's link icon, and the link field (src/links/). */}
       <LinkBadges />

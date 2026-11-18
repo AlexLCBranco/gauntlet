@@ -1291,6 +1291,30 @@ Changes to the plan, newest last. Each says what and why.
     still stores only date and size.
   * Tests: e2e/slatelive.e2e.ts (4); unit manifest.test.ts; calendarkit
     tests/odds, refresh, slatekit; e2e slate.spec "ESPN".
+- 2026-11-17 — GT-10: a board kept as a file, frozen (owner).
+  * Owner's choices (asked 2026-11-17): the file is the CURRENT PAGE; it
+    opens as a NEW PAGE ("<name> (archive)"); frozen boards and maps are
+    listed in /boardkit and /linkkit as "<name> (archive d/m)" (no change
+    to either app); edits reach the file only by saving it again.
+  * The file (src/archive/format.ts, "gauntlet-archive" v1): the page's
+    tldraw content (pictures inlined), Boardkit boards (and linked maps),
+    Linkkit maps, and per Slate snapshot a bundle: schedule.json as served,
+    that night's odds answer (odds + ESPN finals), its notes. Embeds keep
+    their link. Each widget's shape meta `frozen` {kind, savedAt, liveId
+    | bundle}. Saved again, a frozen widget saves its frozen data.
+  * Opening: Boardkit/Linkkit copies via their own write functions; Slate
+    bundles in IndexedDB `gauntlet-archives` (backups carry it); a frozen
+    Slate draws with calendarkit's calendarDataFromRaw (v1.77.0) and the
+    kit's own notes/odds stores over its bundle. Badge "Frozen d/m" + "Go
+    live" (one undo step; meta.frozen set to null: tldraw merges meta).
+  * Not frozen: a board's background picture (Boardkit keeps it apart, by
+    id: still shown while that picture exists); a web embed (only a link).
+  * Speed (perf.e2e.ts Slate hover p95): tldraw's useToasts() in MainMenu
+    made the always-mounted menu draw again on pointer moves (+5-10 ms,
+    with or without Slates): results show in our own BoardFileNotice
+    (a window event). Live widgets render nothing of the archive (Frozen
+    renders null; the badge and archive code are lazy chunks).
+  * Tests: e2e/archive.e2e.ts (4); unit src/archive/format.test.ts.
 
 IDEAS
 

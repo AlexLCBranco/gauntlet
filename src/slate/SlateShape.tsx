@@ -3,6 +3,7 @@ import { ExportStyles } from "../whiteboard/exportStyles";
 import { kitReady } from "./kit";
 import { BaseBoxShapeUtil, HTMLContainer, T, createShapePropsMigrationIds, createShapePropsMigrationSequence, resizeBox, type RecordProps, type TLResizeInfo, type TLShape } from "tldraw";
 import { WidgetBoundary } from "../widgets/WidgetBoundary";
+import { Frozen } from "../archive/Frozen";
 
 export const SLATE_TYPE = "calendarkit-slate";
 
@@ -95,6 +96,7 @@ export class SlateShapeUtil extends BaseBoxShapeUtil<SlateShape> {
       <WidgetBoundary kind="slate">
         <HTMLContainer id={shape.id} style={{ pointerEvents: "none", overflow: "visible" }}>
           <ExportStyles shapeId={shape.id} />
+          <Frozen shape={shape} />
           <Suspense fallback={null}>
             <SlateWidget shape={shape} />
           </Suspense>

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useEditor, useValue, type Editor } from "tldraw";
 
 import { useInExport } from "../whiteboard/exportStyles";
@@ -10,6 +10,9 @@ import { SHEET } from "../pages/sheet";
 import { CONTROLS } from "../pages/edges";
 import type { CalendarData, DayOdds, SlateNotes, SlateOdds } from "./calendarkit";
 import { checkKit, getKit, KIT_CHECK_MS, subscribeKit, type Kit } from "./kit";
+import { bundleNotesStorage, getBundle } from "../archive/store";
+
+const NOTES_KEY = "ck:notes:v1";
 import { SLATE_TYPE, type SlateShape } from "./SlateShape";
 import { barPlace } from "./barPlace";
 import { InLayer, useSlateHover } from "./hover";
@@ -157,11 +160,65 @@ export default function SlateWidget({ shape }: { shape: SlateShape }) {
   return <SlateWithKit key={kit.kitKey} kit={kit} shape={shape} />;
 }
 
+// GT-10: a Slate opened from an archive file draws from its bundle (the
+// schedule snapshot, odds and notes saved with the file: archive/store.ts),
+// never from the live schedule; its notes are typed into the bundle.
+const frozenSources = new WeakMap<Kit, Map<string, Promise<{ data: CalendarData; s: Stores }>>>();
+function frozenSource(kit: Kit, key: string) {
+  let byKey = frozenSources.get(kit);
+  if (!byKey) frozenSources.set(kit, (byKey = new Map()));
+  let p = byKey.get(key);
+  if (!p) {
+    p = (async () => {
+      const bundle = await getBundle(key);
+      if (!bundle || typeof kit.calendarDataFromRaw !== "function") throw new Error("archive data unavailable");
+      const data = kit.calendarDataFromRaw(bundle.schedule);
+      const notes = kit.createNotesStore(bundleNotesStorage(key, bundle, NOTES_KEY), undefined);
+      const odds = kit.createOddsStore(async (date: string) => (bundle.odds[date] as DayOdds | undefined) ?? { date, games: {} });
+      return { data, s: { notes, odds, showing: new Map() } };
+    })();
+    p.catch(() => byKey.delete(key));
+    byKey.set(key, p);
+  }
+  return p;
+}
+const frozenKeyOf = (shape: SlateShape) => {
+  const f = (shape.meta as { frozen?: { kind?: string; bundle?: string } }).frozen;
+  return f?.kind === "slate" && typeof f.bundle === "string" ? f.bundle : undefined;
+};
+function useFrozenSource(kit: Kit, key: string | undefined): { d: Data; s?: Stores } {
+  const [got, setGot] = useState<{ key: string; d: Data; s?: Stores } | null>(null);
+  useEffect(() => {
+    if (!key) return;
+    let on = true;
+    frozenSource(kit, key).then(
+      (v) => on && setGot({ key, d: { status: "ready", data: v.data }, s: v.s }),
+      () => on && setGot({ key, d: { status: "failed" } }),
+    );
+    return () => {
+      on = false;
+    };
+  }, [kit, key]);
+  return got && got.key === key ? got : { d: { status: "loading" } };
+}
+
+/** A live Slate or a frozen one (GT-10): only a frozen one has the archive's hooks. */
 function SlateWithKit({ kit, shape }: { kit: Kit; shape: SlateShape }) {
-  const editor = useEditor();
+  const frozenKey = frozenKeyOf(shape);
+  return frozenKey ? <FrozenSlate key={frozenKey} kit={kit} shape={shape} bundle={frozenKey} /> : <LiveSlate kit={kit} shape={shape} />;
+}
+function LiveSlate({ kit, shape }: { kit: Kit; shape: SlateShape }) {
   const d = useSyncExternalStore(subscribeData, () => data);
   useEffect(() => load(kit), [kit]);
-  const s = storesOf(kit);
+  return <SlateView kit={kit} shape={shape} d={d} s={storesOf(kit)} frozen={false} />;
+}
+function FrozenSlate({ kit, shape, bundle }: { kit: Kit; shape: SlateShape; bundle: string }) {
+  const got = useFrozenSource(kit, bundle);
+  return <SlateView kit={kit} shape={shape} d={got.d} s={got.s ?? storesOf(kit)} frozen />;
+}
+
+function SlateView({ kit, shape, d, s, frozen: frozenKey }: { kit: Kit; shape: SlateShape; d: Data; s: Stores; frozen: boolean }) {
+  const editor = useEditor();
   const content = useRef<HTMLDivElement>(null);
   const { date, w, h, scale, hideNotes } = shape.props;
   // Drawn for an export: the shape is left as it is (exportStyles.tsx).
@@ -241,7 +298,7 @@ function SlateWithKit({ kit, shape }: { kit: Kit; shape: SlateShape }) {
       ) : state === "empty" ? (
         <Message date={date} text="No games" />
       ) : state === "failed" ? (
-        <Message date={date} text="Schedule unavailable" size={keep} retry={editor} kit={kit} />
+        frozenKey ? <Message date={date} text="Archive data unavailable" size={keep} /> : <Message date={date} text="Schedule unavailable" size={keep} retry={editor} kit={kit} />
       ) : (
         <div style={keep} />
       )}

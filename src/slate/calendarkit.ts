@@ -10,6 +10,9 @@
 // file, lazily: a page without a Slate widget never loads calendarkit.
 
 export {
+  calendarDataFromRaw,
+  createNotesStore,
+  createOddsStore,
   hoopsjunkieLink,
   loadCalendarData,
   liveOddsStore,
@@ -31,6 +34,7 @@ export {
   withFinals,
   type CalendarData,
   type DayOdds,
+  type NotesMap,
   type SlateOdds,
   type SlateNotes,
   type TeamLinks,

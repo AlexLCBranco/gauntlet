@@ -29,6 +29,7 @@ import { editingHalf, viewOf } from "./views";
 import { ViewSwitch } from "./ViewSwitch";
 import "./boards.css";
 import { WidgetBoundary } from "../widgets/WidgetBoundary";
+import { Frozen } from "../archive/Frozen";
 
 export const BOARD_TYPE = "boardkit-board";
 
@@ -346,6 +347,7 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   return (
     <HTMLContainer id={shape.id} style={{ pointerEvents: editing ? "all" : "none", overflow: "visible" }}>
       <ExportStyles shapeId={shape.id} />
+      <Frozen shape={shape} />
       <div
         ref={content}
         className="gb-scaled"

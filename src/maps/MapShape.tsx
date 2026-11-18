@@ -22,6 +22,7 @@ import { MapView, type MapShift } from "./MapView";
 import "./maps.css";
 import { ExportStyles, useInExport } from "../whiteboard/exportStyles";
 import { WidgetBoundary } from "../widgets/WidgetBoundary";
+import { Frozen } from "../archive/Frozen";
 
 export const MAP_TYPE = "linkkit-map";
 
@@ -182,6 +183,7 @@ function MapShapeComponent({ shape }: { shape: MapShape }) {
   return (
     <HTMLContainer id={shape.id} style={{ pointerEvents: editing ? "all" : "none", overflow: "visible" }}>
       <ExportStyles shapeId={shape.id} />
+      <Frozen shape={shape} />
       <div
         ref={content}
         className="gm-scaled"

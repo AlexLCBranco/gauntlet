@@ -1,0 +1,30 @@
+/* GT-10: a frozen widget's badge (FrozenBadge.tsx), above its top-right
+   corner, outside the widget's content. */
+.ga-frozen {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 8px;
+  border-radius: 6px;
+  background: #2b3550;
+  color: #cfe0ff;
+  font: 12px/1.4 Assistant, system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: all;
+  z-index: 1;
+}
+.ga-frozen button {
+  padding: 1px 8px;
+  border: 1px solid #4a5a80;
+  border-radius: 4px;
+  background: #1b1b1f;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ga-frozen button:hover:not(:disabled) { border-color: #a8a5ff; }
+.ga-frozen button:disabled { opacity: 0.5; cursor: default; }

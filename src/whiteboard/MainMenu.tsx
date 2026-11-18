@@ -21,6 +21,33 @@ import {
 import { openBoardPicker } from "../boards/AddBoard";
 import { openMapPicker } from "../maps/AddMap";
 import { IMPORT_EVENT, importExcalidrawFile } from "../import/excalidraw/importExcalidraw";
+// GT-10: the archive code loads only when one of its menu items is used
+const archive = () => import("../archive/archive");
+
+import { tellBoardFile } from "../archive/BoardFileNotice";
+
+/** GT-10: asks for a board file saved by "Save board to file" and opens it as a new page. */
+function pickBoardFile(editor: Editor) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json,application/json";
+  input.dataset.testid = "open-board-file-input";
+  input.style.display = "none";
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    input.remove();
+    if (!file) return;
+    void file
+      .text()
+      .then(async (text) => (await archive()).openBoardFile(editor, text))
+      .then(
+        () => tellBoardFile({ title: "Board opened:", text: `"${editor.getCurrentPage().name}". Its widgets are frozen copies; "Go live" on one shows the live data.` }),
+        (err: Error) => tellBoardFile({ title: "Couldn't open that file.", text: err.message, error: true }),
+      );
+  });
+  document.body.append(input);
+  input.click();
+}
 
 /** Asks for a .excalidraw file and imports it in the middle of the view
     (src/import/excalidraw/). */
@@ -104,6 +131,18 @@ export function MainMenu() {
             addDialog({ component: ClearPageDialog });
           }}
         />
+        <TldrawUiMenuItem
+          id="save-board-file"
+          label={"Save board to file" as never}
+          icon="download"
+          onSelect={() => {
+            archive().then((a) => a.saveBoardToFile(editor)).then(
+              (name) => tellBoardFile({ title: "Board saved:", text: `this page, with its widgets' data, is in ${name}.` }),
+              (err: Error) => tellBoardFile({ title: "Couldn't save the board.", text: err.message, error: true }),
+            );
+          }}
+        />
+        <TldrawUiMenuItem id="open-board-file" label={"Open board file…" as never} icon="file" onSelect={() => pickBoardFile(editor)} />
         <TldrawUiMenuItem
           id="import-excalidraw"
           label={"Import Excalidraw file…" as never}
