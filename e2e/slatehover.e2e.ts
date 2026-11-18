@@ -236,6 +236,57 @@ test("Slate hover: the same popups as /calendar (record tooltip, streak, season 
   expect(await selected(page)).toEqual([]);
 });
 
+/** A night past the season's first two weeks, its games and the days before
+    final, on which a team plays its 3rd game in 4 days (a fatigue chip with
+    a day strip): that night and the team's tricode. */
+async function stretchNight(request: APIRequestContext) {
+  const raw = (await (await request.get("/calendar/data/schedule.json")).json()) as {
+    leagueSchedule: { gameDates: { games: { gameId: string; gameDateEst: string; gameStatus: number; homeTeam: { teamTricode: string }; awayTeam: { teamTricode: string } }[] }[] };
+  };
+  const games = raw.leagueSchedule.gameDates.flatMap((d) => d.games).filter((g) => g.gameId.startsWith("002"));
+  const dates = [...new Set(games.map((g) => g.gameDateEst.slice(0, 10)))].sort();
+  const final = (date: string) => games.filter((g) => g.gameDateEst.startsWith(date)).every((g) => g.gameStatus === 3);
+  const plays = (tri: string, date: string) => games.some((g) => g.gameDateEst.startsWith(date) && (g.homeTeam.teamTricode === tri || g.awayTeam.teamTricode === tri));
+  for (const date of dates.slice(14).reverse()) {
+    if (![0, 1, 2, 3, 4, 5, 6].every((n) => final(addDays(date, -n)) || !dates.includes(addDays(date, -n)))) continue;
+    for (const g of games.filter((x) => x.gameDateEst.startsWith(date)))
+      for (const tri of [g.awayTeam.teamTricode, g.homeTeam.teamTricode])
+        if ([1, 2, 3].filter((n) => plays(tri, addDays(date, -n))).length >= 2) return { date, tri, gameId: g.gameId };
+  }
+  throw new Error("no night with a 3-in-4 stretch in the schedule");
+}
+
+test("GT-13: a fatigue chip's popup on the whiteboard is /calendar's, word for word: its lines and each day square's matchup (logo, vs / @)", async ({ page, context, request }) => {
+  test.setTimeout(120_000);
+  const n = await stretchNight(request);
+  const chip = (root: Locator) => root.locator(`[data-game-id="${n.gameId}"] [data-testid="fatigue"][data-tip-days]`).first();
+  const facts = (l: Locator) =>
+    l.evaluate((el) => ({
+      text: (el as HTMLElement).innerText,
+      squares: [...el.querySelectorAll("[data-testid=tip-day]")].map((d) => `${d.getAttribute("data-date")} ${d.getAttribute("data-kind")} ${(d.querySelector(".ck-tip-match") as HTMLElement | null)?.innerText ?? ""} ${d.querySelector(".ck-sq-logo img") ? "logo" : ""}`.trim()),
+    }));
+
+  const ck = await context.newPage();
+  await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), n.date);
+  await ck.goto("/calendar/?view=league&layout=slate");
+  await expect(ck.locator('[data-testid="slate"] .ck-slate-card').first()).toBeVisible();
+  await hover(ck, chip(ck.getByTestId("slate")));
+  await expect(ck.getByTestId("tip-days")).toBeVisible();
+  const want = await facts(ck.getByTestId("tooltip"));
+  await ck.close();
+  expect(want.squares.filter((s) => s.endsWith("logo")).length, "/calendar's squares have matchups").toBeGreaterThanOrEqual(3);
+
+  await openWhiteboard(page, n.date);
+  const s = await insertSlate(page);
+  await page.evaluate(() => (window as any).editor.selectNone());
+  await page.mouse.move(1900, 1060, { steps: 2 });
+  await hover(page, chip(widgetOf(page, s.id)));
+  await expect(page.getByTestId("tip-days")).toBeVisible();
+  const got = await facts(page.getByTestId("tooltip"));
+  expect(got.squares, `${n.tri} on ${n.date}: the same day squares`).toEqual(want.squares);
+  expect(got.text, `${n.tri} on ${n.date}: the same popup text`).toBe(want.text);
+});
+
 test("Slate links: ↗ opens the game's hoopsjunkie page, a team name its /calendar Team Calendar, in a new tab; a drag that starts on a team name moves the widget and opens nothing", async ({ page, context, request }) => {
   const { night } = await midSeasonNight(request);
   await context.route("https://hoopsjunkie.io/**", (r) => r.fulfill({ contentType: "text/html", body: "<title>hj</title>" }));

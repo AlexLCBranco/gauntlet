@@ -65,7 +65,11 @@ const CLICK_SLOP = 4;
 export function useSlateHover(kit: Kit, editor: Editor, data: CalendarData | undefined, date: string) {
   // calendarkit's hooks, from the kit shown (a newer kit draws the widget
   // again from scratch: SlateWidget's key)
-  const tooltip = kit.useTooltip();
+  // GT-13: the day strips' squares get their matchups ("vs NYK", the logo,
+  // its page) as in /calendar (calendarkit's CalendarView). A live kit older
+  // than calendarkit 1.78.1 has no lookup: plain squares, as before.
+  const stripGames = useMemo(() => (data && kit.stripGamesOf ? kit.stripGamesOf(data, kit.hoopsjunkieLink) : undefined), [kit, data]);
+  const tooltip = kit.useTooltip(stripGames);
   const streak = kit.useStreakPopup(data, { gameLink: kit.hoopsjunkieLink });
   const series = kit.useSeriesPopup(data, { gameLink: kit.hoopsjunkieLink });
   const all = [tooltip, streak, series];

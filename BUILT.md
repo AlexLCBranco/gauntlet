@@ -7,11 +7,16 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-18
+- GT-15 — Browser tab title follows the page
+  The tab title says which whiteboard page you are on ("Gauntlet · Page 2"), and changes as you switch, add or rename pages.
+- GT-13 — Slate popup on the whiteboard same as calendarkit's
+  A back-to-back or 3-in-4 popup on a whiteboard Slate shows each game day's opponent (logo, "vs NYK" / "@ DET", a link to the game), as /calendar does.
 - GT-12 — Hide the style menu while editing a widget under it
   The style panel (Opacity / Layers / Actions) hides while a board, map, web embed or Slate note under it is being edited, and comes back when the editing ends.
 - GT-11 — Slate notes box: fixed 3 lines, scroll inside
   Every note box on a Slate, on the whiteboard and in /calendar, is 3 lines tall, empty or not, so all cards are the same height; a longer note scrolls inside its box (the wheel scrolls an open note, not the whiteboard); copied pictures still show each note whole.
 ### Internal
+- Pin calendarkit v1.78.1 (e5b8800): its Slate kit exports the day strips' matchups (stripGamesOf)
 - test: the Slate request count answers the odds itself (a failed ESPN answer made calendarkit wait a minute, so the count followed ESPN)
 - Pin calendarkit v1.78.0 (b70f90c): the 3-line note box
 - test: the widget-vs-copy pixel check lays calendarkit's copy out with the widget's 3-line note boxes; the hover popup check draws its rectangle under the hovered card

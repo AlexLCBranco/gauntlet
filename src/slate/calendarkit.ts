@@ -23,6 +23,7 @@ export {
   slateCopyColumns,
   slateGames,
   slateImageSize,
+  stripGamesOf,
   SlateCopy,
   SLATE_COPY_GAP,
   teamCalendarUrl,

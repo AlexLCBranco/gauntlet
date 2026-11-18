@@ -3,6 +3,20 @@
 The report at the end of each batch of backlog work, newest first (CLAUDE.md, "Feature backlog, built list and
 ideas"), so the owner's Claude chat can read it without a paste.
 
+## 2026-11-18 — GT-13, GT-15
+
+**Built:** GT-13 — Slate popup on the whiteboard same as calendarkit's. Cause: the whiteboard's Slate called
+calendarkit's popup without the lookup /calendar gives it for the day squares' matchups, and calendarkit's Slate kit
+didn't offer that lookup. calendarkit v1.78.1 now exports it and the whiteboard passes it: each day square shows the
+opponent's logo and "vs NYK" / "@ DET" with a link to the game. The "last played" and "Record going in" lines
+were already the same: the two screenshots show different nights (Nov 18, 2nd of a back-to-back, with Nov 17 not yet
+final, has neither line in /calendar either). The e2e compares the popup word for word, squares included.
+GT-15 — Browser tab title follows the page: "Gauntlet · <page name>", changing with ‹ ›, a new page, a rename.
+
+**Blocked:** none. **Ideas added:** none.
+
+**To test by hand:** nothing (both are covered by e2e).
+
 ## 2026-11-18 — GT-12
 
 **Built** (live; local and live suites pass): GT-12 — Hide the style menu while editing a widget under it. The style
