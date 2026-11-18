@@ -884,6 +884,10 @@ test("Slate: when the schedule can't load the widget keeps its place and size, s
 test("Slate: one schedule request for every widget on every page; no timers or requests at rest; calendarkit isn't loaded on a page without a Slate", async ({ page, request }) => {
   const asked: string[] = [];
   page.on("request", (r) => asked.push(new URL(r.url()).pathname));
+  // The odds answered here (a night not over, no finals): live, ESPN's
+  // answer sometimes fails, and calendarkit then waits a minute before
+  // asking again, so the count would follow ESPN, not the widgets.
+  await page.route("**/calendar/api/odds**", (r) => r.fulfill({ json: { date: new URL(r.request().url()).searchParams.get("date"), games: {}, finals: {}, live: false } }));
   // Timers and frames asked for by the Slate's code (its lazy chunk).
   await page.addInitScript(() => {
     const w = window as unknown as { __slateTimers: string[] };

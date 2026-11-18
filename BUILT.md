@@ -12,6 +12,7 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 - GT-11 — Slate notes box: fixed 3 lines, scroll inside
   Every note box on a Slate, on the whiteboard and in /calendar, is 3 lines tall, empty or not, so all cards are the same height; a longer note scrolls inside its box (the wheel scrolls an open note, not the whiteboard); copied pictures still show each note whole.
 ### Internal
+- test: the Slate request count answers the odds itself (a failed ESPN answer made calendarkit wait a minute, so the count followed ESPN)
 - Pin calendarkit v1.78.0 (b70f90c): the 3-line note box
 - test: the widget-vs-copy pixel check lays calendarkit's copy out with the widget's 3-line note boxes; the hover popup check draws its rectangle under the hovered card
 
