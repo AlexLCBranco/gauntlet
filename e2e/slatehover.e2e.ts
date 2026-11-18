@@ -151,15 +151,23 @@ test("Slate hover: the same popups as /calendar (record tooltip, streak, season 
     const v = editor.getViewportPageBounds();
     const scale = 0.3;
     editor.updateShape({ id, type: "calendarkit-slate", x: v.x + 80, y: v.y + 120, props: { scale, w: (p.w / p.scale) * scale, h: (p.h / p.scale) * scale } });
-    const b = editor.getShapePageBounds(id);
-    editor.createShape({ type: "geo", x: v.x + 40, y: b.maxY + 2, props: { w: 900, h: 600, fill: "solid", color: "grey" } });
     editor.selectNone();
   }, { id: s.id });
   const w = widgetOf(page, s.id);
   await expect.poll(async () => (await box(w)).width).toBeLessThan(700);
   await page.evaluate(() => document.fonts.ready);
   const card = w.locator(`[data-game-id="${game}"]`);
-  const widgetBottom = (await box(w)).y + (await box(w)).height;
+  // The rectangle, drawn after the widget (so on top of it), from just under
+  // the hovered card (GT-11's 3-line notes made the cards taller: a popup may
+  // end inside the widget's box, never inside this card's).
+  const cb = await box(card);
+  await page.evaluate(({ x, y }) => {
+    const editor = (window as any).editor;
+    const p = editor.screenToPage({ x, y });
+    editor.createShape({ type: "geo", x: p.x - 40, y: p.y + 2, props: { w: 900, h: 600, fill: "solid", color: "grey" } });
+    editor.selectNone();
+  }, { x: cb.x, y: cb.y + cb.height });
+  const widgetBottom = cb.y + cb.height;
 
   for (const t of TARGETS) {
     await page.mouse.move(1900, 1060, { steps: 2 });
@@ -175,7 +183,7 @@ test("Slate hover: the same popups as /calendar (record tooltip, streak, season 
     expect(got.inWindow, `${t.name}: inside the window`).toBe(true);
     expect(got.corners, `${t.name}: nothing covers or cuts it`).toEqual([true, true, true, true]);
     // A popup reaches out of the widget's box, over the rectangle.
-    if (t.popup !== "tooltip") expect((await box(pop)).y + got.h, `${t.name}: past the widget's box`).toBeGreaterThan(widgetBottom + 20);
+    if (t.popup !== "tooltip") expect((await box(pop)).y + got.h, `${t.name}: past its card, over the rectangle`).toBeGreaterThan(widgetBottom + 20);
     expect(await selected(page), "hovering selects nothing").toEqual([]);
   }
 

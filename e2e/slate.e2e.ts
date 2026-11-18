@@ -194,6 +194,11 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
   );
   await page.clock.setFixedTime(noonOn(night.date));
   await page.goto("/calendar/?view=league&layout=slate");
+  // GT-11: the widget's note boxes are 3 lines (calendarkit's live copy,
+  // editNotes); a copied picture's keep the whole note (owner, 2026-11-18).
+  // The copy compared with is laid out with the widget's box: everything
+  // else must still be the same pixels.
+  await page.addStyleTag({ content: ".ck-slate-copy .ck-gnote-copy .ck-gnote-grow { height: var(--ck-note-box-h); overflow: hidden; }" });
   await showCalendarNotes(page);
   // Notes hidden: calendarkit's own "Hide all notes" (its hideNotes).
   if (hide) {
@@ -242,8 +247,9 @@ async function calendarkitCopy(browser: Browser, baseURL: string, night: Night, 
 /** A window height in which calendarkit's copy of 5 games comes out in 2
     columns, as the owner's copy-pastes (its column rule follows the
     window's shape; a taller window, fewer columns). Hidden notes: its
-    info-only cards (calendarkit's slateCardWidth). */
-const TWO_COLS_HEIGHT = { shown: 1400, hidden: 600 };
+    info-only cards (calendarkit's slateCardWidth). Shown: lower since
+    GT-11 (3-line note boxes make the cards taller). */
+const TWO_COLS_HEIGHT = { shown: 1100, hidden: 600 };
 
 for (const hide of [false, true])
 test(`Slate: at 100% the widget is calendarkit's copy of that night, notes ${hide ? "hidden" : "shown"} (GT-7: 2 columns): same cards${hide ? "" : " and note boxes"} at the same places and sizes, same text, near-identical pixels; nothing between them; no ⇄ (the ↗ of step 3 aside)`, async ({ browser, baseURL, request }) => {
@@ -1043,4 +1049,52 @@ test("Slate: notes stored before the pin move (ck:notes:v1) show in the widget a
   const after = JSON.parse((await ck.evaluate(() => localStorage.getItem("ck:notes:v1")))!);
   expect(after).toEqual({ ...before, [night.ids[3]!]: { pre: "new one", live: "", post: "", shown: "pre" } });
   await ck.close();
+});
+
+test("Slate notes (GT-11): every note box is 3 lines, empty, short or long: every card the same height; a long note scrolls inside its box, also while typed, and is saved whole", async ({ page, request }) => {
+  const night = nightWith(await nights(request), 5);
+  const [a, b] = night.ids;
+  const long = Array.from({ length: 12 }, (_, i) => `Line ${i + 1} about this game`).join("\n");
+  await page.addInitScript(
+    (n) => localStorage.setItem("ck:notes:v1", n),
+    JSON.stringify({ [a!]: { pre: "one line", live: "", post: "", shown: "pre" }, [b!]: { pre: long, live: "", post: "", shown: "pre" } }),
+  );
+  await openWhiteboard(page, noonOn(night.date));
+  const s = await insertSlate(page);
+  await page.evaluate(() => void (window as any).editor.selectNone());
+  const w = widgetOf(page, s.id);
+  await page.evaluate(() => document.fonts.ready);
+  // the same height for every card and every note box (short, long or empty)
+  const sizes = () =>
+    w.evaluate((root) => ({
+      cards: [...root.querySelectorAll(".ck-slate-card")].map((c) => Math.round(c.getBoundingClientRect().height * 10) / 10),
+      boxes: [...root.querySelectorAll(".ck-gnote-grow")].map((c) => Math.round(c.getBoundingClientRect().height * 10) / 10),
+    }));
+  const shown = await sizes();
+  expect(new Set(shown.cards).size, shown.cards.join(", ")).toBe(1);
+  expect(new Set(shown.boxes).size, shown.boxes.join(", ")).toBe(1);
+  // 3 lines tall (15 px × 1.35 and its padding), at the widget's scale
+  const scale = (await slates(page)).find((x) => x.id === s.id)!.scale;
+  expect(Math.abs(shown.boxes[0]! / scale - (3 * 15 * 1.35 + 16))).toBeLessThan(1.5);
+  // the long note: the rest inside its box
+  const nb = noteOf(page, s.id, b!);
+  const grow = nb.box.locator(".ck-gnote-grow");
+  expect(await grow.evaluate((e) => e.scrollHeight - e.clientHeight)).toBeGreaterThan(20);
+  await expect(nb.text).toHaveText(long);
+
+  // typed: the field scrolls inside the same box, the card keeps its height
+  await nb.box.click();
+  await expect(nb.field).toBeFocused();
+  const f = await box(nb.field);
+  await page.mouse.move(f.x + f.width / 2, f.y + f.height / 2);
+  await page.mouse.wheel(0, 200);
+  await expect.poll(() => nb.field.evaluate((t: HTMLTextAreaElement) => t.scrollTop)).toBeGreaterThan(20);
+  await page.keyboard.press("Control+End");
+  await page.keyboard.type("\nLast word");
+  const typing = await sizes();
+  expect(typing.cards).toEqual(shown.cards);
+  await page.keyboard.press("Escape");
+  await expect(nb.field).toHaveCount(0);
+  await expect.poll(async () => (await notesMap(page))[b!]?.pre).toBe(`${long}\nLast word`);
+  expect((await sizes()).cards).toEqual(shown.cards);
 });

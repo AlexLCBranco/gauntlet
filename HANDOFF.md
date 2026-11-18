@@ -6,11 +6,11 @@ Finished work goes to docs/HISTORY.md.
 
 ## Current state (2026-11-17)
 
-- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, 2, 3, 5, 10 DONE
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, 2, 3, 5, 10, 11 DONE
   (2026-11-17; GT-5 Slate kit at run time, src/slate/kit.ts; GT-10 archive
-  files, src/archive/; DECISIONS). Next in Ready: GT-11..GT-15. Phase 3 done; phase 4 = GT-6, held.
+  files, src/archive/; DECISIONS). Next in Ready: GT-12..GT-15. Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
-  calendarkit v1.77.0 (`abedce8`, the fallback since GT-5); on their main.
+  calendarkit v1.78.0 (the fallback since GT-5); on their main.
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
   list paste). Item 6's mod+c "clash" is a dev-only Boardkit check that

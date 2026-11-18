@@ -252,6 +252,20 @@ function SlateView({ kit, shape, d, s, frozen: frozenKey }: { kit: Kit; shape: S
     return () => ro.disconnect();
   }, [editor, shape.id, games, hideNotes, inExport]);
 
+  // GT-11: a note open for typing is 3 lines and scrolls inside; the wheel
+  // over it scrolls the note, not the whiteboard (tldraw pans and zooms on a
+  // wheel it is given: a native listener here, before the canvas's own).
+  useEffect(() => {
+    const el = content.current;
+    if (!el) return;
+    const wheel = (e: WheelEvent) => {
+      const t = e.target instanceof Element ? e.target.closest("textarea") : null;
+      if (t && document.activeElement === t && t.scrollHeight > t.clientHeight) e.stopPropagation();
+    };
+    el.addEventListener("wheel", wheel);
+    return () => el.removeEventListener("wheel", wheel);
+  }, []);
+
   // The cards, made again only when what they show changes: a popup
   // opening or closing (hover state, kept in this component) never redraws
   // them (perf.e2e.ts: hovering a page of Slates). The kit's SlateCopy puts

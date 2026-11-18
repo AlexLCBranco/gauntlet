@@ -3,6 +3,21 @@
 The report at the end of each batch of backlog work, newest first (CLAUDE.md, "Feature backlog, built list and
 ideas"), so the owner's Claude chat can read it without a paste.
 
+## 2026-11-18 — GT-11
+
+**Built** (live; local and live suites pass): GT-11 — Slate notes box: fixed 3 lines, scroll inside. Every note box,
+on the whiteboard and in /calendar, is 3 lines tall, empty or not, so every card is the same height; a longer note
+scrolls inside (on the whiteboard the wheel now scrolls an open note instead of panning). calendarkit v1.78.0.
+
+**Owner's choice:** copied pictures keep each note whole (cards in a picture may still differ in height).
+
+**Blocked:** none. **Ideas added:** none.
+
+**Notes:** calendarkit's two-tab notes test (notes.spec.ts:173) fails now and then under load and passes alone
+(6/6): flaky, not from GT-11.
+
+**To test by hand** (feel only): reading and scrolling a long note in a 3-line box.
+
 ## 2026-11-18 — GT-1, GT-2, GT-3, GT-5, GT-10
 
 **Built** (all live; local and live suites pass):

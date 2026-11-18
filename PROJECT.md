@@ -1315,6 +1315,18 @@ Changes to the plan, newest last. Each says what and why.
     (a window event). Live widgets render nothing of the archive (Frozen
     renders null; the badge and archive code are lazy chunks).
   * Tests: e2e/archive.e2e.ts (4); unit src/archive/format.test.ts.
+- 2026-11-18 — GT-11: Slate notes box fixed at 3 lines (owner).
+  * Owner's choice (asked 2026-11-18): copied pictures keep each note whole;
+    only the live boxes (/calendar's Slate; the whiteboard's widget, shown
+    and open) are 3 lines with their own scroll bar.
+  * calendarkit v1.78.0: notes.css height = 3 lines (--ck-note-box-h) for
+    the on-screen box and for the copy layout when a host lets notes be
+    typed (data-editable, SlateCopy editNotes); NOTE_LINES = 3.
+  * Ours: SlateWidget keeps the wheel over an open note's field (a native
+    listener stops it reaching tldraw), so a long note scrolls there.
+  * Tests: e2e/slate.e2e.ts "GT-11"; the copy pixel check lays the copy out
+    with 3-line boxes (TWO_COLS_HEIGHT shown 1100); calendarkit
+    e2e/notes-cap.spec.ts.
 
 IDEAS
 

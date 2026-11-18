@@ -13,15 +13,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-11 — Slate notes box: fixed 3 lines, scroll inside
-(owner, 2026-11-17, chat)
-Today a game's notes box grows with its text, so cards in a Slate end up different heights. Make every notes box
-exactly 3 lines tall, empty or not. Longer notes scroll inside the box (its own scroll bar), so every card in the
-Slate stays the same size. Applies to the Slate in the whiteboard and in calendarkit (/calendar): the notes field is
-calendarkit's own component (SlateCopy editNotes, `ck:notes:v1`), so change it there and have both use it. Typing,
-clicking away to save and hover popups still work. Tests in both repos: a short note and a long note give the same
-card height; a long note scrolls inside the box and is saved in full.
-
 ### GT-12 — Hide the style menu while editing a widget under it
 **What:** the side menu with Opacity / Layers / Actions (image `docs/backlog-img/GT-12-menu.png`) hides while a widget in that area is being edited, and comes back when editing ends.
 **Tests:** e2e: start editing a widget placed under the menu → menu hidden; stop → back.

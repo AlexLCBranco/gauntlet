@@ -6,6 +6,13 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
+## 2026-11-18
+- GT-11 — Slate notes box: fixed 3 lines, scroll inside
+  Every note box on a Slate, on the whiteboard and in /calendar, is 3 lines tall, empty or not, so all cards are the same height; a longer note scrolls inside its box (the wheel scrolls an open note, not the whiteboard); copied pictures still show each note whole.
+### Internal
+- Pin calendarkit v1.78.0 (b70f90c): the 3-line note box
+- test: the widget-vs-copy pixel check lays calendarkit's copy out with the widget's 3-line note boxes; the hover popup check draws its rectangle under the hovered card
+
 ## 2026-11-17
 - GT-10 — Save a board as a frozen archive file, load it back and edit
   Main menu → "Save board to file" keeps the current page with its widgets' data as they are; "Open board file…" adds it as a new page whose boards, maps and Slates show that saved data (badge "Frozen d/m"), are edited there only, and "Go live" shows today's data again (Ctrl+Z undoes it).
