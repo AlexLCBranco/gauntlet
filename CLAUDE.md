@@ -77,3 +77,18 @@ ID repeats, or package.json's version has no `BUILT.md` entry. Fix the lists, ne
 
 `ALL_BUILT.md` (every repo's built list) and `ALL_BACKLOG.md` (every repo's planned items) live in backlogkit
 (https://github.com/AlexLCBranco/backlogkit), built daily by its `all-built` workflow from every repo on GitHub.
+
+## backlogkit formats (owner's rule, 2026-11-19; same text in every repo)
+
+backlogkit (the owner's site that shows every repo's lists) reads these lines; keep them exact.
+- Specs: every item in `FEATURE_BACKLOG.md` has, as the first line under its `### ID — title` heading,
+  `**In short:** <one plain sentence: what the owner will see change, no code words>`. If nothing visible changes,
+  say so ("Nothing changes on screen: ...").
+- Blocked: a `Blocked:` line means the item waits on the owner. "build the backlog", "next batch" and "next" skip
+  blocked items (they stay where they are) until the owner answers. An answer replaces the `Blocked:` line with
+  `**Answered (YYYY-MM-DD):** <the question> → <the answer>`; from then on the item is built normally.
+- Ideas: every idea in `IDEAS.md` ends with one reason tag saying why it isn't planned: `[why: waiting]` waits on
+  something (a data source, a key or account, another feature, an outside event; the idea's text says which),
+  `[why: decision]` needs the owner to decide something, `[why: too-big]` needs splitting first, `[why: later]` not
+  important yet, `[why: never]` probably never. Tag only from what the owner said; if he gave no reason, leave the tag
+  off (backlogkit shows it under "No reason yet"). The owner can also set it from backlogkit.

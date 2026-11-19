@@ -14,12 +14,14 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 ## Ready
 
 ### GT-14 — Football Slate and combined Slate widgets
+**In short:** Two new Slate widgets on the whiteboard: football only, and football plus NBA together in time order.
 **What:** next to the NBA Slate widget, a Football Slate widget (footykit's Slate) and a Combined Slate: one Slate with both sports' games sorted by start time, a small sport mark on each card. Each can be placed on its own (NBA only, Football only, Combined). Needs footykit FK-35 first (same card shape); until then this item is `Blocked:` on it. Header: "SLATE · 18-11 · NBA + Football". Live scores and updates as GT-5.
 **Tests:** e2e: each of the three widget kinds renders; combined is in time order with both sports.
 
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-6 — Phase 4: things connect (cards go anywhere)
+**In short:** Cards become real whiteboard objects you can grab and move anywhere, in or out of lists.
 Start only when the owner says "go" for GT-6; then move it to Ready. Plan it in steps first (stop after the plan),
 then build one step at a time, stopping to report after each.
 Owner's decisions (2026-10-20, 2026-11-12):
