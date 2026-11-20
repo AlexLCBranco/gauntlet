@@ -92,3 +92,10 @@ backlogkit (the owner's site that shows every repo's lists) reads these lines; k
   `[why: decision]` needs the owner to decide something, `[why: too-big]` needs splitting first, `[why: later]` not
   important yet, `[why: never]` probably never. Tag only from what the owner said; if he gave no reason, leave the tag
   off (backlogkit shows it under "No reason yet"). The owner can also set it from backlogkit.
+
+## A 5-year-old must understand it (owner's rule, 2026-11-20; same text in every repo)
+
+Everything the app shows must be easy for a 5-year-old to understand in one read: rules, labels, statuses, buttons,
+help, empty states and errors. Short sentences, everyday words, no jargon or abbreviations left unexplained, one idea
+per line, and a worked example with real data where it helps. If the owner has to look something up outside the app,
+or ask what something on screen means, the feature is not done. Applies to every feature.
