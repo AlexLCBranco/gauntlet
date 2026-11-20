@@ -18,6 +18,12 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 **What:** next to the NBA Slate widget, a Football Slate widget (footykit's Slate) and a Combined Slate: one Slate with both sports' games sorted by start time, a small sport mark on each card. Each can be placed on its own (NBA only, Football only, Combined). Needs footykit FK-35 first (same card shape); until then this item is `Blocked:` on it. Header: "SLATE · 18-11 · NBA + Football". Live scores and updates as GT-5.
 **Tests:** e2e: each of the three widget kinds renders; combined is in time order with both sports.
 
+### GT-16 — Countdown button in the Slate widgets
+**In short:** The Slate widgets on the whiteboard get the same "⏱ Countdown" button as calendarkit and footykit, opening halftime-timer counting down to the first game.
+**What:** after calendarkit CK-22 (and footykit FK-61 for the football / combined Slate, GT-14) ship, bump the pinned packages and make sure the button works inside the widgets (opens halftime-timer in a new tab, doesn't interfere with selecting or dragging the widget). Combined Slate: counts to the first game of either sport.
+Blocked: waits for calendarkit CK-22 (and footykit FK-61 for the football and combined Slates); the owner unblocks it once they ship.
+**Tests:** e2e: the button is in the NBA Slate widget and its link points to halftime-timer with the right time.
+
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-6 — Phase 4: things connect (cards go anywhere)
