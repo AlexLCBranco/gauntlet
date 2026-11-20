@@ -24,6 +24,12 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 Blocked: waits for calendarkit CK-22 (and footykit FK-61 for the football and combined Slates); the owner unblocks it once they ship.
 **Tests:** e2e: the button is in the NBA Slate widget and its link points to halftime-timer with the right time.
 
+### GT-17 — Main menu button matches the toolbar
+**In short:** The ☰ button at the top left gets the same height and floating look as the main toolbar and sits on the same line as it.
+**What:**
+- Today the ☰ button is smaller and sits lower than the toolbar. Make it the same height, corner radius, background and shadow as the toolbar, vertically centred on the toolbar's centre line, with the same gap from the top edge. It stays at the far left.
+**Tests:** e2e: the button's height equals the toolbar's and their vertical centres match within 1 px.
+
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-6 — Phase 4: things connect (cards go anywhere)
