@@ -25,11 +25,9 @@ Blocked: (2026-11-21) FK-35 shipped, but the "same card shape" it promised no lo
 Blocked: waits for calendarkit CK-22 (and footykit FK-61 for the football and combined Slates); the owner unblocks it once they ship.
 **Tests:** e2e: the button is in the NBA Slate widget and its link points to halftime-timer with the right time.
 
-## Held (needs the owner's "go"; never built from "build the backlog")
-
 ### GT-6 — Phase 4: things connect (cards go anywhere)
 **In short:** Cards become real whiteboard objects you can grab and move anywhere, in or out of lists.
-Start only when the owner says "go" for GT-6; then move it to Ready. Plan it in steps first (stop after the plan),
+Plan it in steps first (stop after the plan),
 then build one step at a time, stopping to report after each.
 Owner's decisions (2026-10-20, 2026-11-12):
 - Cards become real whiteboard objects: directly clickable, draggable, selectable by box and lasso, no double-click
@@ -43,5 +41,7 @@ Owner's decisions (2026-10-20, 2026-11-12):
 - Arrows attach to a single card inside a board and a single box inside a map, and stay attached when things move.
 - Things attached to a card follow it when it moves; when a card is deleted, arrows and things attached to it go with it.
 - Every card change on the whiteboard saves to Boardkit too (same live board in /boardkit).
-Open question for the owner before step 1: the original plan said "notes stick to cards", but sticky notes were removed
-from the toolbar (2026-10-22). What gets attached to a card: text, rectangles, anything? Ask; do not pick a default.
+**Answered (2026-11-21):** What gets attached to a card, now that sticky notes are gone: text, rectangles, anything? → Anything can be attached to a card.
+Owner said "go" 2026-11-21. Step plan: docs/GT-6-PLAN.md (waits for the owner's OK before step 1).
+
+## Held (needs the owner's "go"; never built from "build the backlog")
