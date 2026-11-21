@@ -30,6 +30,7 @@ Should a double-click type in its title there too, as on a list? Until then: dro
 **Boardkit:** v0.0.110 (a1e5f6b) pushed and pinned. Nothing changes on screen in Boardkit itself.
 
 **Tests:** unit 173 ✓ (Boardkit 242 ✓), e2e 366 ✓ (6 new in e2e/freecards.e2e.ts), Linkkit e2e 30 ✓.
+Live (3be7540, Boardkit v0.0.110): 358 ✓, 8 skipped (the ones that only run on localhost), 0 ✗. The 6 new tests pass live.
 One older test changed: it checked that a drop off every list did nothing, which is no longer true.
 
 **Blocked:** nothing. **Ideas added:** none.
