@@ -12,6 +12,8 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 - GT-17 — Main menu button matches the toolbar
   The ☰ button at the top left is now a floating box like the toolbar: same height, corners, background and shadow, on the same line, the same distance from the top edge.
 ### Internal
+- test: the Slate popup check (GT-13) points at its chip again until the right popup shows (it failed now and then on a busy live run: the cards were still settling when it measured)
+- Pin Boardkit v0.0.109 (80d0e18): it moves cards for the whiteboard
 - Phase 4 (cards go anywhere) cut to four steps; arrows on cards, things stuck to cards and arrows on map boxes are separate Held items; old phases 5-6 moved to IDEAS.md; GAUNTLET-PLAN.md moved to docs/ (history)
 - Phase 4 (cards go anywhere) moved to Ready (owner's "go" and answer); its step plan is docs/GT-6-PLAN.md, no code yet
 - Pin calendarkit v1.92.1 (7d6ca62): the fallback copy is the version /calendar serves again (was v1.78.1)
