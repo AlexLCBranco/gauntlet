@@ -1,7 +1,8 @@
 # GT-6 — step plan (cards go anywhere)
 
 Written 2026-11-21 after the owner's "go". The spec and the owner's decisions are in FEATURE_BACKLOG.md (GT-6);
-this file is only the order of the work. Status: WAITING for the owner's OK and the answers below. No code yet.
+this file is only the order of the work. Status: the owner OK'd the steps (2026-11-21) but is talking the plan through in Claude chat first: ON HOLD, build
+nothing until he says so. The four questions below are still open (question 1 blocks step 1). No code yet.
 
 Rules for every step: one step at a time, stop and report after each. Each step has its own e2e tests, goes live
 on its own, and takes nothing away that works today. Tick steps off here; a fresh session reads this file first.

@@ -42,6 +42,6 @@ Owner's decisions (2026-10-20, 2026-11-12):
 - Things attached to a card follow it when it moves; when a card is deleted, arrows and things attached to it go with it.
 - Every card change on the whiteboard saves to Boardkit too (same live board in /boardkit).
 **Answered (2026-11-21):** What gets attached to a card, now that sticky notes are gone: text, rectangles, anything? → Anything can be attached to a card.
-Owner said "go" 2026-11-21. Step plan: docs/GT-6-PLAN.md (waits for the owner's OK before step 1).
+Owner said "go" 2026-11-21. Step plan: docs/GT-6-PLAN.md (steps OK'd 2026-11-21; on hold until the owner says to start step 1).
 
 ## Held (needs the owner's "go"; never built from "build the backlog")
