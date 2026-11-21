@@ -49,6 +49,7 @@ Finished work goes to docs/HISTORY.md.
 
 - Linkkit's tree layout lets long card names overlap (not changed).
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom a wheel tick off).
+- LIVE only, 2026-11-21: slatehover.e2e.ts:259 fails on /calendar's own popup (no tip-days); cause not looked into (REPORTS).
 - Toolbar buttons keep the keyboard focus after a click (tldraw then
   ignores keys: no nudge/Delete until the page is clicked). Fixed for the
   Slate (DECISIONS Part 4) and stamps-tray placing (GT-3); Board, Map still have it.

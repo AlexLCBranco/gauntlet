@@ -28,6 +28,10 @@ which would have made some Ctrl+Z presses do nothing. Has a test that fails on t
 **Boardkit:** v0.0.109 (80d0e18) pushed and pinned. Nothing changes on screen in Boardkit itself.
 
 **Tests:** unit 172 ✓ (Boardkit 236 ✓), e2e 360 ✓ (9 new in e2e/cards.e2e.ts), Linkkit e2e 30 ✓.
+Live (7c79ae4, Boardkit v0.0.109): 351 ✓, 8 skipped, 1 ✗. The 9 card tests pass live. The failure is
+slatehover.e2e.ts:259 (GT-13): on /calendar itself, hovering today's first fatigue chip showed no day squares, so the
+test had nothing to compare the whiteboard's popup with. Same calendarkit version as the pin (v1.92.1); /calendar got
+a new schedule snapshot today. It passed locally minutes earlier. Not caused by this step; cause not yet looked into.
 10 older tests were updated: they assumed a card could only be touched after entering its board.
 
 **Blocked:** nothing. **Ideas added:** none.
