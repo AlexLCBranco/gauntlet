@@ -83,6 +83,13 @@ screenshots. That's the problem this solves.
    f. Agent: paste a screenshot and it becomes real cards on the page.
 
 6. Build order (each phase must be usable on a real page before the next)
+   STATUS 2026-11-21: this list is history. Phases 1, 2, 2.5, 3 and the
+   speed session are done. The plan is FEATURE_BACKLOG.md: phase 4 is
+   GT-6 (cards go anywhere) plus GT-18, GT-19, GT-20 (Held); "notes stick
+   to cards" became "anything can be attached to a card" (the Note tool
+   was removed in phase 2.5). Phase 5 is IDEAS.md I-2 and I-3. Phase 6:
+   live data started early as the Slate widgets; the screenshot agent is
+   I-4. "A card dragged into a map becomes a box" (section 4) is I-5.
    Phase 1 — The floor: whiteboard, drawing tools, box select + lasso,
              zoom and pan, fixed pages, next/previous arrows.
              Test: I can rebuild my 20/10 betting page by hand in it.
@@ -155,7 +162,7 @@ Changes to the plan, newest last. Each says what and why.
   ("stones"): it holds the owner's current layout and Linkkit's e2e tests
   use it. The whiteboard takes over / when it can replace it (to decide
   with the owner, at the latest when boards move over in phase 2). The
-  older canvas is documented in GAUNTLET-PLAN.md and in git history
+  older canvas is documented in docs/GAUNTLET-PLAN.md and in git history
   (PROJECT.md before 2026-10-18).
 - 2026-10-18 — The live site needs the owner's free tldraw hobby license
   key. Without one, tldraw hides the editor on the live site after 5 s (it

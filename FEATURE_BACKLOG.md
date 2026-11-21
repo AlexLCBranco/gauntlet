@@ -25,23 +25,45 @@ Blocked: (2026-11-21) FK-35 shipped, but the "same card shape" it promised no lo
 Blocked: waits for calendarkit CK-22 (and footykit FK-61 for the football and combined Slates); the owner unblocks it once they ship.
 **Tests:** e2e: the button is in the NBA Slate widget and its link points to halftime-timer with the right time.
 
-### GT-6 — Phase 4: things connect (cards go anywhere)
+### GT-6 — Cards go anywhere
 **In short:** Cards become real whiteboard objects you can grab and move anywhere, in or out of lists.
-Plan it in steps first (stop after the plan),
-then build one step at a time, stopping to report after each.
+Build one step at a time (docs/GT-6-PLAN.md), stopping to report after each.
 Owner's decisions (2026-10-20, 2026-11-12):
 - Cards become real whiteboard objects: directly clickable, draggable, selectable by box and lasso, no double-click
   to enter a board first. No interim "two clicks" mode.
 - A board works like a frame: a named container, moved by its title AND by the gaps between its lists, or by
   selecting it. Dragging a board's corner still scales everything together.
 - A card dropped on the empty page leaves its list and lives only on the whiteboard until dropped into a list again.
+  If its board has a linked map, the card leaves the map too.
 - A copied card is a new, independent card.
 - While dragging a card, a line shows where it will land and the target list is highlighted.
 - Ctrl+Z on the whiteboard undoes a card move that also changed Boardkit data, in one step.
-- Arrows attach to a single card inside a board and a single box inside a map, and stay attached when things move.
-- Things attached to a card follow it when it moves; when a card is deleted, arrows and things attached to it go with it.
 - Every card change on the whiteboard saves to Boardkit too (same live board in /boardkit).
-**Answered (2026-11-21):** What gets attached to a card, now that sticky notes are gone: text, rectangles, anything? → Anything can be attached to a card.
-Owner said "go" 2026-11-21. Step plan: docs/GT-6-PLAN.md (steps OK'd 2026-11-21; on hold until the owner says to start step 1).
+Scope cut 2026-11-21 (owner, chat): GT-6 is only the four steps in docs/GT-6-PLAN.md (pick and move cards, cards
+leave their list, copy and delete, speed and clean-up). Arrows on a card, things stuck to a card and arrows on a
+map box are now GT-18, GT-19, GT-20 under Held: decided after the owner has used GT-6 for real.
+Owner said "go" 2026-11-21, steps OK'd. On hold until the owner answers the two questions in docs/GT-6-PLAN.md
+and says to start step 1.
 
 ## Held (needs the owner's "go"; never built from "build the backlog")
+
+### GT-18 — Arrows attach to one card
+**In short:** An arrow's end can snap to a single card and stays on it wherever the card goes.
+**What:** after GT-6. An arrow's end snaps to a single card (in a list or free on the page) and stays attached when
+the card, its list or its board moves, and when the card changes list. Deleting the card deletes its arrows.
+**Tests:** e2e: attach, then move card / list / board / to another list / out to the page; delete card.
+
+### GT-19 — Things stick to a card
+**In short:** Text, shapes, pictures or drawings can be attached to a card and then follow it everywhere.
+**What:** after GT-6. Anything can be attached to a card (owner, 2026-11-21); it follows the card through list
+moves, board moves and scaling, and is deleted with it.
+Blocked: the owner hasn't decided how a thing gets attached: by dropping it on top of the card (and dragging it off
+lets go), or some other way?
+**Tests:** e2e: attach each kind; follows through list moves, board moves, scaling; delete; detach; undo.
+
+### GT-20 — Arrows attach to one box of a map
+**In short:** An arrow's end can snap to a single box inside a Linkkit map and stays on it.
+**What:** after GT-18. Same as GT-18, for a single box inside a map on the whiteboard. Needs a Linkkit release.
+Blocked: the owner hasn't decided whether only arrows attach to map boxes, or boxes also become objects picked
+with one click, like cards.
+**Tests:** e2e: attach; edit the map so the box moves; move/scale the map; delete the box.
