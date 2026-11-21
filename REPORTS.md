@@ -31,7 +31,12 @@ which would have made some Ctrl+Z presses do nothing. Has a test that fails on t
 Live (7c79ae4, Boardkit v0.0.109): 351 ✓, 8 skipped, 1 ✗. The 9 card tests pass live. The failure is
 slatehover.e2e.ts:259 (GT-13): on /calendar itself, hovering today's first fatigue chip showed no day squares, so the
 test had nothing to compare the whiteboard's popup with. Same calendarkit version as the pin (v1.92.1); /calendar got
-a new schedule snapshot today. It passed locally minutes earlier. Not caused by this step; cause not yet looked into.
+a new schedule snapshot today. It passed locally minutes earlier. Not caused by this step.
+Looked into the same day (owner: "Yes, look into it"): a race in the test, no app bug. The test measured where the
+chip was as soon as the first card showed; on a busy machine the Slate's cards still moved a little after that, so
+the pointer landed on the "2d" rest chip one row up and that chip's popup opened (seen in the failure screenshot).
+Alone it passed 3 of 3; four at once against the live site it failed 2 of 12. The test now points at the chip again
+until the right popup shows: 24 of 24 under the same load.
 10 older tests were updated: they assumed a card could only be touched after entering its board.
 
 **Blocked:** nothing. **Ideas added:** none.

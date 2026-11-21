@@ -266,12 +266,23 @@ test("GT-13: a fatigue chip's popup on the whiteboard is /calendar's, word for w
       squares: [...el.querySelectorAll("[data-testid=tip-day]")].map((d) => `${d.getAttribute("data-date")} ${d.getAttribute("data-kind")} ${(d.querySelector(".ck-tip-match") as HTMLElement | null)?.innerText ?? ""} ${d.querySelector(".ck-sq-logo img") ? "logo" : ""}`.trim()),
     }));
 
+  // Points at the chip until its popup (the one with day squares) shows.
+  // The Slate's cards can still move a little after the first one shows
+  // (logos and columns settling on a busy machine): a chip measured too
+  // early is no longer under the pointer, and a neighbour's popup opens
+  // instead (live run 2026-11-21: the "2d" rest chip one row up).
+  const hoverChip = (p: Page, root: Locator) =>
+    expect(async () => {
+      await p.mouse.move(2, 2);
+      await hover(p, chip(root));
+      await expect(p.getByTestId("tip-days")).toBeVisible({ timeout: 1500 });
+    }).toPass({ timeout: 20_000 });
+
   const ck = await context.newPage();
   await ck.addInitScript((d) => ((window as unknown as { __ckOpenDate?: string }).__ckOpenDate = d), n.date);
   await ck.goto("/calendar/?view=league&layout=slate");
   await expect(ck.locator('[data-testid="slate"] .ck-slate-card').first()).toBeVisible();
-  await hover(ck, chip(ck.getByTestId("slate")));
-  await expect(ck.getByTestId("tip-days")).toBeVisible();
+  await hoverChip(ck, ck.getByTestId("slate"));
   const want = await facts(ck.getByTestId("tooltip"));
   await ck.close();
   expect(want.squares.filter((s) => s.endsWith("logo")).length, "/calendar's squares have matchups").toBeGreaterThanOrEqual(3);
@@ -280,8 +291,7 @@ test("GT-13: a fatigue chip's popup on the whiteboard is /calendar's, word for w
   const s = await insertSlate(page);
   await page.evaluate(() => (window as any).editor.selectNone());
   await page.mouse.move(1900, 1060, { steps: 2 });
-  await hover(page, chip(widgetOf(page, s.id)));
-  await expect(page.getByTestId("tip-days")).toBeVisible();
+  await hoverChip(page, widgetOf(page, s.id));
   const got = await facts(page.getByTestId("tooltip"));
   expect(got.squares, `${n.tri} on ${n.date}: the same day squares`).toEqual(want.squares);
   expect(got.text, `${n.tri} on ${n.date}: the same popup text`).toBe(want.text);
