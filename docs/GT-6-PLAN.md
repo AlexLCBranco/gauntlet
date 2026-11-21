@@ -5,7 +5,7 @@ this file is only the order of the work. Status: the owner OK'd the steps (2026-
 Claude chat the same day: GT-6 is steps 1-4 below. The old steps 4-6 (arrows on a card, things stuck to a card,
 arrows on a map box) are GT-18, GT-19, GT-20 under Held in the backlog, not part of this plan. The owner answered
 both questions and said to build (2026-11-21). STEP 1 DONE 2026-11-21 (what was built: PROJECT.md DECISIONS, same
-date). NEXT: step 2, when the owner says so.
+date). STEP 2 DONE 2026-11-21 (owner: "Start gt-6 step 2"). NEXT: step 3, when the owner says so.
 
 Rules for every step: one step at a time, stop and report after each. Each step has its own e2e tests, goes live
 on its own, and takes nothing away that works today. Tick steps off here; a fresh session reads this file first.
@@ -43,7 +43,7 @@ on its own, and takes nothing away that works today. Tick steps off here; a fres
   now. Each move saves to Boardkit and is one Ctrl+Z. The old "enter the board" mode is removed for lists.
   Tests: click/box/lasso pick one card; drag within and across lists and across two boards; the line and the
   highlight; /boardkit shows the same order; one undo, one redo; board moved by title and by a gap.
-- [ ] 2. **Cards leave their list.** A card dropped on the empty page becomes a free card: it is gone from its
+- [x] 2. **Cards leave their list.** A card dropped on the empty page becomes a free card: it is gone from its
   list (and from /boardkit) and stays on the page. Dropped on a list again (any board), it is that list's card
   again. One Ctrl+Z either way. Free cards are saved, backed up, archived and exported with the page.
   Tests: out and back in; undo/redo each; reload keeps it; backup + restore keeps it; archive file keeps it;
@@ -60,6 +60,17 @@ on its own, and takes nothing away that works today. Tick steps off here; a fres
 1. (step 1) Editing a card's text: **double-click the card** to type in its title.
 2. (step 2) A card dragged out of a board scaled to 50% **stays small** (the size it had on that board); dropped
    into a board at another scale, it takes that board's size.
+
+## Step 2 as built: what differs from the step's text
+
+- A card on the page shows what is its own (text, colour, highlight, check mark, link). What its list gave it is
+  gone: its number and the list's colour. Without the number its text has a little more room.
+- A card on the page can't be typed in yet (a double-click does nothing): the step's text doesn't say, the owner
+  decides. To change its text, drop it on a list first.
+- A card on the page is the page's own item: it moves, nudges and lines up like a picture. Delete, Ctrl+D and copy
+  on it are tldraw's own for now (step 3 says what they should do). It has no handles: it keeps its size.
+- Let go anywhere over a board, a card goes to the nearest list of that board (as in step 1), never "on top of" it.
+- Several cards dropped on the page together land one under the other, in the order they were drawn.
 
 ## Step 1 as built: what differs from the step's text
 

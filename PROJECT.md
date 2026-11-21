@@ -1374,6 +1374,41 @@ Changes to the plan, newest last. Each says what and why.
     added a phantom step to the page's undo.
   * Tests: e2e/cards.e2e.ts (9), src/cards/cards.test.ts; Boardkit:
     app/whiteboard/cards.test.ts, domain/ordering.test.ts (placeCards).
+- 2026-11-21 — GT-6 step 2: cards leave their list (owner: "Start gt-6
+  step 2"; docs/GT-6-PLAN.md, "Step 2 as built").
+  * A card off every list is a shape of its own type, `boardkit-free-card`
+    (src/cards/FreeCardShape.tsx), a child of the PAGE, with the card's
+    whole Boardkit record in `props.card` (so page saves, backups, archive
+    files and exports carry it) and `props.scale` (the size it had on the
+    board it left; owner 2026-11-21). Not the list card's type: a list
+    card only mirrors what its board draws and is never tldraw's to move,
+    delete or copy (sync.ts guards); a free card is the page's own item,
+    moved by tldraw like a picture. It draws itself with Boardkit's
+    `WhiteboardCard` (the same CardItem, one-card read-only store, inert)
+    and keeps `h` at what that needs (not an undo step).
+  * Out: cardPointer.ts, a drag let go off every board (`dropOnPage`).
+    Boardkit `takeWhiteboardCards` (v0.0.110: off the board, not to its
+    trash, one board step) then the free shapes are made; `together()`
+    makes it one page step [board, drawing]. Several cards: stacked.
+    Escape still cancels; a full list still takes nothing.
+  * In: freeDrop.ts. tldraw's own drag (select.translating) moves free
+    cards; while it does, the same landing line and lit list. On release
+    over a list: the shapes are deleted FIRST (same tldraw undo span as
+    the drag: a board step ends the span), then `putWhiteboardCards`.
+    `together(action, { withDrawingBefore: true })` (pageUndo.ts) takes
+    the drag's own page step into the group, so drag + drop is one Ctrl+Z
+    and the card comes back where it was before the drag. Inside
+    `together` the drawing interceptor now looks at the group's own last
+    step (it looked at the page's: a create after a board step could be
+    left out of the group).
+  * The card on another board keeps its id unless that board has it. A
+    linked map loses the card's box by itself (it follows the board's
+    record). Kept from outside, `props.card` is not trusted: Boardkit
+    reads it as a saved board's card (readWhiteboardCards).
+  * Open (owner decides): typing in a card on the page; step 3 says what
+    Delete / Ctrl+D / copy do to one (tldraw's own for now).
+  * Tests: e2e/freecards.e2e.ts (6), src/cards/cards.test.ts
+    (landingOrder); Boardkit: app/whiteboard/cards.test.ts (6 new).
 
 IDEAS
 

@@ -44,9 +44,19 @@ let collecting: Step[] | null = null;
 /** Runs `action`; every step it makes (drawing, board, map) is ONE step of
     the page: one Ctrl+Z undoes all of it (GT-6: a card move that changes
     two boards). */
-export function together<T>(action: () => T): T {
+export function together<T>(action: () => T, options?: { readonly withDrawingBefore?: boolean }): T {
   if (collecting) return action();
   const steps: Step[] = (collecting = []);
+  // The drawing step just made (a drag that moved an item) is part of this
+  // action (GT-6 step 2: a card dragged on the page and dropped on a list):
+  // it joins the others, and what the action draws next is that same step.
+  if (options?.withDrawingBefore) {
+    const { done, undone } = pageHistory.get();
+    if (done.at(-1)?.kind === "drawing") {
+      pageHistory.set({ done: done.slice(0, -1), undone });
+      steps.push({ kind: "drawing" });
+    }
+  }
   try {
     return action();
   } finally {
@@ -169,7 +179,9 @@ export function keepPageHistory(editor: Editor): () => void {
     const undos = history.stacks.get().undos;
     const newStop = undos !== lastUndos;
     lastUndos = undos;
-    if (newStop || pageHistory.get().done.at(-1)?.kind !== "drawing") push({ kind: "drawing" });
+    // The step before: inside `together`, the one before in that action.
+    const before = collecting ? collecting.at(-1) : pageHistory.get().done.at(-1);
+    if (collecting ? before?.kind !== "drawing" : newStop || before?.kind !== "drawing") push({ kind: "drawing" });
   });
 
   // Board steps, as Boardkit makes them. A stopping point after each keeps

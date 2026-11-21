@@ -44,7 +44,7 @@ leave their list, copy and delete, speed and clean-up). Arrows on a card, things
 map box are now GT-18, GT-19, GT-20 under Held: decided after the owner has used GT-6 for real.
 **Answered (2026-11-21):** How do you edit a card's text without entering the board first? → Double-click the card.
 **Answered (2026-11-21):** A card dragged out of a board scaled to 50%: small or full size? → It stays small; dropped into another board, it takes that board's size.
-Owner said "go" 2026-11-21, steps OK'd. Step 1 (pick and move cards) built 2026-11-21; steps 2-4 wait for the owner's word, one at a time.
+Owner said "go" 2026-11-21, steps OK'd. Step 1 (pick and move cards) and step 2 (cards leave their list) built 2026-11-21; steps 3-4 wait for the owner's word, one at a time.
 
 ## Held (needs the owner's "go"; never built from "build the backlog")
 

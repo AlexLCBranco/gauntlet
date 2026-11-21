@@ -250,7 +250,7 @@ test("a drag moves a card inside its list and to another list: a line shows wher
   await bk.close();
 });
 
-test("several picked cards move together, in order; Escape and a drop off every list change nothing", async ({ page, context }) => {
+test("several picked cards move together, in order; Escape changes nothing", async ({ page, context }) => {
   const id = await seedBoard(context);
   await openWhiteboard(page, context);
   const rec = await placeBoard(page, id);
@@ -269,10 +269,6 @@ test("several picked cards move together, in order; Escape and a drop off every 
   await page.mouse.up();
   expect(await order(page, id)).toEqual(before);
 
-  // Dropped on the empty page: nothing moves (cards leaving lists is step 2).
-  const whole = await box(page.locator(".tl-html-container [data-boardkit-board]").first());
-  await drag(page, pa, { x: whole.x + whole.width / 2, y: whole.y + whole.height + 120 });
-  expect(await order(page, id)).toEqual(before);
   expect((await record(page, id)).rev).toBe(rec.rev);
 
   // Two cards from two lists, into the empty list: in the order drawn.

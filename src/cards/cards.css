@@ -67,3 +67,9 @@ html.gc-dragging,
 html.gc-dragging * {
   cursor: grabbing !important;
 }
+
+/* A card outside every list (FreeCardShape.tsx): drawn at its own size and
+   scaled from its corner, as a board is. */
+.gc-free {
+  transform-origin: 0 0;
+}

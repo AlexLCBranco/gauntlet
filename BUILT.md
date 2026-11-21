@@ -7,11 +7,14 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-21
+- Cards leave their list (second step of "Cards go anywhere")
+  Drag a card off its board and let go on the empty page: it leaves its list (and /boardkit, and a linked map) and stays on the page; drag it onto any list and it is that list's card again; one Ctrl+Z either way.
 - Cards are picked with one click and dragged between lists (first step of "Cards go anywhere")
   Click a card on a board to pick it (no double-click first), drag it to another place, list or board (a blue line shows where it lands), and double-click it to type; each move is one Ctrl+Z.
 - GT-17 — Main menu button matches the toolbar
   The ☰ button at the top left is now a floating box like the toolbar: same height, corners, background and shadow, on the same line, the same distance from the top edge.
 ### Internal
+- Pin Boardkit v0.0.110 (a1e5f6b): it takes a card off a board, puts one back and draws one card on its own, for the whiteboard
 - test: the Slate popup check (GT-13) points at its chip again until the right popup shows (it failed now and then on a busy live run: the cards were still settling when it measured)
 - Pin Boardkit v0.0.109 (80d0e18): it moves cards for the whiteboard
 - Phase 4 (cards go anywhere) cut to four steps; arrows on cards, things stuck to cards and arrows on map boxes are separate Held items; old phases 5-6 moved to IDEAS.md; GAUNTLET-PLAN.md moved to docs/ (history)

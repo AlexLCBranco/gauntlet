@@ -177,6 +177,19 @@ export function syncCardsNow(editor: Editor, boardShapeId?: TLShapeId): void {
   for (const [id, content] of drawnBoards) if (!boardShapeId || id === boardShapeId) syncCards(editor, id, content);
 }
 
+/** Picks the objects of the cards `cardIds` of the board widget
+    `boardShapeId`, once it has drawn them (cards just moved or put there:
+    the board draws them first, then their objects follow). */
+export function pickCardsSoon(editor: Editor, boardShapeId: TLShapeId, cardIds: readonly string[]): void {
+  const pick = (tries: number) => {
+    syncCardsNow(editor);
+    const ids = cardIds.map((cardId) => cardShapeId(boardShapeId, cardId)).filter((id) => editor.getShape(id));
+    if (ids.length < cardIds.length && tries > 0) return void requestAnimationFrame(() => pick(tries - 1));
+    if (ids.length > 0) editor.setSelectedShapes(ids);
+  };
+  requestAnimationFrame(() => pick(20));
+}
+
 /**
  * Keeps the card objects of a board widget where its cards are drawn:
  * after every change to what the board shows (cards added, moved, renamed,

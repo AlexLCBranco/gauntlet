@@ -61,7 +61,7 @@ export class EdgeSelectionForeground extends SelectionForegroundOverlayUtil {
   // by hand; its board lays it out.
   override getOverlays(): TLSelectionForegroundOverlay[] {
     const picked = this.editor.getSelectedShapes();
-    if (picked.length > 0 && picked.every((s) => s.type === "boardkit-card")) return [];
+    if (picked.length > 0 && picked.every((s) => s.type === "boardkit-card" || s.type === "boardkit-free-card")) return [];
     return super.getOverlays();
   }
 

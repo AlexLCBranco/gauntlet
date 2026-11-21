@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TLShapeId } from "tldraw";
 
 import { boardOrCards } from "./brush";
-import { placeAmong } from "./drop";
+import { landingOrder, placeAmong } from "./drop";
 import { cardChanges, type DrawnCard } from "./sync";
 
 const id = (s: string) => `shape:${s}` as TLShapeId;
@@ -59,5 +59,12 @@ describe("boardOrCards", () => {
   it("leaves cards picked without their board, and a board picked without cards", () => {
     expect(boardOrCards([a, b], parent, () => false)).toEqual([a, b]);
     expect(boardOrCards([board, other], parent, () => false)).toEqual([board, other]);
+  });
+});
+
+describe("landingOrder", () => {
+  it("orders cards dropped together top to bottom, then left to right", () => {
+    const at = (name: string, x: number, y: number) => ({ name, x, y });
+    expect(landingOrder([at("c", 5, 90), at("b", 40, 10), at("a", 0, 10)]).map((s) => s.name)).toEqual(["a", "b", "c"]);
   });
 });

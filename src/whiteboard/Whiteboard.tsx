@@ -66,6 +66,8 @@ import { Toolbar } from "./Toolbar";
 import { KEYS, REMOVED } from "./toolbarLayout";
 import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
 import { CardShapeUtil } from "../cards/CardShape";
+import { FreeCardShapeUtil } from "../cards/FreeCardShape";
+import { keepFreeCardDrops } from "../cards/freeDrop";
 import { keepCardPointer } from "../cards/cardPointer";
 import { brushPicksCards } from "../cards/brush";
 import { keepCardObjectsTrue } from "../cards/sync";
@@ -179,7 +181,7 @@ const overrides: TLUiOverrides = {
 /** tldraw's selection handles, with grab zones that work at the page's edge. */
 const overlayUtils = [EdgeSelectionForeground];
 
-const shapeUtils = [...styleShapeUtils, BoardShapeUtil, CardShapeUtil, MapShapeUtil, SlateShapeUtil, WebEmbedShapeUtil];
+const shapeUtils = [...styleShapeUtils, BoardShapeUtil, CardShapeUtil, FreeCardShapeUtil, MapShapeUtil, SlateShapeUtil, WebEmbedShapeUtil];
 
 /** Under the main menu (top left): the style panel, as in Excalidraw. */
 function UnderMenu() {
@@ -315,6 +317,8 @@ function setUp(editor: Editor) {
   const stopCards = keepCardPointer(editor);
   const stopCardBrush = brushPicksCards(editor);
   const stopCardObjects = keepCardObjectsTrue(editor);
+  // A card off every list is dropped on a list again (GT-6 step 2).
+  const stopFreeCards = keepFreeCardDrops(editor);
   const stopTakeBack = takeBackEmptyNewBoards(editor);
   const stopTakeBackMaps = takeBackEmptyNewMaps(editor);
   const stopCopies = keepCopiesIndependent(editor);
@@ -333,6 +337,7 @@ function setUp(editor: Editor) {
     stopCards();
     stopCardBrush();
     stopCardObjects();
+    stopFreeCards();
     stopUndo();
     stopJournal();
     stopPage();

@@ -9,6 +9,12 @@ export function placeAmong(middles: readonly number[], y: number): number {
   return at < 0 ? middles.length : at;
 }
 
+/** Cards dropped on a list together, top to bottom (then left to right):
+    the order they land in. Pure; tested in cards.test.ts. */
+export function landingOrder<T extends { readonly x: number; readonly y: number }>(shapes: readonly T[]): T[] {
+  return [...shapes].sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
 /** The most cards a Boardkit list holds (Boardkit's own rule,
     `domain/limits.ts`; Boardkit refuses a move past it either way). */
 export const LIST_HOLDS = 50;

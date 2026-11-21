@@ -3,6 +3,40 @@
 The report at the end of each batch of backlog work, newest first (CLAUDE.md, "Feature backlog, built list and
 ideas"), so the owner's Claude chat can read it without a paste.
 
+## 2026-11-21 — GT-6 step 2 (cards leave their list)
+
+**Built:** GT-6 step 2 of 4. GT-6 itself stays in the backlog until step 4.
+- Drag a card off its board and let go on the empty page: it leaves its list and stays on the page, where you let go.
+  It is gone from /boardkit too, and from the board's map if it has one. It is not in the board's trash: it moved.
+- It keeps the size it had on its board (a card from a board at 50% stays small).
+- Drag it onto a list of any board: a blue line shows where it lands, the list gets a blue outline, and it is that
+  list's card again, at that board's size.
+- One Ctrl+Z either way. Undoing a drop on a list puts the card back on the page where it was before that drag.
+- Several picked cards go out together (they land one under the other) and go back in together, in the same order.
+- A card on the page is saved with the page: it is there after a reload, in a backup, in a board file, and in an
+  exported picture.
+- Escape while dragging still puts the cards back. A full list (50 cards) still takes no more.
+
+**Different from the step's text:**
+- A card on the page loses what its list gave it: its number and the list's colour. Its own colour, highlight, check
+  mark and link stay.
+- Let go anywhere over a board, a card goes to the nearest list of that board. It can't be left lying on top of a board.
+- Delete, Ctrl+D and copy on a card on the page work as for any item on the page (a deleted one comes back with
+  Ctrl+Z; it is not in a board's trash). Step 3 is where you say what they should do.
+
+**Question for you:** a card on the page can't be typed in yet (a double-click does nothing). The step doesn't say.
+Should a double-click type in its title there too, as on a list? Until then: drop it on a list to change its text.
+
+**Boardkit:** v0.0.110 (a1e5f6b) pushed and pinned. Nothing changes on screen in Boardkit itself.
+
+**Tests:** unit 173 ✓ (Boardkit 242 ✓), e2e 366 ✓ (6 new in e2e/freecards.e2e.ts), Linkkit e2e 30 ✓.
+One older test changed: it checked that a drop off every list did nothing, which is no longer true.
+
+**Blocked:** nothing. **Ideas added:** none.
+
+**To test by hand (feel only, can't be automated):** drag a card out and back in on a real page. Is it clear the
+card has left its board? Is it easy to aim at a list on the way back?
+
 ## 2026-11-21 — GT-6 step 1 (cards are picked and moved on the whiteboard)
 
 **Built:** GT-6 step 1 of 4. GT-6 itself stays in the backlog until step 4.

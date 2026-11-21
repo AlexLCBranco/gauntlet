@@ -1,12 +1,13 @@
-import type { Editor, TLShapeId } from "tldraw";
+import { createShapeId, type Editor, type JsonValue, type TLShapeId, type TLShapePartial } from "tldraw";
 
 import { boardkitOverlayOpen, controlAt, editCardTitle } from "../boards/BoardShape";
-import { moveWhiteboardCards } from "../boards/boardkit";
+import { moveWhiteboardCards, takeWhiteboardCards } from "../boards/boardkit";
 import { boxKeyHeld } from "../pages/edges";
 import { together } from "../whiteboard/pageUndo";
-import { cardShapeId, isCard, type CardShape } from "./CardShape";
+import { isCard, type CardShape } from "./CardShape";
+import { FREE_CARD_TYPE, type FreeCardShape } from "./FreeCardShape";
 import { dropTargetAt, LIST_HOLDS, type DropTarget } from "./drop";
-import { syncCardsNow } from "./sync";
+import { pickCardsSoon } from "./sync";
 import "./cards.css";
 
 /** How far (screen pixels) a press must travel to be a drag. */
@@ -68,7 +69,9 @@ interface Drag {
  *    picked); no double-click to enter the board first;
  *  - a drag moves the picked cards to a place in a list, of the same board
  *    or another: a line shows where they land and that list lights up;
- *    Escape, or a drop off every list, puts them back;
+ *    dropped on the empty page, off every board, they leave their list and
+ *    stay there as cards of the page (step 2; FreeCardShape.tsx); Escape
+ *    puts them back;
  *  - a double-click types in the card's title.
  * A press on one of the card's own buttons is the board's, as before
  * (BoardShape.tsx). The move is made in Boardkit's data (same board in
@@ -234,13 +237,44 @@ export function keepCardPointer(editor: Editor): () => void {
     });
     // The boards draw the cards in their new places first; then the objects
     // follow, and the moved cards stay picked.
-    const pick = (tries: number) => {
-      syncCardsNow(editor);
-      const ids = now.map((cardId) => cardShapeId(target.boardShapeId, cardId)).filter((id) => editor.getShape(id));
-      if (ids.length < now.length && tries > 0) return void requestAnimationFrame(() => pick(tries - 1));
-      if (ids.length > 0) editor.setSelectedShapes(ids);
-    };
-    requestAnimationFrame(() => pick(20));
+    pickCardsSoon(editor, target.boardShapeId, now);
+  };
+
+  /** The dragged cards were let go on the empty page (step 2): they leave
+      their lists, and Boardkit's records, and stay on the page where they
+      were dropped, one under the other, at the size they had. One step of
+      the page's undo. `dx`, `dy`: how far the pressed card was dragged. */
+  const dropOnPage = (drag: Drag, pressed: CardShape, dx: number, dy: number) => {
+    const lead = drag.cards.find((c) => c.shape.id === pressed.id) ?? drag.cards[0];
+    const from = lead.el.getBoundingClientRect();
+    const zoom = editor.getZoomLevel();
+    const key = (boardId: string, cardId: string) => `${boardId}/${cardId}`;
+    const places = new Map<string, { x: number; y: number; w: number; h: number; scale: number }>();
+    let top = from.top + dy;
+    for (const c of drag.cards) {
+      const r = c.el.getBoundingClientRect();
+      // Screen pixels per pixel of the card as Boardkit draws it.
+      const ratio = r.width / (c.el.offsetWidth || r.width);
+      const at = editor.screenToPage({ x: from.left + dx, y: top });
+      places.set(key(c.shape.props.boardId, c.shape.props.cardId), { x: at.x, y: at.y, w: r.width / zoom, h: r.height / zoom, scale: ratio / zoom });
+      top += r.height + 8 * ratio;
+    }
+    const groups = new Map<string, string[]>();
+    for (const c of drag.cards) groups.set(c.shape.props.boardId, [...(groups.get(c.shape.props.boardId) ?? []), c.shape.props.cardId]);
+    const made: TLShapePartial<FreeCardShape>[] = [];
+    editor.markHistoryStoppingPoint("card out");
+    together(() => {
+      for (const [boardId, cardIds] of groups) {
+        for (const card of takeWhiteboardCards({ boardId, cardIds }) ?? []) {
+          const place = places.get(key(boardId, card.id));
+          if (!place) continue;
+          const { x, y, ...size } = place;
+          made.push({ id: createShapeId(), type: FREE_CARD_TYPE, parentId: editor.getCurrentPageId(), x, y, props: { card: JSON.parse(JSON.stringify(card)) as Record<string, JsonValue>, ...size } });
+        }
+      }
+      if (made.length > 0) editor.createShapes(made);
+    });
+    if (made.length > 0) editor.setSelectedShapes(made.map((s) => s.id));
   };
 
   const onMove = (e: PointerEvent) => {
@@ -258,15 +292,18 @@ export function keepCardPointer(editor: Editor): () => void {
   const onUp = (e: PointerEvent) => {
     if (!press || e.pointerId !== press.pointerId) return;
     take(e);
-    const { drag, card, pickAloneOnUp } = press;
+    const { drag, card, pickAloneOnUp, x, y } = press;
     press = null;
     if (!drag) {
       if (pickAloneOnUp) editor.setSelectedShapes([card.id]);
       return;
     }
-    const target = e.type === "pointerup" ? drag.target : null;
+    const dropped = e.type === "pointerup";
+    const target = dropped ? drag.target : null;
     endDrag(drag);
-    if (target && !target.full) drop(drag, target);
+    if (target) {
+      if (!target.full) drop(drag, target);
+    } else if (dropped) dropOnPage(drag, card, e.clientX - x, e.clientY - y);
   };
 
   const cancel = () => {

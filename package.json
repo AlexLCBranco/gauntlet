@@ -15,7 +15,7 @@
   "dependencies": {
     "@tldraw/tlschema": "5.5.2",
     "@tldraw/utils": "5.5.2",
-    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/80d0e1897d6f7fd5a3cc86b02f2d203f2c6240cc",
+    "boardkit": "https://codeload.github.com/AlexLCBranco/boardkit/tar.gz/a1e5f6b540d1e9f70b3359422910da44c4568ad9",
     "calendarkit": "https://codeload.github.com/AlexLCBranco/calendarkit/tar.gz/7d6ca6242b340f90493fca83cc4f07ae28e12cc1",
     "linkkit": "https://codeload.github.com/AlexLCBranco/linkkit/tar.gz/f41cbe8bf889513a68a708aeb14ee40349d37492",
     "react": "^19.3.1",
