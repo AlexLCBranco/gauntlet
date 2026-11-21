@@ -1,0 +1,69 @@
+/* Cards dragged on the whiteboard (src/cards/cardPointer.ts). All of it is
+   drawn at the page's top level, over everything, and ignores the pointer. */
+
+/* The lifted copy of the dragged cards: follows the pointer. */
+.gc-ghost {
+  position: fixed;
+  z-index: 100000;
+  transform-origin: 0 0;
+  transform: scale(var(--gc-scale, 1));
+  pointer-events: none;
+  opacity: 0.85;
+}
+.gc-ghost-card {
+  position: absolute !important;
+  top: calc(var(--gc-behind, 0) * 6px);
+  left: calc(var(--gc-behind, 0) * 6px);
+  z-index: calc(3 - var(--gc-behind, 0));
+  margin: 0 !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+  opacity: 1 !important;
+}
+/* How many cards are being moved. */
+.gc-ghost-count {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  z-index: 4;
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: #4f7cff;
+  color: #fff;
+  font: 600 13px/22px system-ui, sans-serif;
+  text-align: center;
+}
+
+/* Where the cards will land. */
+.gc-line {
+  position: fixed;
+  z-index: 100001;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: #4f7cff;
+  box-shadow: 0 0 0 1px rgb(15 17 21 / 0.6);
+  pointer-events: none;
+}
+.gc-line[hidden],
+.gc-note[hidden] {
+  display: none;
+}
+
+/* Why nothing lands (a full list). */
+.gc-note {
+  position: fixed;
+  z-index: 100001;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #1c2028;
+  border: 1px solid #3a4150;
+  color: #e6e9ef;
+  font: 13px/1.3 system-ui, sans-serif;
+  pointer-events: none;
+}
+
+html.gc-dragging,
+html.gc-dragging * {
+  cursor: grabbing !important;
+}

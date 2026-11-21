@@ -11,6 +11,7 @@ import {
   type RecordProps,
   type TLResizeInfo,
   type TLShape,
+  type TLShapeId,
 } from "tldraw";
 
 import { useLinkedMap } from "../maps/linkedMap";
@@ -30,6 +31,8 @@ import { ViewSwitch } from "./ViewSwitch";
 import "./boards.css";
 import { WidgetBoundary } from "../widgets/WidgetBoundary";
 import { Frozen } from "../archive/Frozen";
+import { isCard } from "../cards/CardShape";
+import { useCardObjects } from "../cards/sync";
 
 export const BOARD_TYPE = "boardkit-board";
 
@@ -74,6 +77,10 @@ export class BoardShapeUtil extends BaseBoxShapeUtil<BoardShape> {
   override isAspectRatioLocked() {
     return true;
   }
+  // Its cards' objects follow what it draws (src/cards/sync.ts), not tldraw.
+  override canResizeChildren() {
+    return false;
+  }
   override onResize(shape: BoardShape, info: TLResizeInfo<BoardShape>) {
     const next = resizeBox(shape, info);
     const from = info.initialShape.props;
@@ -96,8 +103,24 @@ export class BoardShapeUtil extends BaseBoxShapeUtil<BoardShape> {
 function BoardShapeComponent({ shape }: { shape: BoardShape }) {
   const editor = useEditor();
   const editing = useIsEditing(shape.id);
-  const selected = useValue("board selected", () => editor.getSelectedShapeIds().includes(shape.id), [editor, shape.id]);
-  const hovered = useValue("board hovered", () => editor.getHoveredShapeId() === shape.id, [editor, shape.id]);
+  // Picked: the board itself, or one of its cards (objects of their own:
+  // the board's name, switch and "+" show as for the board picked).
+  const selected = useValue(
+    "board selected",
+    () => editor.getSelectedShapes().some((s) => s.id === shape.id || (isCard(s) && s.parentId === shape.id)),
+    [editor, shape.id],
+  );
+  // Over the board, or over one of its cards (each an object of its own).
+  const hovered = useValue(
+    "board hovered",
+    () => {
+      const id = editor.getHoveredShapeId();
+      if (!id) return false;
+      const over = editor.getShape(id);
+      return id === shape.id || (isCard(over) && over.parentId === shape.id);
+    },
+    [editor, shape.id],
+  );
   const content = useRef<HTMLDivElement>(null);
   const mapHalf = useRef<HTMLDivElement>(null);
   const { boardId, scale } = shape.props;
@@ -216,6 +239,10 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     return () => ro.disconnect();
   }, [editor, shape.id, inExport]);
 
+  // Each card is a whiteboard object of its own, kept where it is drawn
+  // (GT-6; src/cards/).
+  useCardObjects(shape.id, content, scale, inExport);
+
   // Editing began with a press on one of the board's controls (below): that
   // control does its part now, as if pressed while editing. Or with a
   // double-click on a card or list title: rename it, as a click on a title
@@ -273,15 +300,11 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
     if (!el) return;
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0 || editor.getCurrentToolId() !== "select") return;
-      const hit = [...el.querySelectorAll<HTMLElement>("[data-boardkit-board] [data-add], [data-boardkit-board] [data-list-header] [data-control], [data-boardkit-board] article[data-card-id] [data-control]")].find((b) => {
-        const style = getComputedStyle(b);
-        if (Number(style.opacity) < 0.05 || style.visibility === "hidden") return false;
-        const r = b.getBoundingClientRect();
-        return r.width > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-      });
+      const hit = controlAt(el, e.clientX, e.clientY);
       if (!hit) return;
       editor.markEventAsHandled(e);
       pressedControl = {
+        title: false,
         add: hit.dataset.add ?? null,
         control: hit.dataset.control ?? null,
         listId: hit.closest<HTMLElement>("section[data-list-id]")?.dataset.listId ?? null,
@@ -380,8 +403,29 @@ function BoardShapeComponent({ shape }: { shape: BoardShape }) {
 }
 
 /** The control a press started editing on (see above), by its markers. */
-type PressedControl = { readonly add: string | null; readonly control: string | null; readonly listId: string | null; readonly cardId: string | null };
+type PressedControl = { readonly title: boolean; readonly add: string | null; readonly control: string | null; readonly listId: string | null; readonly cardId: string | null };
 let pressedControl: PressedControl | null = null;
+
+/** The control of the board drawn in `el` that is showing under the screen
+    point (`x`, `y`): a "+" to add a card or a list, a list header's button,
+    a card's button. Found by Boardkit's fixed markers, never by their text. */
+export function controlAt(el: HTMLElement, x: number, y: number): HTMLElement | undefined {
+  return [...el.querySelectorAll<HTMLElement>("[data-boardkit-board] [data-add], [data-boardkit-board] [data-list-header] [data-control], [data-boardkit-board] article[data-card-id] [data-control]")].find((b) => {
+    const style = getComputedStyle(b);
+    if (Number(style.opacity) < 0.05 || style.visibility === "hidden") return false;
+    const r = b.getBoundingClientRect();
+    return r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  });
+}
+
+/** A double-click on a card (src/cards/cardPointer.ts): its title is typed
+    in, in place, as a click on a title does in Boardkit. */
+export function editCardTitle(editor: Editor, shapeId: TLShapeId, cardId: string): void {
+  pressedControl = { title: true, add: null, control: null, listId: null, cardId };
+  editingHalf.set({ shapeId, half: "list" });
+  editor.select(shapeId);
+  editor.setEditingShape(shapeId);
+}
 
 /**
  * Keys typed after a press on a "+" and before its field has the focus
@@ -443,7 +487,8 @@ function releaseHeldKeys(field: HTMLTextAreaElement) {
 }
 
 /** The same control on the board being edited. */
-function controlSelector({ add, control, listId, cardId }: PressedControl): string {
+function controlSelector({ title, add, control, listId, cardId }: PressedControl): string {
+  if (title && cardId) return `article[data-card-id="${CSS.escape(cardId)}"] [data-card-title] [data-inline-display]`;
   const inList = listId ? `section[data-list-id="${CSS.escape(listId)}"] ` : "";
   if (add) return `${inList}[data-add="${add}"]`;
   if (cardId) return `${inList}article[data-card-id="${CSS.escape(cardId)}"] [data-control="${control}"]`;
@@ -465,7 +510,7 @@ const boardkitDragging = () => document.querySelector("[data-boardkit-lifted]") 
 
 /** One of Boardkit's menus, panels or dialogs is open. They are drawn at the
     page's top level, outside the whiteboard (whose own menus live inside). */
-function boardkitOverlayOpen(container: HTMLElement): boolean {
+export function boardkitOverlayOpen(container: HTMLElement): boolean {
   const open = document.querySelectorAll('[data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"], [role="menu"]');
   return [...open].some((el) => !container.contains(el));
 }

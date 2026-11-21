@@ -2,6 +2,7 @@ import { PageRecordType, type Editor, type TLAsset, type TLContent, type TLShape
 
 import { readWhiteboardBoard, writeWhiteboardBoard } from "../boards/boardkit";
 import { BOARD_TYPE } from "../boards/BoardShape";
+import { CARD_TYPE } from "../cards/CardShape";
 import { registryChanged } from "../boards/registry";
 import { linkedMaps, readWhiteboardMap, writeWhiteboardMap } from "../maps/linkkit";
 import { mapListChanged } from "../maps/mapList";
@@ -100,6 +101,8 @@ export async function archiveOfPage(editor: Editor, now = new Date()): Promise<A
   };
   const shapes: TLShape[] = [];
   for (const s of content.shapes) {
+    // A card's object only mirrors what its board draws: made again there.
+    if (s.type === CARD_TYPE) continue;
     const was = frozenOf(s);
     if (s.type === BOARD_TYPE) {
       const id = (s.props as { boardId: string }).boardId;

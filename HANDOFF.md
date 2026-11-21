@@ -8,8 +8,8 @@ Finished work goes to docs/HISTORY.md.
 
 - PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, 2, 3, 5, 10, 11, 12, 13, 15, 17 DONE
   (2026-11-17; GT-5 Slate kit at run time, src/slate/kit.ts; GT-10 archive
-  files, src/archive/; DECISIONS). Ready: GT-14, GT-16, both Blocked (notes in the backlog; owner answers). Phase 3 done; phase 4 = GT-6: "go" given 2026-11-21, plan in docs/GT-6-PLAN.md. Scope cut 2026-11-21 to 4 steps (arrows and attaching are GT-18, GT-19, GT-20, Held). ON HOLD: 2 questions open in the plan; no code yet.
-- Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
+  files, src/archive/; DECISIONS). Ready: GT-14, GT-16, both Blocked (notes in the backlog; owner answers). Phase 3 done; phase 4 = GT-6 (4 steps, docs/GT-6-PLAN.md; GT-18, 19, 20 Held): STEP 1 DONE 2026-11-21 (cards are objects, src/cards/; DECISIONS 2026-11-21). Steps 2-4 wait for the owner's word.
+- Pinned: Boardkit v0.0.109 (`80d0e18`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.92.1 (`7d6ca62`; the fallback since GT-5); on their main.
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
@@ -94,6 +94,6 @@ Finished work goes to docs/HISTORY.md.
 
 ## Next step
 
-- GT-6 step 1 (docs/GT-6-PLAN.md) once the owner answers its two questions
-  and says to start. The plan is FEATURE_BACKLOG.md on origin/main. SPEED-SESSION.md Parts 7, 10, 11
+- GT-6 step 2 (cards leave their list; docs/GT-6-PLAN.md) when the owner
+  says so. The plan is FEATURE_BACKLOG.md on origin/main. SPEED-SESSION.md Parts 7, 10, 11
   and Slate steps 4-5 moved there (2026-11-16); Part 8 folded into GT-6.

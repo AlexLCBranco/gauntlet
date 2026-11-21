@@ -3,8 +3,9 @@
 Written 2026-11-21 after the owner's "go". The spec and the owner's decisions are in FEATURE_BACKLOG.md (GT-6);
 this file is only the order of the work. Status: the owner OK'd the steps (2026-11-21) and then cut the scope in
 Claude chat the same day: GT-6 is steps 1-4 below. The old steps 4-6 (arrows on a card, things stuck to a card,
-arrows on a map box) are GT-18, GT-19, GT-20 under Held in the backlog, not part of this plan. ON HOLD: build
-nothing until the owner answers the two questions below (question 1 blocks step 1) and says to start. No code yet.
+arrows on a map box) are GT-18, GT-19, GT-20 under Held in the backlog, not part of this plan. The owner answered
+both questions and said to build (2026-11-21). STEP 1 DONE 2026-11-21 (what was built: PROJECT.md DECISIONS, same
+date). NEXT: step 2, when the owner says so.
 
 Rules for every step: one step at a time, stop and report after each. Each step has its own e2e tests, goes live
 on its own, and takes nothing away that works today. Tick steps off here; a fresh session reads this file first.
@@ -34,7 +35,7 @@ on its own, and takes nothing away that works today. Tick steps off here; a fres
 
 ## Steps
 
-- [ ] 1. **Pick a card with one click, and move it between lists.** One click on a card selects that card (no
+- [x] 1. **Pick a card with one click, and move it between lists.** One click on a card selects that card (no
   double-click to enter the board). Box select and lasso pick single cards. Dragging a card moves it inside its
   list or to another list of any board on the page: a line shows where it lands, the target list lights up.
   Several picked cards move together. The board itself moves by its title, by the gaps between its lists, or
@@ -54,9 +55,18 @@ on its own, and takes nothing away that works today. Tick steps off here; a fres
   e2e/perf.e2e.ts and fix what got slower. Remove dead code, update PROJECT.md DECISIONS and HANDOFF. GT-6 moves
   to BUILT.md here; steps 1-3 are listed there as they go live, without the ID.
 
-## Questions for the owner (not answered by the spec; no defaults picked)
+## The owner's answers (2026-11-21)
 
-1. (step 1) Editing a card's text: double-click the card to type in it? (Today: double-click enters the board,
-   then a click on the title edits.)
-2. (step 2) A board scaled to 50%: is a card dragged out of it small like on that board, or full size? And
-   dropped into a board at another scale, it takes that board's scale?
+1. (step 1) Editing a card's text: **double-click the card** to type in its title.
+2. (step 2) A card dragged out of a board scaled to 50% **stays small** (the size it had on that board); dropped
+   into a board at another scale, it takes that board's size.
+
+## Step 1 as built: what differs from the step's text
+
+- A double-click on a part of a board that is not a card (a list's background or header) still opens the board
+  for editing, as before: that is the only way to drag a LIST to another place (Boardkit's own drag), and the plan
+  says nothing that works today is taken away. Cards never need it.
+- Delete, Ctrl+D and copy on a picked card do nothing yet (step 3). Picked cards show no style panel and no
+  resize handles.
+- A selection box picks the cards it fully surrounds (the whiteboard's existing rule for every item).
+- A full list (50 cards, Boardkit's limit) takes no more: the drag says "This list is full. A list holds 50 cards."

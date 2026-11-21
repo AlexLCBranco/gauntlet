@@ -172,6 +172,17 @@ for (const [label, make] of [
     await expect(page.getByRole("textbox", { name: "Card title" })).toBeFocused();
     await page.keyboard.press("Control+a");
     await page.keyboard.type("ZZ card renamed");
+    if (label === "on the whiteboard") {
+      // A click on another card: saved, and that card is picked (GT-6: one
+      // click picks a card; a double-click types in it).
+      const b = (await root.locator(`article[data-card-id="${secondId}"]`).boundingBox())!;
+      await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+      await saved(page, id, (r) => r.board.cards[firstId].title === "ZZ card renamed");
+      await expect(page.getByRole("textbox", { name: "Card title" })).toHaveCount(0);
+      expect(await page.evaluate(() => (window as any).editor.getSelectedShapes().map((s: any) => s.props.cardId))).toEqual([secondId]);
+      expect((await record(page, id)).board.cards[secondId].title).toBe(r0.cards[secondId].title);
+      return;
+    }
     // A click on another card's title: saved, and that title opens.
     await root.locator(`article[data-card-id="${secondId}"]`).getByRole("button", { name: "Card title", exact: true }).click();
     await saved(page, id, (r) => r.board.cards[firstId].title === "ZZ card renamed");

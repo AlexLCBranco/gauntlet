@@ -10,7 +10,10 @@ import { mapEditedBy } from "../maps/mapEditedBy";
 type Step =
   | { readonly kind: "drawing" }
   | { readonly kind: "board"; readonly boardId: string }
-  | { readonly kind: "map"; readonly mapId: string };
+  | { readonly kind: "map"; readonly mapId: string }
+  /** Several steps made by one action (a card dragged from one board to
+      another changes two boards): undone and redone together. */
+  | { readonly kind: "group"; readonly steps: readonly Step[] };
 
 interface PageHistory {
   readonly done: readonly Step[];
@@ -35,7 +38,29 @@ let acting = false;
     coming back then is not a new copy: widgets/copies.ts). */
 export const undoingOrRedoing = () => acting;
 
+/** Steps made inside `together`, kept to become one. */
+let collecting: Step[] | null = null;
+
+/** Runs `action`; every step it makes (drawing, board, map) is ONE step of
+    the page: one Ctrl+Z undoes all of it (GT-6: a card move that changes
+    two boards). */
+export function together<T>(action: () => T): T {
+  if (collecting) return action();
+  const steps: Step[] = (collecting = []);
+  try {
+    return action();
+  } finally {
+    collecting = null;
+    if (steps.length === 1) push(steps[0]);
+    else if (steps.length > 1) push({ kind: "group", steps });
+  }
+}
+
 function push(step: Step) {
+  if (collecting) {
+    collecting.push(step);
+    return;
+  }
   const { done } = pageHistory.get();
   pageHistory.set({ done: [...done, step].slice(-500), undone: [] });
 }
@@ -50,6 +75,13 @@ const stored = (key: string) => {
 
 /** Does `step` (undo or redo); false when there was nothing to do. */
 function act(editor: Editor, step: Step, kind: "undo" | "redo"): boolean {
+  if (step.kind === "group") {
+    // Undone last to first, redone first to last. Done if any part was.
+    const parts = kind === "undo" ? [...step.steps].reverse() : step.steps;
+    let did = false;
+    for (const part of parts) did = act(editor, part, kind) || did;
+    return did;
+  }
   acting = true;
   try {
     if (step.kind === "drawing") {

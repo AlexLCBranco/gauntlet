@@ -1,6 +1,7 @@
 import { atom, type Editor, type TLShape, type TLShapeId } from "tldraw";
 
 import { BOARD_TYPE, type BoardShape } from "../boards/BoardShape";
+import { isCard } from "../cards/CardShape";
 import { setWhiteboardItemUrl, whiteboardItemUrl, type WhiteboardLinkTarget } from "../boards/boardkit";
 import { linkedMapOf, setWhiteboardBoxUrl, whiteboardBoxUrl } from "../maps/linkkit";
 import { MAP_TYPE, type MapShape } from "../maps/MapShape";
@@ -71,9 +72,16 @@ export function setUrlOf(editor: Editor, target: LinkTarget, url: string | undef
   }) as typeof record);
 }
 
+const textOf = (el: Element | null | undefined) => (el?.textContent ?? "").trim().replace(/\s+/g, " ");
+
 /** The target for a whole item: a board widget's board, any other shape
     itself (a map widget included: the map as a whole is a drawn item). */
 export function itemTarget(shape: TLShape): LinkTarget {
+  // A card picked as an object of its own (GT-6): that card, on its board.
+  if (isCard(shape)) {
+    const el = document.getElementById(shape.parentId)?.querySelector(`[data-boardkit-board] article[data-card-id="${CSS.escape(shape.props.cardId)}"] [data-card-title]`);
+    return { kind: "board", shapeId: shape.parentId as TLShapeId, boardId: shape.props.boardId, item: { kind: "card", cardId: shape.props.cardId }, name: textOf(el) };
+  }
   if (shape.type === BOARD_TYPE) {
     return { kind: "board", shapeId: shape.id, boardId: (shape as BoardShape).props.boardId, item: { kind: "board" }, name: "" };
   }
@@ -84,7 +92,6 @@ const inside = (el: Element, x: number, y: number) => {
   const r = el.getBoundingClientRect();
   return r.width > 0 && r.height > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 };
-const textOf = (el: Element | null | undefined) => (el?.textContent ?? "").trim().replace(/\s+/g, " ");
 
 /**
  * The card, list or box of a board or map widget under the screen point

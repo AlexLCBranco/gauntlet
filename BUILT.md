@@ -7,6 +7,8 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
 ## 2026-11-21
+- Cards are picked with one click and dragged between lists (first step of "Cards go anywhere")
+  Click a card on a board to pick it (no double-click first), drag it to another place, list or board (a blue line shows where it lands), and double-click it to type; each move is one Ctrl+Z.
 - GT-17 — Main menu button matches the toolbar
   The ☰ button at the top left is now a floating box like the toolbar: same height, corners, background and shadow, on the same line, the same distance from the top edge.
 ### Internal

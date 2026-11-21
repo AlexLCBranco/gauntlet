@@ -65,6 +65,10 @@ import { straightLines } from "./straightLines";
 import { Toolbar } from "./Toolbar";
 import { KEYS, REMOVED } from "./toolbarLayout";
 import { keepPageHistory, pageRedo, pageUndo } from "./pageUndo";
+import { CardShapeUtil } from "../cards/CardShape";
+import { keepCardPointer } from "../cards/cardPointer";
+import { brushPicksCards } from "../cards/brush";
+import { keepCardObjectsTrue } from "../cards/sync";
 import { undoSkipsSelection } from "./undoSkipsSelection";
 import { unsavedJournal } from "./unsavedJournal";
 import { ZoomUndo } from "./ZoomUndo";
@@ -175,7 +179,7 @@ const overrides: TLUiOverrides = {
 /** tldraw's selection handles, with grab zones that work at the page's edge. */
 const overlayUtils = [EdgeSelectionForeground];
 
-const shapeUtils = [...styleShapeUtils, BoardShapeUtil, MapShapeUtil, SlateShapeUtil, WebEmbedShapeUtil];
+const shapeUtils = [...styleShapeUtils, BoardShapeUtil, CardShapeUtil, MapShapeUtil, SlateShapeUtil, WebEmbedShapeUtil];
 
 /** Under the main menu (top left): the style panel, as in Excalidraw. */
 function UnderMenu() {
@@ -306,6 +310,11 @@ function setUp(editor: Editor) {
   const stopFilled = keepFilled(editor);
   const stopUndo = undoSkipsSelection(editor);
   const stopPageHistory = keepPageHistory(editor);
+  // Cards are objects of their own: picked with one click, moved between
+  // lists by a drag, picked one by one by a box (GT-6; src/cards/).
+  const stopCards = keepCardPointer(editor);
+  const stopCardBrush = brushPicksCards(editor);
+  const stopCardObjects = keepCardObjectsTrue(editor);
   const stopTakeBack = takeBackEmptyNewBoards(editor);
   const stopTakeBackMaps = takeBackEmptyNewMaps(editor);
   const stopCopies = keepCopiesIndependent(editor);
@@ -321,6 +330,9 @@ function setUp(editor: Editor) {
     stopCopies();
     stopTakeBack();
     stopPageHistory();
+    stopCards();
+    stopCardBrush();
+    stopCardObjects();
     stopUndo();
     stopJournal();
     stopPage();

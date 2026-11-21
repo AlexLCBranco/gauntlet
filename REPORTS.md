@@ -3,6 +3,45 @@
 The report at the end of each batch of backlog work, newest first (CLAUDE.md, "Feature backlog, built list and
 ideas"), so the owner's Claude chat can read it without a paste.
 
+## 2026-11-21 — GT-6 step 1 (cards are picked and moved on the whiteboard)
+
+**Built:** GT-6 step 1 of 4. GT-6 itself stays in the backlog until step 4.
+- One click on a card picks that card. No double-click to "enter" the board first. Shift + click adds or removes one.
+- A selection box and the lasso pick single cards (the ones they surround). A box around the whole board picks the board.
+- Drag a card to another place in its list, to another list, or to a list of another board on the page. A blue line
+  shows where it lands and that list gets a blue outline. Several picked cards move together (a small number shows how many).
+- Escape, or a drop that is not on a list, puts the cards back.
+- Double-click a card to type in its title (owner's answer).
+- Every move is saved in Boardkit (the same board in /boardkit) and one Ctrl+Z undoes it, also a move between two boards.
+- The board itself moves by its name, by the gaps between lists, or once picked; a corner still scales everything.
+- A card's own buttons (delete, thots, customise, the "+") still work with one press.
+
+**Different from the step's text:**
+- A double-click on a part of a board that is not a card (a list's background) still opens the board for editing.
+  It is the only way to drag a whole LIST to another place, and the plan says nothing that works today is taken away.
+- Delete, Ctrl+D and copy on a picked card do nothing yet: that is step 3.
+- A full list (Boardkit's limit: 50 cards) takes no more; the drag says "This list is full. A list holds 50 cards."
+
+**Also fixed:** a Boardkit bug found on the way. Opening a board again on the whiteboard counted as a new undo step,
+which would have made some Ctrl+Z presses do nothing. Has a test that fails on the old code.
+
+**Boardkit:** v0.0.109 (80d0e18) pushed and pinned. Nothing changes on screen in Boardkit itself.
+
+**Tests:** unit 172 ✓ (Boardkit 236 ✓), e2e 360 ✓ (9 new in e2e/cards.e2e.ts), Linkkit e2e 30 ✓.
+10 older tests were updated: they assumed a card could only be touched after entering its board.
+
+**Blocked:** nothing. **Ideas added:** none.
+
+**To test by hand (feel only, can't be automated):** drag a few cards around on a real page. Is the lifted card,
+the blue line and the outline easy to follow? Does grabbing the board by its name feel right? (The name's top edge
+is the board's edge, which resizes: grab the name a little lower.)
+
+**Needs your attention:**
+- Edge of the screen: dragging a card to the window's edge does not scroll the page (tldraw's own drags do).
+  Zoom out or move the page first. Say if you want it.
+- Card buttons that are not hover buttons (check circle, thots) still need the board opened first, as before.
+- Next: step 2 (cards leave their list), when you say so.
+
 ## 2026-11-21 — the 5 red Slate / archive tests (no backlog item)
 
 **Fixed** (owner: "Yes, fix them"). Causes, all on the test side or the pin; the widget itself was right:

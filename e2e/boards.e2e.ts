@@ -170,16 +170,22 @@ test("edit in place: rename, add, move and delete cards, all in Boardkit's own r
   // Still editing after Escape left the add field.
   await expect(editingEl(page)).toHaveCount(1);
 
-  // Drag the first card of list 1 onto the top of list 2.
+  // Drag the first card of list 1 onto the top of list 2. The whiteboard
+  // moves it (GT-6): the board stops being edited, the move is Boardkit's.
   const from = await box(cardEl(page, c1));
   const target = await box(cardEl(page, now.board.cardOrder[l2][0]));
   await drag(page, { x: from.x + 20, y: from.y + from.height / 2 }, { x: target.x + 20, y: target.y + 4 });
   now = await saved(page, id, (r) => r.board.cardOrder[l2][0] === c1 && !r.board.cardOrder[l1].includes(c1), "card moved");
   await expect(listEl(page, l2).locator("article[data-card-id]").first()).toHaveAttribute("data-card-id", c1);
 
-  // Delete one: it goes to Boardkit's trash.
-  await cardEl(page, c2).hover();
-  await cardEl(page, c2).getByRole("button", { name: "Delete card" }).click();
+  await expect(editingEl(page)).toHaveCount(0);
+
+  // Delete one, with its own button (one press, the pointer over the card):
+  // it goes to Boardkit's trash.
+  const c2Box = await box(cardEl(page, c2));
+  await page.mouse.move(c2Box.x + c2Box.width / 2, c2Box.y + c2Box.height / 2, { steps: 3 });
+  const del = await box(cardEl(page, c2).getByRole("button", { name: "Delete card" }));
+  await page.mouse.click(del.x + del.width / 2, del.y + del.height / 2);
   await expect(cardEl(page, c2)).toHaveCount(0);
   await saved(page, id, (r) => r.board.trash.at(-1)?.cardId === c2, "card in the trash");
 

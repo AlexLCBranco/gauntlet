@@ -1341,6 +1341,39 @@ Changes to the plan, newest last. Each says what and why.
     data-hidden-for-editing (visibility hidden, pointer through); its state
     is kept. Nothing edited: no work on camera steps (perf).
   * Tests: e2e/stylepanel.e2e.ts "GT-12" (2).
+- 2026-11-21 — GT-6 step 1: cards are whiteboard objects (owner; plan and
+  answers in docs/GT-6-PLAN.md).
+  * Owner's answers: a double-click on a card types in its title; a card
+    taken out of a scaled board stays that size (step 2).
+  * src/cards/. Every card a board widget draws has a tldraw shape of its
+    own, `boardkit-card` (CardShape.tsx), a CHILD of the board shape, with
+    a fixed id per (board widget, card). It draws nothing: the board still
+    draws its cards (Boardkit's code); sync.ts keeps each card shape where
+    its card is drawn (after every change of the board's DOM or scale;
+    never an undo step). Card shapes are saved with the page like any shape.
+  * cardPointer.ts takes a press on a card (select tool) before tldraw and
+    Boardkit: click = pick, Shift = add/remove, drag = move (lifted copy,
+    landing line, target list lit; Escape or a drop off every list cancels),
+    double-click = Boardkit's title field (BoardShape.editCardTitle). A
+    press on a card's own button stays the board's (BoardShape.controlAt).
+    tldraw never moves a card shape itself.
+  * The move is made in Boardkit's data by Boardkit (v0.0.109,
+    app/whiteboard/cards.ts moveWhiteboardCards: placeCards in one board;
+    insertCards + removeCards across two, a moved card is NOT in the trash
+    of the board it left). pageUndo.ts `together()` makes the steps of one
+    action one step of the page (kind "group"): two boards, one Ctrl+Z.
+  * Guards (sync.ts keepCardObjectsTrue): tldraw can't delete, duplicate or
+    paste a card shape (steps 3); a board removed by undo takes its card
+    shapes along. brush.ts: a box holding a whole board picks the board,
+    else the cards it holds. No style panel, no handles for cards only.
+  * Kept: a double-click on a board's non-card part still opens it for
+    editing (the only way to drag a list). Arrows still attach to the
+    board as a whole (CardShapeUtil.canBind false; GT-18).
+  * Boardkit bug fixed on the way: opening a board again with its undo
+    history kept counted as a new step (history.ts), which would have
+    added a phantom step to the page's undo.
+  * Tests: e2e/cards.e2e.ts (9), src/cards/cards.test.ts; Boardkit:
+    app/whiteboard/cards.test.ts, domain/ordering.test.ts (placeCards).
 
 IDEAS
 

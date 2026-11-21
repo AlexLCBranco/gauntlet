@@ -365,12 +365,12 @@ test("on the whiteboard, a board, a list and a card take links from the right-cl
   await expect(board.locator(`section[data-list-id="${firstList}"] [data-list-header] a[aria-label^="Open link"]`)).toHaveAttribute("href", "https://example.com/list1");
   await expect(badge(page, shapeId)).toHaveAttribute("href", "https://example.com/board-key");
 
-  // The board is only shown: a click on the card selects the board and
-  // opens nothing; a click on its icon opens the card's link.
+  // The board is only shown: a click on the card picks that card (GT-6)
+  // and opens nothing; a click on its icon opens the card's link.
   await ed(page, (e) => void e.selectNone());
   const c = await box(board.locator(`[data-card-id="${card1}"]`));
   expect(await opened(context, () => page.mouse.click(c.x + 8, c.y + c.height / 2))).toHaveLength(0);
-  expect(await ed(page, (e) => e.getSelectedShapeIds())).toEqual([shapeId]);
+  expect(await ed(page, (e) => e.getSelectedShapes().map((s: any) => [s.type, s.props.cardId, s.parentId]))).toEqual([["boardkit-card", card1, shapeId]]);
   await ed(page, (e) => void e.selectNone());
   const icon = await box(board.locator(`[data-card-id="${card1}"] a[aria-label^="Open link"]`));
   const pages = await opened(context, () => page.mouse.click(icon.x + icon.width / 2, icon.y + icon.height / 2));

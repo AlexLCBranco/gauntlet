@@ -106,7 +106,8 @@ test("save → open: the page comes back as a new page with every widget, each d
 
   const pg = await openFile(page, file.path);
   expect(pg.name).toBe("Page 1 (archive)");
-  const got = await shapes(page);
+  // (a board's cards have objects of their own since GT-6: not in the file, made again by the board)
+  const got = (await shapes(page)).filter((s) => s.type !== "boardkit-card");
   expect(got.map((s) => s.type).sort()).toEqual(["boardkit-board", "calendarkit-slate", "linkkit-map", "text", "web-embed"]);
   // the board and map are copies, named as archives; the live ones untouched
   const b = got.find((s) => s.type === "boardkit-board")!;

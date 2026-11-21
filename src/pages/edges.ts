@@ -57,6 +57,14 @@ const rect = (x: number, y: number, w: number, h: number) =>
  * Rotated selections keep tldraw's own zones. Drawing is tldraw's.
  */
 export class EdgeSelectionForeground extends SelectionForegroundOverlayUtil {
+  // Only cards picked (GT-6): no handles. A card is never sized or turned
+  // by hand; its board lays it out.
+  override getOverlays(): TLSelectionForegroundOverlay[] {
+    const picked = this.editor.getSelectedShapes();
+    if (picked.length > 0 && picked.every((s) => s.type === "boardkit-card")) return [];
+    return super.getOverlays();
+  }
+
   override getGeometry(overlay: TLSelectionForegroundOverlay): Geometry2d | null {
     const own = super.getGeometry(overlay);
     const { overlayType, handle } = overlay.props as { overlayType: string; handle: string };

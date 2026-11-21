@@ -1,3 +1,4 @@
+import { CARD_TYPE } from "../cards/CardShape";
 import { useEffect, useRef, type ReactNode } from "react";
 import {
   DefaultColorStyle,
@@ -242,7 +243,9 @@ export function StylePanel() {
     () => {
       if (editor.getIsReadonly() || editor.getInstanceState().isFocusMode) return null;
       if (editor.isInAny("select.translating", "select.resizing", "select.rotating")) return null;
-      const shapes = editor.getSelectedShapes();
+      // Cards have no styles here (their look is Boardkit's): only cards
+      // picked, no panel.
+      const shapes = editor.getSelectedShapes().filter((s) => s.type !== CARD_TYPE);
       if (shapes.length === 0) return null;
       const types = new Set(shapes.map((s) => s.type));
       const next = nextMeta(editor);

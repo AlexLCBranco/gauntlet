@@ -42,8 +42,9 @@ Owner's decisions (2026-10-20, 2026-11-12):
 Scope cut 2026-11-21 (owner, chat): GT-6 is only the four steps in docs/GT-6-PLAN.md (pick and move cards, cards
 leave their list, copy and delete, speed and clean-up). Arrows on a card, things stuck to a card and arrows on a
 map box are now GT-18, GT-19, GT-20 under Held: decided after the owner has used GT-6 for real.
-Owner said "go" 2026-11-21, steps OK'd. On hold until the owner answers the two questions in docs/GT-6-PLAN.md
-and says to start step 1.
+**Answered (2026-11-21):** How do you edit a card's text without entering the board first? → Double-click the card.
+**Answered (2026-11-21):** A card dragged out of a board scaled to 50%: small or full size? → It stays small; dropped into another board, it takes that board's size.
+Owner said "go" 2026-11-21, steps OK'd. Step 1 (pick and move cards) built 2026-11-21; steps 2-4 wait for the owner's word, one at a time.
 
 ## Held (needs the owner's "go"; never built from "build the backlog")
 

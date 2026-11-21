@@ -207,8 +207,9 @@ test("C11: a dragged card follows the pointer the whole way to another list, the
     const at = { x: start.x + ((end.x - start.x) * i) / steps, y: start.y + ((end.y - start.y) * i) / steps };
     await page.mouse.move(at.x, at.y);
     if (i < 3) continue;
-    // The lifted copy is under the pointer at every step (it used to vanish).
-    const lifted = page.locator("article:not([data-card-id])");
+    // The lifted copy is under the pointer at every step (it used to
+    // vanish). Since GT-6 the whiteboard drags the card itself.
+    const lifted = page.getByTestId("card-ghost");
     const b = await box(lifted);
     expect(at.x, `step ${i}: x`).toBeGreaterThanOrEqual(b.x - 2);
     expect(at.x, `step ${i}: x`).toBeLessThanOrEqual(b.x + b.width + 2);
@@ -216,19 +217,19 @@ test("C11: a dragged card follows the pointer the whole way to another list, the
     expect(at.y, `step ${i}: y`).toBeLessThanOrEqual(b.y + b.height + 2);
     await expect(lifted).toBeVisible();
   }
-  // The target list already shows the card (as in Boardkit).
-  await expect(listEl(page, to).locator(`[data-card-id="${cardId}"]`)).toHaveCount(1);
+  // A line in the target list shows where the card lands.
+  await expect(page.getByTestId("card-landing-line")).toHaveAttribute("data-list", to);
   await page.mouse.up();
   await saved(page, id, (r) => r.board.cardOrder[to].includes(cardId) && !r.board.cardOrder[from].includes(cardId), "card moved in the record");
 
   // Esc mid-drag: back where it was.
-  const back = await centre(cardEl(page, cardId));
+  const back = await centre(boardEl(page).locator(`[data-card-id="${cardId}"]`));
   await page.mouse.move(back.x, back.y);
   await page.mouse.down();
   for (let i = 1; i <= 8; i++) await page.mouse.move(back.x - i * 30, back.y + i * 5);
   await page.keyboard.press("Escape");
   await page.mouse.up();
-  await expect(editingEl(page)).toHaveCount(1);
+  await expect(page.getByTestId("card-ghost")).toHaveCount(0);
   await page.waitForTimeout(600);
   expect((await record(page, id)).board.cardOrder[to]).toContain(cardId);
 });
@@ -260,8 +261,7 @@ test("C11: a card dropped on the top edge of another list's first card lands the
   const { id } = await setUp(page, context);
   const wb = await dropOnTopEdge(page, editingEl(page));
   const r = await saved(page, id, (r) => r.board.cardOrder[wb.to][0] === wb.cardId && !r.board.cardOrder[wb.from].includes(wb.cardId), "card moved on the whiteboard");
-  await expect(listEl(page, wb.to).locator("article[data-card-id]").first()).toHaveAttribute("data-card-id", wb.cardId);
-  await expect(editingEl(page)).toHaveCount(1);
+  await expect(boardEl(page).locator(`section[data-list-id="${wb.to}"] article[data-card-id]`).first()).toHaveAttribute("data-card-id", wb.cardId);
 
   const bk = await context.newPage();
   bk.on("pageerror", (e) => errors.push(e.message));
@@ -297,11 +297,14 @@ test("L12: Enter on an empty 'Add a card' adds a blank card at once, and keeps a
   await expect(editingEl(page)).toHaveCount(1);
 });
 
-test("C4, L3, B1: rename a card and a list by clicking their titles; add a list", async ({ page, context }) => {
+test("C4, L3, B1: rename a card (double-click) and a list (click its title); add a list", async ({ page, context }) => {
   const { id, rec, withCards } = await setUp(page, context);
   const list = withCards[0];
   const cardId = rec.board.cardOrder[list][0];
-  await cardEl(page, cardId).getByRole("button", { name: "Card title", exact: true }).click();
+  // A card: one click picks it, a double-click types in its title (GT-6).
+  const title = await centre(cardEl(page, cardId).getByRole("button", { name: "Card title", exact: true }));
+  await page.mouse.dblclick(title.x, title.y);
+  await expect(cardEl(page, cardId).getByRole("textbox", { name: "Card title" })).toBeFocused();
   await page.keyboard.press("Control+a");
   await page.keyboard.type("Renamed card");
   await page.keyboard.press("Enter");

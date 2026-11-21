@@ -52,10 +52,14 @@ const shapeIds = (page: Page) => ed(page, (e) => e.getCurrentPageShapes().map((s
 const allShapes = (page: Page) =>
   ed(page, (e) =>
     e.getPages().map((p: any) =>
-      [...e.getPageShapeIds(p.id)].sort().map((id: string) => {
-        const s = e.getShape(id);
-        return { id, x: s.x, y: s.y, rotation: s.rotation, props: JSON.stringify(s.props) };
-      }),
+      [...e.getPageShapeIds(p.id)]
+        .sort()
+        // (a board's cards have objects of their own since GT-6: they follow the board)
+        .filter((id: string) => e.getShape(id).type !== "boardkit-card")
+        .map((id: string) => {
+          const s = e.getShape(id);
+          return { id, x: s.x, y: s.y, rotation: s.rotation, props: JSON.stringify(s.props) };
+        }),
     ),
   );
 
