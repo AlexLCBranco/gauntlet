@@ -9,6 +9,9 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 ## 2026-11-21
 - GT-17 — Main menu button matches the toolbar
   The ☰ button at the top left is now a floating box like the toolbar: same height, corners, background and shadow, on the same line, the same distance from the top edge.
+### Internal
+- Pin calendarkit v1.92.1 (7d6ca62): the fallback copy is the version /calendar serves again (was v1.78.1)
+- test: 5 Slate / archive checks follow calendarkit v1.79-v1.92 (the ⇄ switch always on a widget's cards, the header line counted as a box of the Slate, cards told apart from Cup squares)
 
 ## 2026-11-18
 - GT-15 — Browser tab title follows the page

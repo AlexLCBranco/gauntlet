@@ -10,7 +10,7 @@ Finished work goes to docs/HISTORY.md.
   (2026-11-17; GT-5 Slate kit at run time, src/slate/kit.ts; GT-10 archive
   files, src/archive/; DECISIONS). Ready: GT-14, GT-16, both Blocked (notes in the backlog; owner answers). Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
-  calendarkit v1.78.1 (the fallback since GT-5); on their main.
+  calendarkit v1.92.1 (`7d6ca62`; the fallback since GT-5); on their main.
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
   items 1-6 DONE (e2e/mapsfast.e2e.ts; Linkkit v0.0.117 made here for the
   list paste). Item 6's mod+c "clash" is a dev-only Boardkit check that
@@ -49,7 +49,6 @@ Finished work goes to docs/HISTORY.md.
 
 - Linkkit's tree layout lets long card names overlap (not changed).
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom a wheel tick off).
-- 5 e2e RED since calendarkit v1.92.1 (pin is v1.78.1): slate:963, :255 x2, archive:95, :144 (REPORTS 2026-11-21).
 - Toolbar buttons keep the keyboard focus after a click (tldraw then
   ignores keys: no nudge/Delete until the page is clicked). Fixed for the
   Slate (DECISIONS Part 4) and stamps-tray placing (GT-3); Board, Map still have it.

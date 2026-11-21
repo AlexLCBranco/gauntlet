@@ -121,7 +121,7 @@ test("save → open: the page comes back as a new page with every widget, each d
   await expect(page.locator(`[id="${b.id}"] section[data-list-id]`)).toHaveCount(liveBoard.board.listOrder.length);
   const slate = got.find((s) => s.type === "calendarkit-slate")!;
   await expect(page.locator(`[id="${slate.id}"] [data-testid="slate-widget"]`)).toHaveAttribute("data-state", "ready", { timeout: 20_000 });
-  expect(await page.locator(`[id="${slate.id}"] [data-game-id]`).count()).toBe(day.games.length);
+  expect(await page.locator(`[id="${slate.id}"] .ck-slate-card[data-game-id]`).count()).toBe(day.games.length);
   // its hover popups still work, from the frozen data
   // (pointed at where it is now: a widget just drawn may still be settling its size)
   const recEl = page.locator(`[id="${slate.id}"] [data-side="away"] .ck-slate-rec[data-tip]`).first();
@@ -158,12 +158,12 @@ test("a frozen Slate shows the games as saved after the live schedule changes; a
   await open(page);
   await openFile(page, file.path);
   const slate = await one(page, "calendarkit-slate");
-  const frozenCard = page.locator(`[id="${slate.id}"] [data-game-id="${g.gameId}"]`);
+  const frozenCard = page.locator(`[id="${slate.id}"] .ck-slate-card[data-game-id="${g.gameId}"]`);
   await expect(frozenCard).toBeVisible({ timeout: 20_000 });
   expect(await frozenCard.locator(".ck-slate-score").allTextContents()).toEqual(["", ""]);
   // a live Slate of the same night on the same page: the played game
   await page.evaluate((date) => void (window as any).editor.createShape({ id: "shape:liveslate", type: "calendarkit-slate", x: 900, y: 1400, props: { date } }), day.date);
-  const liveCard = page.locator(`[id="shape:liveslate"] [data-game-id="${g.gameId}"]`);
+  const liveCard = page.locator(`[id="shape:liveslate"] .ck-slate-card[data-game-id="${g.gameId}"]`);
   await expect.poll(() => liveCard.locator(".ck-slate-score").allTextContents(), { timeout: 20_000 }).toEqual(["101", "99"]);
   expect(await frozenCard.locator(".ck-slate-score").allTextContents()).toEqual(["", ""]);
 });

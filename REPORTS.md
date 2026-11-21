@@ -3,6 +3,19 @@
 The report at the end of each batch of backlog work, newest first (CLAUDE.md, "Feature backlog, built list and
 ideas"), so the owner's Claude chat can read it without a paste.
 
+## 2026-11-21 — the 5 red Slate / archive tests (no backlog item)
+
+**Fixed** (owner: "Yes, fix them"). Causes, all on the test side or the pin; the widget itself was right:
+- slate.e2e.ts:963: the pin was calendarkit v1.78.1 while /calendar serves v1.92.1. Pin moved to v1.92.1 (7d6ca62).
+- slate.e2e.ts:255, notes shown: calendarkit CK-11 (v1.88.1) put the ⇄ switch on every card of the widget on purpose;
+  the test still expected no button. It now expects one ⇄ per card (none with notes hidden) and no other button.
+- slate.e2e.ts:255, notes hidden: the header line (CK-10, v1.82.0) was not in the test's list of the Slate's boxes, so
+  the 1-device-pixel rounding of its edge counted as "something between the cards" (100 px at 4x). It is in the list now.
+- archive.e2e.ts:95 and :144: Cup squares carry `data-game-id` as cards do; the tests now look for the card.
+
+**Needs your attention:** nothing made sure the whiteboard's tests ran when calendarkit shipped v1.79-v1.92, so the
+live suite was red for days unnoticed. Same risk at the next calendarkit change.
+
 ## 2026-11-21 — GT-17 (GT-14, GT-16 blocked)
 
 **Built:** GT-17 — Main menu button matches the toolbar. The ☰ button is a floating box like the toolbar (44 px tall,

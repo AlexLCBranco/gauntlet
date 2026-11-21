@@ -292,7 +292,11 @@ test(`Slate: at 100% the widget is calendarkit's copy of that night, notes ${hid
   await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
   // No controls of step 4 yet: no ⇄, no field. Step 3's ↗ is on every
   // card (speed session Part 4); hidden for the comparison (copies have none).
-  await expect(w.locator('[data-testid="note-switch"], textarea, button')).toHaveCount(0);
+  // Since calendarkit v1.88.1 (CK-11) each note box has its ⇄ switch at all
+  // times in the widget (never in a copy: hidden for the comparison too).
+  await expect(w.locator("textarea")).toHaveCount(0);
+  await expect(w.getByTestId("note-switch")).toHaveCount(hide ? 0 : night.ids.length);
+  await expect(w.locator('button:not([data-testid="note-switch"])')).toHaveCount(0);
   await expect(w.getByTestId("game-link")).toHaveCount(night.ids.length);
   // Slot labels as saved; none with the notes hidden.
   const slots = await w.locator('[data-testid="note-slot"]').allTextContents();
@@ -301,7 +305,7 @@ test(`Slate: at 100% the widget is calendarkit's copy of that night, notes ${hid
   // Nothing drawn behind the cards: no background on the widget or its grid.
   for (const sel of [".gs-slate", ".ck-slate-copy"])
     expect(await page.locator(`[id="${s.id}"] ${sel}`).evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
-  await page.addStyleTag({ content: ".tlui-layout, .tl-user-indicator-bounds, [data-testid='backup-banner'], [data-testid='game-link'] { visibility: hidden !important; }" });
+  await page.addStyleTag({ content: ".tlui-layout, .tl-user-indicator-bounds, [data-testid='backup-banner'], [data-testid='game-link'], [data-testid='note-switch'] { visibility: hidden !important; }" });
 
   const { w: pw, h: ph } = await sizeOf(page, copy.png);
   const shot = (await page.screenshot({ clip: { x: 0, y: 0, width: pw / copy.ratio, height: ph / copy.ratio }, animations: "disabled", caret: "hide" })).toString("base64");
@@ -331,9 +335,18 @@ test(`Slate: at 100% the widget is calendarkit's copy of that night, notes ${hid
   // (transparent in the copy) the widget shows the page itself.
   const sheet = await page.evaluate(() => getComputedStyle(document.querySelector(".tl-background") ?? document.body).backgroundColor);
   // The copy's layout as calendarkit draws it on screen.
-  const r = await comparePng(page, copy.png, copy.stageShot, shot, copy.stage, copy.ratio);
+  // The header line across the top (calendarkit v1.82.0, CK-10) is a box of
+  // the Slate as the cards are: its edges get the cards' 2 px of rounding
+  // room, so "between the cards" stays the page and nothing else.
+  const header = await w.locator(".ck-slate-copy").evaluate((root) => {
+    const o = root.getBoundingClientRect();
+    const r = root.querySelector(".ck-slate-header")!.getBoundingClientRect();
+    return { x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height };
+  });
+  const boxes = [...copy.stage, header];
+  const r = await comparePng(page, copy.png, copy.stageShot, shot, boxes, copy.ratio);
   // The copied PNG itself.
-  const viaPng = await comparePng(page, copy.png, copy.png, shot, copy.stage, copy.ratio);
+  const viaPng = await comparePng(page, copy.png, copy.png, shot, boxes, copy.ratio);
   test.info().annotations.push({ type: "pixels", description: JSON.stringify({ stage: r, png: viaPng, ratio: copy.ratio, sheet }) });
   await writeFile(test.info().outputPath("calendarkit-copy.png"), Buffer.from(copy.png, "base64"));
   await writeFile(test.info().outputPath("widget.png"), Buffer.from(shot, "base64"));
