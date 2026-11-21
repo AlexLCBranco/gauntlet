@@ -4,11 +4,11 @@ Read PROJECT.md first (the plan + DECISIONS), then this file. Update this
 file after every step. Hard limit: 100 lines (PROJECT.md section 7).
 Finished work goes to docs/HISTORY.md.
 
-## Current state (2026-11-17)
+## Current state (2026-11-21)
 
-- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, 2, 3, 5, 10, 11, 12, 13, 15 DONE
+- PLAN = FEATURE_BACKLOG.md on origin/main. GT-1, 2, 3, 5, 10, 11, 12, 13, 15, 17 DONE
   (2026-11-17; GT-5 Slate kit at run time, src/slate/kit.ts; GT-10 archive
-  files, src/archive/; DECISIONS). Next in Ready: GT-14 (blocked on footykit FK-35). Phase 3 done; phase 4 = GT-6, held.
+  files, src/archive/; DECISIONS). Ready: GT-14, GT-16, both Blocked (notes in the backlog; owner answers). Phase 3 done; phase 4 = GT-6, held.
 - Pinned: Boardkit v0.0.108 (`886f83d`), Linkkit v0.0.119 (`f41cbe8`),
   calendarkit v1.78.1 (the fallback since GT-5); on their main.
 - MAP-MAKING ROUND (owner, 2026-11-13; Linkkit's speed round wired in):
@@ -49,6 +49,7 @@ Finished work goes to docs/HISTORY.md.
 
 - Linkkit's tree layout lets long card names overlap (not changed).
 - Flaky, not chased: fullpage.e2e.ts:192 (zoom a wheel tick off).
+- 5 e2e RED since calendarkit v1.92.1 (pin is v1.78.1): slate:963, :255 x2, archive:95, :144 (REPORTS 2026-11-21).
 - Toolbar buttons keep the keyboard focus after a click (tldraw then
   ignores keys: no nudge/Delete until the page is clicked). Fixed for the
   Slate (DECISIONS Part 4) and stamps-tray placing (GT-3); Board, Map still have it.

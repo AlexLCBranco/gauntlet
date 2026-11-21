@@ -638,8 +638,9 @@ test("narrower than everything pinned: the last ones wait in the ⋮ menu, the s
 });
 
 test("a full bar refuses another pin, with a short message; the layout doesn't change", async ({ page }) => {
-  // At 720 px everything but Lasso fits; Lasso too wouldn't.
-  await page.setViewportSize({ width: 720, height: 480 });
+  // At 740 px everything but Lasso fits; Lasso too wouldn't (720 before GT-17: the ☰ box is 10 px wider, and the
+  // centred bar keeps clear of it on both sides).
+  await page.setViewportSize({ width: 740, height: 480 });
   const allButLasso = { bar: EVERYTHING.bar.filter((id) => id !== "lasso"), more: ["lasso"] };
   await withLayout(page, allButLasso);
   await open(page);
@@ -652,10 +653,51 @@ test("a full bar refuses another pin, with a short message; the layout doesn't c
   expect(await barOrder(page)).toEqual([...allButLasso.bar, "more"]);
   expect(await menuOrder(page)).toEqual(["lasso"]);
   expect(JSON.parse((await stored(page))!)).toEqual(allButLasso);
-  await barIsWhole(page, 680);
+  await barIsWhole(page, 700);
   // The message goes away by itself.
   await expect(page.getByTestId("toolbar-full")).toHaveCount(0, { timeout: 5000 });
 });
+
+// GT-17: the ☰ button floats like the toolbar and sits on its line.
+for (const size of [
+  { width: 1400, height: 900 },
+  { width: 700, height: 480 },
+]) {
+  test(`GT-17: at ${size.width} px the ☰ button has the toolbar's height and look, on its centre line, at the far left`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await open(page);
+    const look = (sel: string) =>
+      page.locator(sel).evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const s = getComputedStyle(el);
+        return { top: r.top, left: r.left, right: r.right, height: r.height, width: r.width, bg: s.backgroundColor, radius: s.borderTopLeftRadius, radiusBR: s.borderBottomRightRadius, shadow: s.boxShadow, border: s.borderRightWidth };
+      });
+    const bar = await look('[data-testid="toolbar"]');
+    const menu = await look(".tlui-menu-zone");
+    const button = await look('[data-testid="main-menu.button"]');
+    // Same height, same gap from the top edge, so the same centre line (within 1 px).
+    expect(menu.height).toBeCloseTo(bar.height, 1);
+    expect(Math.abs(menu.top + menu.height / 2 - (bar.top + bar.height / 2))).toBeLessThanOrEqual(1);
+    expect(menu.top).toBeCloseTo(bar.top, 1);
+    // The same floating look: background, corner radius (all corners), shadow, no border.
+    expect(menu.bg).toBe(bar.bg);
+    expect(menu.radius).toBe(bar.radius);
+    expect(menu.radiusBR).toBe(bar.radius);
+    expect(menu.shadow).toBe(bar.shadow);
+    expect(menu.border).toBe("0px");
+    // The button fills it as a tool fills the bar: a square, centred on the same line.
+    const toolSize = (await page.getByTestId("tools.select").boundingBox())!;
+    expect(button.height).toBeCloseTo(toolSize.height, 1);
+    expect(button.width).toBeCloseTo(toolSize.width, 1);
+    expect(Math.abs(button.top + button.height / 2 - (bar.top + bar.height / 2))).toBeLessThanOrEqual(1);
+    // Far left, clear of the bar.
+    expect(menu.left).toBeLessThanOrEqual(12);
+    expect(menu.right).toBeLessThan(bar.left);
+    // It still opens the menu.
+    await page.getByTestId("main-menu.button").click();
+    await expect(page.getByTestId("main-menu.save-board-file")).toBeVisible();
+  });
+}
 
 test("screenshots of the bar and the open ⋮ menu, to compare with Excalidraw's (screenshots/)", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 800 });

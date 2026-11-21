@@ -230,7 +230,7 @@ test("snapped to half width: zoom and content unchanged, panning reaches every p
   await open(page);
   // Shapes all over the page, up to its far edges.
   const ids = [
-    await drawRect(page, { x: 40, y: 40 }, { x: 240, y: 160 }),
+    await drawRect(page, { x: 70, y: 70 }, { x: 240, y: 160 }), // clear of the ☰ box (GT-17: 8..52 px)
     await drawRect(page, { x: BIG.width - 200, y: 60 }, { x: BIG.width - 10, y: 180 }),
     await drawRect(page, { x: 900, y: 400 }, { x: 1100, y: 520 }),
     await drawRect(page, { x: BIG.width - 300, y: BIG.height - 150 }, { x: BIG.width - 6, y: BIG.height - 6 }),

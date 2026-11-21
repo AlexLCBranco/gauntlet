@@ -3,6 +3,38 @@
 The report at the end of each batch of backlog work, newest first (CLAUDE.md, "Feature backlog, built list and
 ideas"), so the owner's Claude chat can read it without a paste.
 
+## 2026-11-21 — GT-17 (GT-14, GT-16 blocked)
+
+**Built:** GT-17 — Main menu button matches the toolbar. The ☰ button is a floating box like the toolbar (44 px tall,
+same corners, background and shadow, 6 px from the top edge, so on the toolbar's centre line), 8 px from the left edge,
+in line with the style panel under it. CSS only (src/whiteboard/chrome.css); e2e at 1400 and 700 px wide.
+Side effect: the ☰ box is 10 px wider than the old button and the centred toolbar keeps clear of it on both sides, so
+a bar with every tool pinned needs a 20 px wider window than before (the default bar is unchanged, checked at 640 px).
+Two tests followed: the "full bar" test runs at 740 px (was 720), and a full-page test's first rectangle starts at
+70, 70 (40, 40 is now under the ☰ box).
+
+**Blocked:** GT-14 — Football Slate and combined Slate widgets. footykit FK-35 shipped, but its "same card shape" no
+longer holds and the combined Slate can't be built from what the two kits offer. Four things are missing (full note
+in the backlog): (1) football cards are now 561 × 96, NBA cards 509 × 78: how they sit in one grid; (2) neither kit
+exports a single card (footykit draws a whole day, calendarkit a whole night with its header), so cards can't be mixed
+in time order or get a sport mark without new footykit and calendarkit items; (3) which games belong to one date
+(NBA: US Eastern night; football: São Paulo day); (4) pinned footykit package only, or a run-time kit like
+calendarkit's. Nothing of GT-14 was built (not the football-only widget either: the item ships whole).
+GT-16 — Countdown button in the Slate widgets: still waits for calendarkit CK-22 (not in calendarkit's BUILT.md) and
+footykit FK-61 (still in footykit's backlog).
+
+**Needs your attention:** 5 e2e fail with and without this change (same 5 on the old code): calendarkit went from
+v1.78.1 (the pin) to v1.92.1 and the whiteboard's tests were not updated. slate.e2e.ts:963 (the pin is not the version
+/calendar serves), slate.e2e.ts:255 twice (5 buttons inside the widget where the test expects none; 100 non-background
+pixels between cards), archive.e2e.ts:95 and :144 (the new Cup squares carry `data-game-id` too, so the tests' card
+count and card locator match them). Not looked into further: whether each is a stale test or a real change in the
+widget is not known yet. perf.e2e.ts hover p95 with 3 Slates failed once at 31 ms (limit 25; known borderline, HANDOFF)
+and passed in the full run.
+
+**Ideas added:** none.
+
+**To test by hand:** nothing (GT-17 is covered by e2e); only whether the ☰ box looks right to you next to the toolbar.
+
 ## 2026-11-18 — GT-13, GT-15
 
 **Built:** GT-13 — Slate popup on the whiteboard same as calendarkit's. Cause: the whiteboard's Slate called

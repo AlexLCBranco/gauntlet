@@ -16,6 +16,7 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 ### GT-14 — Football Slate and combined Slate widgets
 **In short:** Two new Slate widgets on the whiteboard: football only, and football plus NBA together in time order.
 **What:** next to the NBA Slate widget, a Football Slate widget (footykit's Slate) and a Combined Slate: one Slate with both sports' games sorted by start time, a small sport mark on each card. Each can be placed on its own (NBA only, Football only, Combined). Needs footykit FK-35 first (same card shape); until then this item is `Blocked:` on it. Header: "SLATE · 18-11 · NBA + Football". Live scores and updates as GT-5.
+Blocked: (2026-11-21) FK-35 shipped, but the "same card shape" it promised no longer holds, and the combined Slate needs answers and kit work first: (1) footykit's cards are now 561 × 96 (FK-50, FK-53, FK-73), calendarkit's 509 × 78: how do the two sit in one grid (football's size for every cell with NBA cards padded, each card its own size, or footykit back to 509 × 78)? (2) Neither kit offers one card on its own: footykit's part draws a whole day (SlateDay) and calendarkit's a whole night with its own header (SlateCopy), so cards can't be mixed in time order or given a sport mark until both export a single card (new footykit and calendarkit items). (3) Which games are "18-11" in a combined Slate: the NBA night is a US Eastern date, football's day is the local (São Paulo) day. (4) No footykit Slate kit is served at run time as calendarkit's is (/calendar/slatekit/): is a pinned footykit package enough (a new card design then needs a new pin here), or should footykit get a kit too? The owner answers and unblocks.
 **Tests:** e2e: each of the three widget kinds renders; combined is in time order with both sports.
 
 ### GT-16 — Countdown button in the Slate widgets
@@ -23,12 +24,6 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 **What:** after calendarkit CK-22 (and footykit FK-61 for the football / combined Slate, GT-14) ship, bump the pinned packages and make sure the button works inside the widgets (opens halftime-timer in a new tab, doesn't interfere with selecting or dragging the widget). Combined Slate: counts to the first game of either sport.
 Blocked: waits for calendarkit CK-22 (and footykit FK-61 for the football and combined Slates); the owner unblocks it once they ship.
 **Tests:** e2e: the button is in the NBA Slate widget and its link points to halftime-timer with the right time.
-
-### GT-17 — Main menu button matches the toolbar
-**In short:** The ☰ button at the top left gets the same height and floating look as the main toolbar and sits on the same line as it.
-**What:**
-- Today the ☰ button is smaller and sits lower than the toolbar. Make it the same height, corner radius, background and shadow as the toolbar, vertically centred on the toolbar's centre line, with the same gap from the top edge. It stays at the far left.
-**Tests:** e2e: the button's height equals the toolbar's and their vertical centres match within 1 px.
 
 ## Held (needs the owner's "go"; never built from "build the backlog")
 

@@ -6,6 +6,10 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
+## 2026-11-21
+- GT-17 — Main menu button matches the toolbar
+  The ☰ button at the top left is now a floating box like the toolbar: same height, corners, background and shadow, on the same line, the same distance from the top edge.
+
 ## 2026-11-18
 - GT-15 — Browser tab title follows the page
   The tab title says which whiteboard page you are on ("Gauntlet · Page 2"), and changes as you switch, add or rename pages.
