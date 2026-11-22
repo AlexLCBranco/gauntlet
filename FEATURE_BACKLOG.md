@@ -13,11 +13,21 @@ checklists, no browser windows left open. tldraw is pinned at 5.5.2: check its o
 
 ## Ready
 
-### GT-14 — Football Slate and combined Slate widgets
-**In short:** Two new Slate widgets on the whiteboard: football only, and football plus NBA together in time order.
-**What:** next to the NBA Slate widget, a Football Slate widget (footykit's Slate) and a Combined Slate: one Slate with both sports' games sorted by start time, a small sport mark on each card. Each can be placed on its own (NBA only, Football only, Combined). Needs footykit FK-35 first (same card shape); until then this item is `Blocked:` on it. Header: "SLATE · 18-11 · NBA + Football". Live scores and updates as GT-5.
-Blocked: (2026-11-21) FK-35 shipped, but the "same card shape" it promised no longer holds, and the combined Slate needs answers and kit work first: (1) footykit's cards are now 561 × 96 (FK-50, FK-53, FK-73), calendarkit's 509 × 78: how do the two sit in one grid (football's size for every cell with NBA cards padded, each card its own size, or footykit back to 509 × 78)? (2) Neither kit offers one card on its own: footykit's part draws a whole day (SlateDay) and calendarkit's a whole night with its own header (SlateCopy), so cards can't be mixed in time order or given a sport mark until both export a single card (new footykit and calendarkit items). (3) Which games are "18-11" in a combined Slate: the NBA night is a US Eastern date, football's day is the local (São Paulo) day. (4) No footykit Slate kit is served at run time as calendarkit's is (/calendar/slatekit/): is a pinned footykit package enough (a new card design then needs a new pin here), or should footykit get a kit too? The owner answers and unblocks.
-**Tests:** e2e: each of the three widget kinds renders; combined is in time order with both sports.
+### GT-14 — Football Slate widget
+**In short:** A new Slate widget on the whiteboard showing the day's football matches (footykit's Slate), next to the NBA one.
+**What:** next to the NBA Slate widget, a Football Slate widget: footykit's Slate for one day, loaded live from footykit's kit at `/football/slatekit/manifest.json`, the same way the NBA Slate widget loads calendarkit's kit (same fallback rule as the NBA widget has). Cards as footykit draws them (561 × 96). Header: "SLATE · 18-11 · Football". Live scores and updates as GT-5. A game counts for the day it starts on in São Paulo time, and a game that starts before 05:00 São Paulo time counts for the day before (owner's rule, 2026-11-21: a late NBA game belongs to the night it is part of; football in South America and Europe never starts that late).
+The Combined Slate (football plus NBA) is now GT-21.
+**Answered (2026-11-21):** Is a pinned footykit package enough, or should footykit get a kit served at run time like calendarkit's? → A kit served at run time, like calendarkit's (footykit FK-76).
+Blocked: waits for footykit FK-76 (footykit serves its Slate kit live).
+**Tests:** e2e: the Football Slate widget renders the day's matches; a 04:30 São Paulo start shows on the day before.
+
+### GT-21 — Combined Slate widget (football plus NBA)
+**In short:** A new Slate widget on the whiteboard with football and NBA games together in start-time order, a small sport mark on each card.
+**What:** split from GT-14 (2026-11-21). One Slate with both sports' games sorted by start time, a small sport mark on each card. Can be placed on its own, like NBA only and Football only. Header: "SLATE · 18-11 · NBA + Football". Live scores and updates as GT-5. Cards come from the two kits' single-card exports (footykit FK-77, calendarkit CK-34).
+**Answered (2026-11-21):** footykit's cards are 561 × 96 and calendarkit's 509 × 78: how do the two sit in one grid? → Neither card changes size (the NBA card must stay 509 × 78). Every cell of the grid is 561 × 96; an NBA card sits centred in its cell with empty space around it.
+**Answered (2026-11-21):** Which games are "18-11" in a combined Slate? → A game counts for the day it starts on in São Paulo time, and a game that starts before 05:00 São Paulo time counts for the day before (owner's rule, 2026-11-21: a late NBA game belongs to the night it is part of; football in South America and Europe never starts that late). So "18-11" is every football match and every NBA game that starts from 05:00 on the 18th to just before 05:00 on the 19th, São Paulo time.
+Blocked: waits for footykit FK-77, calendarkit CK-34 and GT-14.
+**Tests:** e2e: the combined widget is in start-time order with both sports and a sport mark on every card; an NBA game starting 01:00 São Paulo time on the 19th shows under 18-11; NBA cards are 509 × 78 inside 561 × 96 cells.
 
 ### GT-16 — Countdown button in the Slate widgets
 **In short:** The Slate widgets on the whiteboard get the same "⏱ Countdown" button as calendarkit and footykit, opening halftime-timer counting down to the first game.
