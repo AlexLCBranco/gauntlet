@@ -56,6 +56,12 @@ map box are now GT-18, GT-19, GT-20 under Held: decided after the owner has used
 **Answered (2026-11-21):** A card dragged out of a board scaled to 50%: small or full size? → It stays small; dropped into another board, it takes that board's size.
 Owner said "go" 2026-11-21, steps OK'd. Step 1 (pick and move cards) and step 2 (cards leave their list) built 2026-11-21; steps 3-4 wait for the owner's word, one at a time.
 
+### GT-22 — Past-season games in the Slate widget's season-series popup are clickable
+**In short:** In the Slate widget on the whiteboard, the past-season games of the season-series popup open NBA.com in a new tab, as in calendarkit.
+**What:** the popup comes from calendarkit's kit (`kit.useSeriesPopup` in `src/slate/hover.tsx`), so the links arrive with calendarkit CK-35. After it ships: bump the pinned calendarkit package (the fallback) and make sure a click on a past-season square inside the widget opens the link in a new tab and doesn't select or drag the widget.
+Blocked: waits for calendarkit CK-35.
+**Tests:** e2e: in the NBA Slate widget, open the season-series popup, switch to an earlier season; each square is a link to `nba.com/games?date=` and clicking it leaves the widget unselected and in place.
+
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-18 — Arrows attach to one card
