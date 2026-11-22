@@ -58,13 +58,15 @@ the card, its list or its board moves, and when the card changes list. Deleting 
 **In short:** Text, shapes, pictures or drawings can be attached to a card and then follow it everywhere.
 **What:** after GT-6. Anything can be attached to a card (owner, 2026-11-21); it follows the card through list
 moves, board moves and scaling, and is deleted with it.
-Blocked: the owner hasn't decided how a thing gets attached: by dropping it on top of the card (and dragging it off
-lets go), or some other way?
+**Open question (not asked yet: the owner decides after using GT-6 for real, 2026-11-21):** how does a thing get
+attached: by dropping it on top of the card (and dragging it off lets go), or some other way? If the owner says "go"
+before answering, don't build: put a `Blocked:` note with this question.
 **Tests:** e2e: attach each kind; follows through list moves, board moves, scaling; delete; detach; undo.
 
 ### GT-20 — Arrows attach to one box of a map
 **In short:** An arrow's end can snap to a single box inside a Linkkit map and stays on it.
 **What:** after GT-18. Same as GT-18, for a single box inside a map on the whiteboard. Needs a Linkkit release.
-Blocked: the owner hasn't decided whether only arrows attach to map boxes, or boxes also become objects picked
-with one click, like cards.
+**Open question (not asked yet: the owner decides after using GT-6 and GT-18 for real, 2026-11-21):** do only arrows
+attach to map boxes, or do boxes also become objects picked with one click, like cards? If the owner says "go" before
+answering, don't build: put a `Blocked:` note with this question.
 **Tests:** e2e: attach; edit the map so the box moves; move/scale the map; delete the box.
