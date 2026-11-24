@@ -26,13 +26,13 @@ Blocked: waits for footykit FK-76 (footykit serves its Slate kit live).
 **What:** split from GT-14 (2026-11-21). One Slate with both sports' games sorted by start time, a small sport mark on each card. Can be placed on its own, like NBA only and Football only. Header: "SLATE · 18-11 · NBA + Football". Live scores and updates as GT-5. Cards come from the two kits' single-card exports (footykit FK-77, calendarkit CK-34).
 **Answered (2026-11-21):** footykit's cards are 561 × 96 and calendarkit's 509 × 78: how do the two sit in one grid? → Neither card changes size (the NBA card must stay 509 × 78). Every cell of the grid is 561 × 96; an NBA card sits centred in its cell with empty space around it.
 **Answered (2026-11-21):** Which games are "18-11" in a combined Slate? → A game counts for the day it starts on in São Paulo time, and a game that starts before 05:00 São Paulo time counts for the day before (owner's rule, 2026-11-21: a late NBA game belongs to the night it is part of; football in South America and Europe never starts that late). So "18-11" is every football match and every NBA game that starts from 05:00 on the 18th to just before 05:00 on the 19th, São Paulo time.
-Blocked: waits for footykit FK-77, calendarkit CK-34 and GT-14.
+Blocked: waits for footykit FK-77, calendarkit CK-34, gauntlet GT-14.
 **Tests:** e2e: the combined widget is in start-time order with both sports and a sport mark on every card; an NBA game starting 01:00 São Paulo time on the 19th shows under 18-11; NBA cards are 509 × 78 inside 561 × 96 cells.
 
 ### GT-16 — Countdown button in the Slate widgets
 **In short:** The Slate widgets on the whiteboard get the same "⏱ Countdown" button as calendarkit and footykit, opening halftime-timer counting down to the first game.
 **What:** after calendarkit CK-22 (and footykit FK-61 for the football / combined Slate, GT-14) ship, bump the pinned packages and make sure the button works inside the widgets (opens halftime-timer in a new tab, doesn't interfere with selecting or dragging the widget). Combined Slate: counts to the first game of either sport.
-Blocked: waits for calendarkit CK-22 (and footykit FK-61 for the football and combined Slates); the owner unblocks it once they ship.
+Blocked: waits for calendarkit CK-22, footykit FK-61 (FK-61 is for the football and combined Slates).
 **Tests:** e2e: the button is in the NBA Slate widget and its link points to halftime-timer with the right time.
 
 ### GT-6 — Cards go anywhere

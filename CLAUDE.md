@@ -69,7 +69,7 @@ in the backlog yourself.
 
 If an item is unclear or blocked, don't guess: leave it in `FEATURE_BACKLOG.md` with a `Blocked:` note saying what's
 missing, and continue with the next one. Don't add, rewrite or reorder backlog items yourself; only remove shipped
-ones and add `Blocked:` notes. End with a short report: built / blocked / ideas added / what the owner must test by
+ones, add `Blocked:` notes and turn them into `**Unblocked**` lines (see "backlogkit formats"). End with a short report: built / blocked / ideas added / what the owner must test by
 hand (only what couldn't be automated). Also save that report at the top of `REPORTS.md` (newest first: date, item IDs, the report text) in the same commit, so the owner's Claude chat can read it without a paste. A pasted prompt overrides this section.
 
 Guard: `scripts/check-lists.mjs` runs with the checks (before `npm test`) and fails if an ID is both planned and built, an
@@ -84,9 +84,19 @@ backlogkit (the owner's site that shows every repo's lists) reads these lines; k
 - Specs: every item in `FEATURE_BACKLOG.md` has, as the first line under its `### ID — title` heading,
   `**In short:** <one plain sentence: what the owner will see change, no code words>`. If nothing visible changes,
   say so ("Nothing changes on screen: ...").
-- Blocked: a `Blocked:` line means the item waits on the owner. "build the backlog", "next batch" and "next" skip
-  blocked items (they stay where they are) until the owner answers. An answer replaces the `Blocked:` line with
-  `**Answered (YYYY-MM-DD):** <the question> → <the answer>`; from then on the item is built normally.
+- Blocked: a `Blocked:` line means the item can't be built yet. "build the backlog", "next batch" and "next" skip
+  blocked items (they stay where they are) until they are unblocked. There are two kinds (rule of 2026-11-24):
+  - It waits only for other items: write it with no question, naming each item's repo and ID, like
+    `Blocked: waits for footykit FK-76, calendarkit CK-34`. It unblocks itself: on "build the backlog", "next batch",
+    "next" or "build <ID>", look each one up in that repo's `BUILT.md` on GitHub's `main`. When all have shipped,
+    replace the line with `**Unblocked (YYYY-MM-DD):** footykit FK-76 shipped (v0.87.0)` (every item, with its
+    version) and build the item in that same run; say so in the report. Otherwise it stays blocked.
+  - It asks the owner something: write the question with a "?". It waits on the owner, even when every item named in
+    it has shipped. An answer replaces the line with `**Answered (YYYY-MM-DD):** <the question> → <the answer>`; from
+    then on the item is built normally.
+  Every item an item needs first must be written by ID in its `Blocked:` line, also when the line is mainly a question
+  to the owner: backlogkit's Stuck section and Build order page only see the IDs written there, and say when they
+  have shipped.
 - Ideas: every idea in `IDEAS.md` ends with one reason tag saying why it isn't planned: `[why: waiting]` waits on
   something (a data source, a key or account, another feature, an outside event; the idea's text says which),
   `[why: decision]` needs the owner to decide something, `[why: too-big]` needs splitting first, `[why: later]` not

@@ -6,6 +6,10 @@ spec commits left out). New entries name their backlog ID (see CLAUDE.md, "Featu
 
 No version numbers here: gauntlet's package.json stays 0.1.0, so entries go under `## <YYYY-MM-DD>` only.
 
+## 2026-11-24
+### Internal
+- docs: new "Blocked" rule in CLAUDE.md: a Blocked line that only waits for other items unblocks itself at the next build; a question needs a "?" and still waits for the owner; GT-16 and GT-21 Blocked lines rewritten in that form
+
 ## 2026-11-21
 - Cards leave their list (second step of "Cards go anywhere")
   Drag a card off its board and let go on the empty page: it leaves its list (and /boardkit, and a linked map) and stays on the page; drag it onto any list and it is that list's card again; one Ctrl+Z either way.
