@@ -62,6 +62,17 @@ Owner said "go" 2026-11-21, steps OK'd. Step 1 (pick and move cards) and step 2 
 Blocked: waits for calendarkit CK-35.
 **Tests:** e2e: in the NBA Slate widget, open the season-series popup, switch to an earlier season; each square is a link to `nba.com/games?date=` and clicking it leaves the widget unselected and in place.
 
+### GT-23 — A link opens the page of a given day
+**In short:** Opening gauntlet with a day in the address (for example from bettracker) jumps straight to the whiteboard page named with that day, or says there is no board for it.
+**What:** from the owner, 2026-11-24. He wants to click a day in bettracker and land on that day's whiteboard page. The whiteboard lives in this browser's IndexedDB under gauntlet's address, so another site cannot look inside it: the link can only carry the day, and gauntlet finds the page. His stopgap until a better system: he names each daily page with its day by hand (page rename already exists).
+- Address: `/?date=YYYY-MM-DD` on the whiteboard's own address. Read once when the whiteboard has loaded; it wins over the page remembered for a reload (`src/pages/rememberPage.ts`). After the jump (or the miss) the `date` part is removed from the address without a reload, so a later reload behaves as today.
+- Which page is "that day's": the page whose NAME has that day in it. Accepted ways of writing the day in a name, with any other text around it ("24/11 NBA" counts): `24/11/2026`, `24/11/26`, `2026-11-24`, and `24/11` with no year. Leading zeros optional (`5/11` = `05/11`). Day first, then month, always.
+- A name with no year matches that day and month of any year. If more than one page matches, a name with the right year wins over a name with no year; if still more than one, open the one furthest down the page list.
+- Found: switch to that page, nothing else changes (no selection, no edit, nothing saved by the jump itself).
+- Not found: stay on the page it would have opened anyway and show a short note that goes away by itself: "No board for 24/11/2026". Same note, with the text typed, when `date` is not a real day ("No board for <text>"). Never an error screen.
+- No new button or menu in gauntlet for this item.
+**Tests:** unit: the name matching (each accepted way, text around the day, no-year names, the tie rules, not-a-day input). e2e with throwaway pages: name a page "24/11/2026", open `/?date=2026-11-24`, land on it and the address no longer has `date`; open a day with no page, see the note and stay put; two matching pages, the right one opens.
+
 ## Held (needs the owner's "go"; never built from "build the backlog")
 
 ### GT-18 — Arrows attach to one card
