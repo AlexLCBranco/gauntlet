@@ -9,8 +9,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run && node --test \"scripts/*.test.mjs\"",
-    "e2e": "playwright test",
-    "pretest": "node scripts/check-lists.mjs"
+    "e2e": "node scripts/local-e2e.mjs gauntlet",
+    "pretest": "node scripts/check-lists.mjs",
+    "e2e:live": "node scripts/live-e2e.mjs"
   },
   "dependencies": {
     "@tldraw/tlschema": "5.5.2",

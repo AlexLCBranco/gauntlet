@@ -42,6 +42,8 @@ Finished work goes to docs/HISTORY.md.
   embed, markup .e2e.ts); waiting for the owner's hand check.
 - Live runs: no bypass secret exists (DECISIONS 2026-10-22); after a
   push, `node scripts/wait-deploy.mjs`. A 403 stops the run: tell the owner.
+  Live runs only with `npm run e2e:live`, only when the owner asks;
+  `npm run e2e` is local (2026-11-24).
 - LINKS ROUND (owner, 2026-10-23): steps 1-2 DONE (DECISIONS); waiting
   for the owner's hand check (feel of the icons and the link field).
 

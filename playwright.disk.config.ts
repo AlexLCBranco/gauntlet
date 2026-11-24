@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
+import { e2eSite } from "./scripts/e2e-site.mjs";
+
 /**
  * The save measured on a REAL disk folder (e2e/disk-save.manual.ts), not
  * the browser's private one the tests use. Not part of any test run:
@@ -22,7 +24,8 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   workers: 1,
   use: {
-    baseURL: process.env.BRIDGE_SITE ?? "http://localhost:3000",
+    // local-e2e.mjs sets it; no live site without E2E_LIVE=1 (scripts/e2e-site.mjs).
+    baseURL: e2eSite({ BRIDGE_SITE: "http://localhost:3000", ...process.env }),
     channel: "msedge",
     headless: false,
     viewport: { width: 1920, height: 1080 },

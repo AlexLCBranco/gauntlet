@@ -8,6 +8,7 @@ No version numbers here: gauntlet's package.json stays 0.1.0, so entries go unde
 
 ## 2026-11-24
 ### Internal
+- test: `npm run e2e` runs locally (scripts/local-e2e.mjs); the live site only through the new `npm run e2e:live`; Playwright has no default site and refuses a deployed one without it
 - docs: new "Blocked" rule in CLAUDE.md: a Blocked line that only waits for other items unblocks itself at the next build; a question needs a "?" and still waits for the owner; GT-16 and GT-21 Blocked lines rewritten in that form
 
 ## 2026-11-21

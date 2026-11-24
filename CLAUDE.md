@@ -15,6 +15,11 @@ all; a full live Playwright run costs thousands of requests). Every page,
 file, API call and prefetch on the live site counts; local runs cost nothing.
 - The full Playwright suite runs locally (against a local production build),
   never against the live site unless the owner asks for it.
+- Commands: `npm run e2e` is the local run (scripts/local-e2e.mjs builds and
+  serves a local copy; `npm run e2e -- e2e/x.e2e.ts` for some files).
+  `npm run e2e:live` is the only command that reaches the live site: only when
+  the owner asks. playwright.config.ts has no default site and refuses any
+  site not on this PC without it (scripts/e2e-site.mjs).
 - After a push the live site gets only a small smoke check (it loads, the
   version, one throwaway create + delete): tens of requests.
 - Check the live `/version.json` at most every 30 s and stop once it shows the
